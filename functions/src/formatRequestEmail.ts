@@ -38,13 +38,21 @@ function addressBlock(data: ConciergeRequestDoc): string {
   return parts.length ? parts.join('\n') : ''
 }
 
+export function customerDisplayName(data: ConciergeRequestDoc): string {
+  return [data.firstName, data.lastName].filter(Boolean).join(' ').trim()
+}
+
 export function buildRequestEmail(data: ConciergeRequestDoc, requestId: string) {
-  const name = [data.firstName, data.lastName].filter(Boolean).join(' ').trim() || 'Unknown'
-  const subject = `New concierge request — ${name}`
+  const name = customerDisplayName(data) || 'Unknown'
+  const customerEmail = (data.email ?? '').trim()
+  const subject = customerEmail
+    ? `New request from ${name} — ${customerEmail}`
+    : `New concierge request — ${name}`
 
   const rows = [
+    line('Customer', name),
+    line('Reply to', customerEmail),
     line('Request ID', requestId),
-    line('Name', name),
     line('Email', data.email),
     line('Phone', data.phone),
     line('Service type', data.requestType),
@@ -65,7 +73,14 @@ export function buildRequestEmail(data: ConciergeRequestDoc, requestId: string) 
     rows.push('', 'Address:', address)
   }
 
-  const text = ['A new service request was submitted on theconcierge.life.', '', ...rows].join('\n')
+  const text = [
+    `New concierge request from ${name}.`,
+    customerEmail ? `Reply to the customer: ${customerEmail}` : '',
+    '',
+    ...rows,
+  ]
+    .filter(Boolean)
+    .join('\n')
 
   const htmlBody = rows
     .map((r) => {
@@ -82,7 +97,9 @@ export function buildRequestEmail(data: ConciergeRequestDoc, requestId: string) 
     : ''
 
   const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;line-height:1.5">
-<p>A new service request was submitted on <strong>theconcierge.life</strong>.</p>
+<p><strong>New request from ${escapeHtml(name)}</strong></p>
+${customerEmail ? `<p>Reply to customer: <a href="mailto:${escapeHtml(customerEmail)}">${escapeHtml(customerEmail)}</a></p>` : ''}
+<p>Submitted on <strong>theconcierge.life</strong></p>
 ${htmlBody}
 ${htmlAddress}
 </body></html>`

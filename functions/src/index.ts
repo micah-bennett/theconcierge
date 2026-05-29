@@ -2,7 +2,11 @@ import { initializeApp } from 'firebase-admin/app'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { logger } from 'firebase-functions/v2'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
-import { buildRequestEmail, type ConciergeRequestDoc } from './formatRequestEmail.js'
+import {
+  buildRequestEmail,
+  customerDisplayName,
+  type ConciergeRequestDoc,
+} from './formatRequestEmail.js'
 import { sendMailWithSmtpFallback } from './smtp.js'
 
 initializeApp()
@@ -43,6 +47,14 @@ export const emailOnConciergeRequest = onDocumentCreated(
     const host = smtpHost.value().trim()
     const port = Number(smtpPort.value())
     const customerEmail = (data.email ?? '').trim()
+    const customerName = customerDisplayName(data)
+    const replyTo =
+      customerEmail && customerName
+        ? `"${customerName.replace(/"/g, '')}" <${customerEmail}>`
+        : customerEmail || undefined
+    const fromName = customerName
+      ? `${customerName.replace(/"/g, '')} — Concierge request`
+      : 'The Concierge'
 
     try {
       const profileUsed = await sendMailWithSmtpFallback({
@@ -51,9 +63,9 @@ export const emailOnConciergeRequest = onDocumentCreated(
         host,
         port,
         mail: {
-          from: `"The Concierge" <${user}>`,
+          from: `"${fromName}" <${user}>`,
           to: notifyEmail.value(),
-          replyTo: customerEmail || undefined,
+          replyTo,
           subject,
           text,
           html,
