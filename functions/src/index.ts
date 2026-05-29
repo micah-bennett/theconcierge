@@ -14,7 +14,7 @@ initializeApp()
 const smtpPass = defineSecret('SMTP_PASS')
 const smtpUser = defineString('SMTP_USER', {
   default: 'micah@hvconcierge.com',
-  description: 'SMTP login (usually your mailbox address)',
+  description: 'Google SMTP login and From address (micah@hvconcierge.com)',
 })
 const smtpHost = defineString('SMTP_HOST', {
   default: 'smtp.gmail.com',
@@ -43,29 +43,22 @@ export const emailOnConciergeRequest = onDocumentCreated(
     const requestId = snap.id
     const { subject, text, html } = buildRequestEmail(data, requestId)
 
-    const user = smtpUser.value().trim()
+    const mailbox = smtpUser.value().trim()
     const host = smtpHost.value().trim()
     const port = Number(smtpPort.value())
     const customerEmail = (data.email ?? '').trim()
-    const customerName = customerDisplayName(data)
-    const replyTo =
-      customerEmail && customerName
-        ? `"${customerName.replace(/"/g, '')}" <${customerEmail}>`
-        : customerEmail || undefined
-    const fromName = customerName
-      ? `${customerName.replace(/"/g, '')} — Concierge request`
-      : 'The Concierge'
+    const customerName = customerDisplayName(data).replace(/"/g, '') || 'Guest'
 
     try {
       const profileUsed = await sendMailWithSmtpFallback({
-        user,
+        user: mailbox,
         pass: smtpPass.value().replace(/\s/g, ''),
         host,
         port,
         mail: {
-          from: `"${fromName}" <${user}>`,
+          from: `"${customerName}" <${mailbox}>`,
           to: notifyEmail.value(),
-          replyTo,
+          replyTo: customerEmail || undefined,
           subject,
           text,
           html,
@@ -81,7 +74,7 @@ export const emailOnConciergeRequest = onDocumentCreated(
         requestId,
         smtpHost: host,
         smtpPort: port,
-        smtpUser: user,
+        smtpUser: mailbox,
         error: err instanceof Error ? err.message : String(err),
       })
       throw err

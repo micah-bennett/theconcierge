@@ -21,9 +21,10 @@ export type ConciergeRequestDoc = {
   expYear?: string
 }
 
-function line(label: string, value: string | undefined): string {
-  const v = (value ?? '').trim()
-  return v ? `${label}: ${v}` : ''
+export const FORM_NOTIFICATION_SUBJECT = 'New submission from Concierge Request Form'
+
+export function customerDisplayName(data: ConciergeRequestDoc): string {
+  return [data.firstName, data.lastName].filter(Boolean).join(' ').trim()
 }
 
 function addressBlock(data: ConciergeRequestDoc): string {
@@ -35,76 +36,70 @@ function addressBlock(data: ConciergeRequestDoc): string {
   ]
     .map((p) => (p ?? '').trim())
     .filter(Boolean)
-  return parts.length ? parts.join('\n') : ''
+  return parts.join('\n')
 }
 
-export function customerDisplayName(data: ConciergeRequestDoc): string {
-  return [data.firstName, data.lastName].filter(Boolean).join(' ').trim()
+function formatDateUS(iso: string | undefined): string {
+  const v = (iso ?? '').trim()
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return v
+  return `${m[2]}/${m[3]}/${m[1]}`
 }
 
-export function buildRequestEmail(data: ConciergeRequestDoc, requestId: string) {
-  const name = customerDisplayName(data) || 'Unknown'
-  const customerEmail = (data.email ?? '').trim()
-  const subject = customerEmail
-    ? `New request from ${name} — ${customerEmail}`
-    : `New concierge request — ${name}`
+function formatPhoneUS(digits: string | undefined): string {
+  const d = (digits ?? '').replace(/\D/g, '')
+  if (d.length === 10) {
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
+  }
+  return digits?.trim() ?? ''
+}
 
-  const rows = [
-    line('Customer', name),
-    line('Reply to', customerEmail),
-    line('Request ID', requestId),
-    line('Email', data.email),
-    line('Phone', data.phone),
-    line('Service type', data.requestType),
-    line('Date needed', data.dateNeeded),
-    line('Time needed', data.timeNeeded),
-    line('Details', data.details),
-    line('How they heard about us', data.hearAboutUs),
-    line('Payment method', data.paymentMethod),
-    line('Cardholder name', data.cardholderName),
-    data.cardLastFour ? line('Card last 4', data.cardLastFour) : '',
-    data.expMonth || data.expYear
-      ? line('Card exp', [data.expMonth, data.expYear].filter(Boolean).join('/'))
-      : '',
-  ].filter(Boolean)
+type EmailRow = { label: string; value: string; isEmail?: boolean }
 
+function buildRows(data: ConciergeRequestDoc): EmailRow[] {
+  const name = customerDisplayName(data) || '—'
   const address = addressBlock(data)
-  if (address) {
-    rows.push('', 'Address:', address)
+  const customerEmail = (data.email ?? '').trim()
+  const phone = formatPhoneUS(data.phone)
+
+  const rows: EmailRow[] = [
+    { label: 'Name', value: name },
+    { label: 'Address', value: address || '—' },
+    { label: 'Phone', value: phone || '—' },
+    { label: 'Email', value: customerEmail || '—', isEmail: Boolean(customerEmail) },
+    {
+      label: 'Date request needs to be completed',
+      value: formatDateUS(data.dateNeeded) || '—',
+    },
+    { label: 'Time request needs to be completed', value: (data.timeNeeded ?? '').trim() || '—' },
+    { label: 'Request', value: (data.requestType ?? '').trim() || '—' },
+  ]
+
+  const details = (data.details ?? '').trim()
+  if (details) {
+    rows.push({ label: 'Request Details or Comments', value: details })
   }
 
-  const text = [
-    `New concierge request from ${name}.`,
-    customerEmail ? `Reply to the customer: ${customerEmail}` : '',
-    '',
-    ...rows,
-  ]
-    .filter(Boolean)
-    .join('\n')
+  rows.push({
+    label: 'How did you hear about us?',
+    value: (data.hearAboutUs ?? '').trim() || '—',
+  })
 
-  const htmlBody = rows
-    .map((r) => {
-      const idx = r.indexOf(': ')
-      if (idx === -1) return `<p>${escapeHtml(r)}</p>`
-      const label = r.slice(0, idx)
-      const value = r.slice(idx + 2)
-      return `<p><strong>${escapeHtml(label)}</strong><br>${escapeHtml(value).replace(/\n/g, '<br>')}</p>`
-    })
-    .join('')
+  const payment = (data.paymentMethod ?? '').trim()
+  if (payment && payment !== 'Skip — payment optional') {
+    rows.push({ label: 'Payment method', value: payment })
+    const cardholder = (data.cardholderName ?? '').trim()
+    if (cardholder) rows.push({ label: 'Cardholder name', value: cardholder })
+    if (data.cardLastFour) rows.push({ label: 'Card last 4', value: data.cardLastFour })
+    if (data.expMonth || data.expYear) {
+      rows.push({
+        label: 'Card expiration',
+        value: [data.expMonth, data.expYear].filter(Boolean).join('/'),
+      })
+    }
+  }
 
-  const htmlAddress = address
-    ? `<p><strong>Address</strong></p><pre style="font-family:inherit;white-space:pre-wrap;margin:0">${escapeHtml(address)}</pre>`
-    : ''
-
-  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;line-height:1.5">
-<p><strong>New request from ${escapeHtml(name)}</strong></p>
-${customerEmail ? `<p>Reply to customer: <a href="mailto:${escapeHtml(customerEmail)}">${escapeHtml(customerEmail)}</a></p>` : ''}
-<p>Submitted on <strong>theconcierge.life</strong></p>
-${htmlBody}
-${htmlAddress}
-</body></html>`
-
-  return { subject, text, html }
+  return rows
 }
 
 function escapeHtml(s: string): string {
@@ -113,4 +108,40 @@ function escapeHtml(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function renderValue(row: EmailRow): string {
+  if (row.isEmail && row.value !== '—') {
+    const e = escapeHtml(row.value)
+    return `<a href="mailto:${e}" style="color:#1a73e8;text-decoration:underline">${e}</a>`
+  }
+  return escapeHtml(row.value).replace(/\n/g, '<br>')
+}
+
+export function buildRequestEmail(data: ConciergeRequestDoc, _requestId: string) {
+  const rows = buildRows(data)
+  const subject = FORM_NOTIFICATION_SUBJECT
+
+  const text = rows.map((r) => `${r.label}\n${r.value}`).join('\n\n')
+
+  const tableRows = rows
+    .map((row, i) => {
+      const bg = i % 2 === 0 ? '#eef6fc' : '#ffffff'
+      return `<tr style="background:${bg}">
+  <td style="padding:10px 12px;font-weight:bold;vertical-align:top;width:42%;color:#1a1a1a;border:1px solid #d8e8f4">${escapeHtml(row.label)}</td>
+  <td style="padding:10px 12px;vertical-align:top;color:#1a1a1a;border:1px solid #d8e8f4">${renderValue(row)}</td>
+</tr>`
+    })
+    .join('')
+
+  const html = `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:16px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;border-collapse:collapse">
+${tableRows}
+</table>
+</body>
+</html>`
+
+  return { subject, text, html }
 }

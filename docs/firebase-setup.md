@@ -52,6 +52,8 @@ SMTP_PORT=587
 NOTIFY_EMAIL=micah@hvconcierge.com
 ```
 
+Inbox shows **customer first + last name** as the sender name (e.g. `Anthony Jackson <micah@hvconcierge.com>`), delivered **to** `micah@hvconcierge.com`. **Reply** goes to the customer’s email.
+
 ## 3. Firestore rules
 
 ```bash
