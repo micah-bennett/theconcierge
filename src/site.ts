@@ -1,0 +1,2 @@
+export const OFFICE_PHONE_DISPLAY = '845-518-4827'
+export const OFFICE_PHONE_TEL = '+18455184827'

@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /conciergeRequests/{requestId} {
+      allow create: if
+        request.resource.data.firstName is string
+        && request.resource.data.firstName.size() > 0
+        && request.resource.data.lastName is string
+        && request.resource.data.lastName.size() > 0
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 0
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() > 0
+        && request.resource.data.zip is string
+        && request.resource.data.zip.size() == 5
+        && request.resource.data.zip.matches('^[0-9]{5}$');
+      allow read, update, delete: if false;
+    }
+  }
+}
