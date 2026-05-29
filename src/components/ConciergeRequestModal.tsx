@@ -61,7 +61,6 @@ function localDateISO(d: Date): string {
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
 const CURRENT_YEAR = new Date().getFullYear()
-const MAX_REQUEST_YEAR = CURRENT_YEAR + 3
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate()
@@ -218,11 +217,6 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
     const yearNum = parseInt(form.dateYear, 10)
     if (form.dateYear.length !== 4 || !Number.isFinite(yearNum)) {
       setError('Year must be exactly 4 digits (e.g. 2026).')
-      setSubmitting(false)
-      return
-    }
-    if (yearNum < CURRENT_YEAR || yearNum > MAX_REQUEST_YEAR) {
-      setError(`Year must be between ${CURRENT_YEAR} and ${MAX_REQUEST_YEAR}.`)
       setSubmitting(false)
       return
     }
@@ -553,7 +547,7 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
                 </label>
               </div>
               <p className="request-modal__micro request-modal__micro--date">
-                Enter month, day, and year. Must be today or a future date ({CURRENT_YEAR}–{MAX_REQUEST_YEAR}).
+                Enter month, day, and year. Must be today or a future date.
               </p>
             </fieldset>
 

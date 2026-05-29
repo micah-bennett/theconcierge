@@ -2,8 +2,8 @@ import { initializeApp } from 'firebase-admin/app'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { logger } from 'firebase-functions/v2'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
-import nodemailer from 'nodemailer'
 import { buildRequestEmail, type ConciergeRequestDoc } from './formatRequestEmail.js'
+import { sendMailWithSmtpFallback } from './smtp.js'
 
 initializeApp()
 
@@ -13,12 +13,12 @@ const smtpUser = defineString('SMTP_USER', {
   description: 'SMTP login (usually your mailbox address)',
 })
 const smtpHost = defineString('SMTP_HOST', {
-  default: 'smtpout.secureserver.net',
-  description: 'SMTP host (GoDaddy: smtpout.secureserver.net)',
+  default: 'smtp.gmail.com',
+  description: 'SMTP host (Google Workspace: smtp.gmail.com)',
 })
 const smtpPort = defineString('SMTP_PORT', {
-  default: '465',
-  description: 'SMTP port (465 for SSL)',
+  default: '587',
+  description: 'SMTP port (Google Workspace: 587 STARTTLS)',
 })
 const notifyEmail = defineString('NOTIFY_EMAIL', {
   default: 'micah@hvconcierge.com',
@@ -39,30 +39,37 @@ export const emailOnConciergeRequest = onDocumentCreated(
     const requestId = snap.id
     const { subject, text, html } = buildRequestEmail(data, requestId)
 
-    const transporter = nodemailer.createTransport({
-      host: smtpHost.value(),
-      port: Number(smtpPort.value()),
-      secure: Number(smtpPort.value()) === 465,
-      auth: {
-        user: smtpUser.value(),
-        pass: smtpPass.value(),
-      },
-    })
-
+    const user = smtpUser.value().trim()
+    const host = smtpHost.value().trim()
+    const port = Number(smtpPort.value())
     const customerEmail = (data.email ?? '').trim()
+
     try {
-      await transporter.sendMail({
-        from: `"The Concierge" <${smtpUser.value()}>`,
-        to: notifyEmail.value(),
-        replyTo: customerEmail || undefined,
-        subject,
-        text,
-        html,
+      const profileUsed = await sendMailWithSmtpFallback({
+        user,
+        pass: smtpPass.value().replace(/\s/g, ''),
+        host,
+        port,
+        mail: {
+          from: `"The Concierge" <${user}>`,
+          to: notifyEmail.value(),
+          replyTo: customerEmail || undefined,
+          subject,
+          text,
+          html,
+        },
       })
-      logger.info('Request notification sent', { requestId, to: notifyEmail.value() })
+      logger.info('Request notification sent', {
+        requestId,
+        to: notifyEmail.value(),
+        smtpProfile: profileUsed,
+      })
     } catch (err) {
       logger.error('Failed to send request notification email', {
         requestId,
+        smtpHost: host,
+        smtpPort: port,
+        smtpUser: user,
         error: err instanceof Error ? err.message : String(err),
       })
       throw err
