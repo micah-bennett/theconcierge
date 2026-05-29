@@ -24,11 +24,22 @@ Without these keys, the form shows success but **does not write to Firestore**, 
 
 ### Google App Password (required)
 
-Use a **Google App Password**, not the normal Gmail sign-in password:
+Firestore saves work, but **email fails** if `SMTP_PASS` is your normal Gmail password. Logs show:
+
+`Application-specific password required`
+
+**Fix:**
 
 1. https://myaccount.google.com/apppasswords (2-Step Verification must be on)
-2. Create a password for “Concierge website”
-3. Store it in Firebase:
+2. Create a new App Password (name: “Concierge website”)
+3. Test locally (must see ✓ before updating Firebase):
+
+```bash
+cd functions
+SMTP_PASS='paste-16-char-app-password-here' npm run test-smtp
+```
+
+4. Store the **same** App Password in Firebase and redeploy:
 
 ```bash
 firebase use theconcierge-e94e8
@@ -36,12 +47,7 @@ firebase functions:secrets:set SMTP_PASS
 firebase deploy --only functions
 ```
 
-Local test:
-
-```bash
-cd functions
-SMTP_PASS='your-16-char-app-password' npm run test-smtp
-```
+5. Submit a **new** request on the site (old Firestore rows do not resend email automatically).
 
 ### Optional params (`functions/.env.theconcierge-e94e8`)
 

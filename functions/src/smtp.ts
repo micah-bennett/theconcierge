@@ -115,5 +115,11 @@ export async function sendMailWithSmtpFallback(options: {
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+  const message = lastError instanceof Error ? lastError.message : String(lastError)
+  if (/application-specific password required/i.test(message)) {
+    throw new Error(
+      'Google SMTP rejected login: use a Google App Password in Firebase secret SMTP_PASS (not your normal Gmail password). See https://myaccount.google.com/apppasswords',
+    )
+  }
+  throw lastError instanceof Error ? lastError : new Error(message)
 }
