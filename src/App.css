@@ -2111,6 +2111,21 @@
   color: #fca5a5;
 }
 
+.request-modal__field-error {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #fca5a5;
+}
+
+.request-modal__fieldset--invalid .request-modal__input {
+  border-color: rgba(252, 165, 165, 0.65);
+}
+
+.request-modal__fieldset--invalid .request-modal__legend {
+  color: rgba(252, 165, 165, 0.95);
+}
+
 .request-modal__actions {
   display: flex;
   flex-wrap: wrap;

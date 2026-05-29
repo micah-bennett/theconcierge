@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { isFirebaseConfigured } from '../firebase/envCheck'
 import { submitConciergeRequest } from '../firebase/submitConciergeRequest'
 import { OFFICE_PHONE_DISPLAY, OFFICE_PHONE_TEL } from '../site'
@@ -51,14 +51,6 @@ function digitsOnly(value: string): string {
   return value.replace(/\D/g, '')
 }
 
-/** YYYY-MM-DD in the user's local calendar (for `<input type="date" min>` and comparisons). */
-function localDateISO(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
 const MONTHS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -84,8 +76,19 @@ function isValidCalendarDate(iso: string): boolean {
   return day >= 1 && day <= daysInMonth(y, mo)
 }
 
+function parseLocalISODate(iso: string): Date | null {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return null
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+}
+
 function isTodayOrFutureISO(iso: string): boolean {
-  return iso >= localDateISO(new Date())
+  const chosen = parseLocalISODate(iso)
+  if (!chosen) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  chosen.setHours(0, 0, 0, 0)
+  return chosen >= today
 }
 
 type FormState = {
@@ -115,6 +118,15 @@ type FormState = {
   expYear: string
 }
 
+function defaultDateParts(): Pick<FormState, 'dateMonth' | 'dateDay' | 'dateYear'> {
+  const d = new Date()
+  return {
+    dateMonth: String(d.getMonth() + 1).padStart(2, '0'),
+    dateDay: String(d.getDate()).padStart(2, '0'),
+    dateYear: String(d.getFullYear()),
+  }
+}
+
 const emptyForm = (): FormState => ({
   firstName: '',
   lastName: '',
@@ -126,9 +138,7 @@ const emptyForm = (): FormState => ({
   country: 'United States',
   phone: '',
   email: '',
-  dateMonth: '',
-  dateDay: '',
-  dateYear: '',
+  ...defaultDateParts(),
   hour: '9',
   minute: '00',
   ampm: 'AM',
@@ -149,14 +159,30 @@ type Props = {
 
 export function ConciergeRequestModal({ open, onClose }: Props) {
   const baseId = useId()
+  const dateFieldRef = useRef<HTMLFieldSetElement>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dateError, setDateError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [successKind, setSuccessKind] = useState<'remote' | 'local' | null>(null)
 
   const update = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
+    setError(null)
+    if (key === 'dateMonth' || key === 'dateDay' || key === 'dateYear') {
+      setDateError(null)
+    }
+  }, [])
+
+  const showFormError = useCallback((message: string, opts?: { scrollToDate?: boolean }) => {
+    setError(message)
+    if (opts?.scrollToDate) {
+      setDateError(message)
+      requestAnimationFrame(() => {
+        dateFieldRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    }
   }, [])
 
   useEffect(() => {
@@ -176,122 +202,118 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
   useEffect(() => {
     if (!open) return
     setError(null)
+    setDateError(null)
     setSuccess(false)
     setSuccessKind(null)
+    setSubmitting(false)
   }, [open])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+    setDateError(null)
     setSubmitting(true)
 
-    const timeNeeded = `${form.hour}:${form.minute} ${form.ampm}`
-
-    const phoneDigits = digitsOnly(form.phone)
-    const cardDigits = digitsOnly(form.cardNumber)
-    const emailTrim = normalizeEmailInput(form.email)
-    const first = form.firstName.trim()
-    const last = form.lastName.trim()
-
-    if (!first || !last) {
-      setError('Please enter your first and last name.')
-      setSubmitting(false)
-      return
-    }
-    if (!isValidEmail(emailTrim)) {
-      setError('Please enter a valid email (e.g. name@gmail.com).')
-      setSubmitting(false)
-      return
-    }
-    if (phoneDigits.length !== 10) {
-      setError('Phone number must be exactly 10 digits (US).')
-      setSubmitting(false)
-      return
-    }
-    const zipDigits = digitsOnly(form.zip)
-    if (zipDigits.length !== 5) {
-      setError('ZIP code must be exactly 5 digits (NY format, e.g. 12601).')
-      setSubmitting(false)
-      return
-    }
-    const yearNum = parseInt(form.dateYear, 10)
-    if (form.dateYear.length !== 4 || !Number.isFinite(yearNum)) {
-      setError('Year must be exactly 4 digits (e.g. 2026).')
-      setSubmitting(false)
-      return
-    }
-    const dateNeeded = buildDateISO(form.dateMonth, form.dateDay, form.dateYear)
-    if (!dateNeeded || !isValidCalendarDate(dateNeeded)) {
-      setError('Enter a valid month (1–12), day, and year.')
-      setSubmitting(false)
-      return
-    }
-    if (!isTodayOrFutureISO(dateNeeded)) {
-      setError('Date must be today or in the future — past dates are not allowed.')
-      setSubmitting(false)
-      return
-    }
-    if (cardDigits.length > 0 && cardDigits.length !== 16) {
-      setError('Credit card number must be exactly 16 digits, or leave payment blank.')
-      setSubmitting(false)
-      return
-    }
-
-    const expYearDigits = digitsOnly(form.expYear)
-    const hasExpMonth = Boolean(form.expMonth)
-    const hasExpYear = expYearDigits.length > 0
-    const fullCard =
-      form.paymentMethod === 'Credit card' && cardDigits.length === 16
-
-    const validateExpYearRange = (y: number): boolean => {
-      if (Number.isNaN(y) || y < CURRENT_YEAR || y > CURRENT_YEAR + 25) {
-        setError(`Expiration year must be a 4-digit year between ${CURRENT_YEAR} and ${CURRENT_YEAR + 25}.`)
-        setSubmitting(false)
-        return false
-      }
-      return true
-    }
-
-    if (fullCard) {
-      if (!hasExpMonth || expYearDigits.length !== 4) {
-        setError('Please enter expiration month and a 4-digit year (YYYY).')
-        setSubmitting(false)
-        return
-      }
-      if (!validateExpYearRange(parseInt(expYearDigits, 10))) return
-    } else if (hasExpMonth || hasExpYear) {
-      if (!hasExpMonth || expYearDigits.length !== 4) {
-        setError('Please enter both expiration month and a 4-digit year (YYYY), or leave both blank.')
-        setSubmitting(false)
-        return
-      }
-      if (!validateExpYearRange(parseInt(expYearDigits, 10))) return
-    }
-
-    const payload = {
-      firstName: first,
-      lastName: last,
-      addressLine1: form.addressLine1.trim(),
-      addressLine2: form.addressLine2.trim(),
-      city: form.city.trim(),
-      state: form.state.trim(),
-      zip: zipDigits,
-      country: form.country.trim(),
-      phone: phoneDigits,
-      email: emailTrim,
-      dateNeeded,
-      timeNeeded,
-      requestType: form.requestType,
-      details: form.details.trim(),
-      hearAboutUs: form.hearAboutUs,
-      paymentMethod: form.paymentMethod.trim(),
-      cardholderName: form.cardholderName.trim(),
-      cardLastFour: cardDigits.length === 16 ? cardDigits.slice(-4) : '',
-      expMonth: form.expMonth,
-      expYear: expYearDigits.length === 4 ? expYearDigits : '',
-    }
-
     try {
+      const timeNeeded = `${form.hour}:${form.minute} ${form.ampm}`
+
+      const phoneDigits = digitsOnly(form.phone)
+      const cardDigits = digitsOnly(form.cardNumber)
+      const emailTrim = normalizeEmailInput(form.email)
+      const first = form.firstName.trim()
+      const last = form.lastName.trim()
+
+      if (!first || !last) {
+        showFormError('Please enter your first and last name.')
+        return
+      }
+      if (!isValidEmail(emailTrim)) {
+        showFormError('Please enter a valid email (e.g. name@gmail.com).')
+        return
+      }
+      if (phoneDigits.length !== 10) {
+        showFormError('Phone number must be exactly 10 digits (US).')
+        return
+      }
+      const zipDigits = digitsOnly(form.zip)
+      if (zipDigits.length !== 5) {
+        showFormError('ZIP code must be exactly 5 digits (NY format, e.g. 12601).')
+        return
+      }
+      const yearNum = parseInt(form.dateYear, 10)
+      if (form.dateYear.length !== 4 || !Number.isFinite(yearNum)) {
+        showFormError('Year must be exactly 4 digits (e.g. 2026).', { scrollToDate: true })
+        return
+      }
+      const dateNeeded = buildDateISO(form.dateMonth, form.dateDay, form.dateYear)
+      if (!dateNeeded || !isValidCalendarDate(dateNeeded)) {
+        showFormError('Enter a valid month (1–12), day, and year.', { scrollToDate: true })
+        return
+      }
+      if (!isTodayOrFutureISO(dateNeeded)) {
+        showFormError('Date must be today or in the future — past dates are not allowed.', {
+          scrollToDate: true,
+        })
+        return
+      }
+      if (cardDigits.length > 0 && cardDigits.length !== 16) {
+        showFormError('Credit card number must be exactly 16 digits, or leave payment blank.')
+        return
+      }
+
+      const expYearDigits = digitsOnly(form.expYear)
+      const hasExpMonth = Boolean(form.expMonth)
+      const hasExpYear = expYearDigits.length > 0
+      const fullCard =
+        form.paymentMethod === 'Credit card' && cardDigits.length === 16
+
+      const validateExpYearRange = (y: number): boolean => {
+        if (Number.isNaN(y) || y < CURRENT_YEAR || y > CURRENT_YEAR + 25) {
+          showFormError(
+            `Expiration year must be a 4-digit year between ${CURRENT_YEAR} and ${CURRENT_YEAR + 25}.`,
+          )
+          return false
+        }
+        return true
+      }
+
+      if (fullCard) {
+        if (!hasExpMonth || expYearDigits.length !== 4) {
+          showFormError('Please enter expiration month and a 4-digit year (YYYY).')
+          return
+        }
+        if (!validateExpYearRange(parseInt(expYearDigits, 10))) return
+      } else if (hasExpMonth || hasExpYear) {
+        if (!hasExpMonth || expYearDigits.length !== 4) {
+          showFormError('Please enter both expiration month and a 4-digit year (YYYY), or leave both blank.')
+          return
+        }
+        if (!validateExpYearRange(parseInt(expYearDigits, 10))) return
+      }
+
+      const payload = {
+        firstName: first,
+        lastName: last,
+        addressLine1: form.addressLine1.trim(),
+        addressLine2: form.addressLine2.trim(),
+        city: form.city.trim(),
+        state: form.state.trim(),
+        zip: zipDigits,
+        country: form.country.trim(),
+        phone: phoneDigits,
+        email: emailTrim,
+        dateNeeded,
+        timeNeeded,
+        requestType: form.requestType,
+        details: form.details.trim(),
+        hearAboutUs: form.hearAboutUs,
+        paymentMethod: form.paymentMethod.trim(),
+        cardholderName: form.cardholderName.trim(),
+        cardLastFour: cardDigits.length === 16 ? cardDigits.slice(-4) : '',
+        expMonth: form.expMonth,
+        expYear: expYearDigits.length === 4 ? expYearDigits : '',
+      }
+
       if (isFirebaseConfigured()) {
         await submitConciergeRequest(payload)
         setSuccessKind('remote')
@@ -498,7 +520,10 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
               </label>
             </div>
 
-            <fieldset className="request-modal__fieldset request-modal__fieldset--date">
+            <fieldset
+              ref={dateFieldRef}
+              className={`request-modal__fieldset request-modal__fieldset--date${dateError ? ' request-modal__fieldset--invalid' : ''}`}
+            >
               <legend className="request-modal__legend">
                 Date request needs to be completed <span className="request-modal__req">*</span>
               </legend>
@@ -549,6 +574,11 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
               <p className="request-modal__micro request-modal__micro--date">
                 Enter month, day, and year. Must be today or a future date.
               </p>
+              {dateError ? (
+                <p className="request-modal__field-error" role="alert">
+                  {dateError}
+                </p>
+              ) : null}
             </fieldset>
 
             <fieldset className="request-modal__fieldset request-modal__fieldset--time">
