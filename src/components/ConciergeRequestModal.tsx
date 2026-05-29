@@ -91,6 +91,38 @@ function isTodayOrFutureISO(iso: string): boolean {
   return chosen >= today
 }
 
+function time12hToMinutes(hour: string, minute: string, ampm: 'AM' | 'PM'): number | null {
+  const h = parseInt(hour, 10)
+  const m = parseInt(minute, 10)
+  if (!Number.isFinite(h) || h < 1 || h > 12 || !Number.isFinite(m) || m < 0 || m > 59) return null
+  let hours24 = h % 12
+  if (ampm === 'PM') hours24 += 12
+  return hours24 * 60 + m
+}
+
+/** When date is today, scheduled time must be later than now (local). */
+function isScheduledDateTimeValid(
+  iso: string,
+  hour: string,
+  minute: string,
+  ampm: 'AM' | 'PM',
+): boolean {
+  const date = parseLocalISODate(iso)
+  const chosenMinutes = time12hToMinutes(hour, minute, ampm)
+  if (!date || chosenMinutes === null) return false
+
+  const now = new Date()
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  date.setHours(0, 0, 0, 0)
+
+  if (date > today) return true
+  if (date < today) return false
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  return chosenMinutes > nowMinutes
+}
+
 type FormState = {
   firstName: string
   lastName: string
@@ -127,6 +159,24 @@ function defaultDateParts(): Pick<FormState, 'dateMonth' | 'dateDay' | 'dateYear
   }
 }
 
+function defaultTimeParts(): Pick<FormState, 'hour' | 'minute' | 'ampm'> {
+  const now = new Date()
+  let total = now.getHours() * 60 + now.getMinutes() + 1
+  if (total >= 24 * 60) {
+    return { hour: '11', minute: '45', ampm: 'PM' }
+  }
+  const hours24 = Math.floor(total / 60)
+  const mins = total % 60
+  const ampm: 'AM' | 'PM' = hours24 >= 12 ? 'PM' : 'AM'
+  let h12 = hours24 % 12
+  if (h12 === 0) h12 = 12
+  return {
+    hour: String(h12),
+    minute: String(mins).padStart(2, '0'),
+    ampm,
+  }
+}
+
 const emptyForm = (): FormState => ({
   firstName: '',
   lastName: '',
@@ -139,9 +189,7 @@ const emptyForm = (): FormState => ({
   phone: '',
   email: '',
   ...defaultDateParts(),
-  hour: '9',
-  minute: '00',
-  ampm: 'AM',
+  ...defaultTimeParts(),
   requestType: REQUEST_TYPES[0],
   details: '',
   hearAboutUs: HEAR_ABOUT[0],
@@ -170,7 +218,14 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
   const update = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
     setError(null)
-    if (key === 'dateMonth' || key === 'dateDay' || key === 'dateYear') {
+    if (
+      key === 'dateMonth' ||
+      key === 'dateDay' ||
+      key === 'dateYear' ||
+      key === 'hour' ||
+      key === 'minute' ||
+      key === 'ampm'
+    ) {
       setDateError(null)
     }
   }, [])
@@ -254,6 +309,13 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
         showFormError('Date must be today or in the future — past dates are not allowed.', {
           scrollToDate: true,
         })
+        return
+      }
+      if (!isScheduledDateTimeValid(dateNeeded, form.hour, form.minute, form.ampm)) {
+        showFormError(
+          'For today, choose a time later than the current time. Pick a future date or a later time.',
+          { scrollToDate: true },
+        )
         return
       }
       if (cardDigits.length > 0 && cardDigits.length !== 16) {
@@ -572,7 +634,8 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
                 </label>
               </div>
               <p className="request-modal__micro request-modal__micro--date">
-                Enter month, day, and year. Must be today or a future date.
+                Enter month, day, and year. Must be today or a future date. If today, the time below must be
+                later than now.
               </p>
               {dateError ? (
                 <p className="request-modal__field-error" role="alert">
@@ -581,7 +644,9 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
               ) : null}
             </fieldset>
 
-            <fieldset className="request-modal__fieldset request-modal__fieldset--time">
+            <fieldset
+              className={`request-modal__fieldset request-modal__fieldset--time${dateError ? ' request-modal__fieldset--invalid' : ''}`}
+            >
               <legend className="request-modal__legend">Time request needs to be completed</legend>
               <div className="request-modal__time">
                 <label className="request-modal__label request-modal__label--inline" htmlFor={id('hour')}>

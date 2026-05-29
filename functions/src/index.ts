@@ -4,7 +4,8 @@ import { logger } from 'firebase-functions/v2'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import {
   buildRequestEmail,
-  customerDisplayName,
+  notificationSenderDisplayName,
+  sanitizeEmailDisplayName,
   type ConciergeRequestDoc,
 } from './formatRequestEmail.js'
 import { sendMailWithSmtpFallback } from './smtp.js'
@@ -13,8 +14,8 @@ initializeApp()
 
 const smtpPass = defineSecret('SMTP_PASS')
 const smtpUser = defineString('SMTP_USER', {
-  default: 'micah@hvconcierge.com',
-  description: 'Google SMTP login and From address (micah@hvconcierge.com)',
+  default: 'hvconciergeservices@gmail.com',
+  description: 'Google SMTP login (sending account)',
 })
 const smtpHost = defineString('SMTP_HOST', {
   default: 'smtp.gmail.com',
@@ -27,6 +28,10 @@ const smtpPort = defineString('SMTP_PORT', {
 const notifyEmail = defineString('NOTIFY_EMAIL', {
   default: 'micah@hvconcierge.com',
   description: 'Inbox that receives new request notifications',
+})
+const smtpFrom = defineString('SMTP_FROM', {
+  default: 'hvconciergeservices@gmail.com',
+  description: 'From address on notification emails (display name includes customer)',
 })
 
 export const emailOnConciergeRequest = onDocumentCreated(
@@ -47,7 +52,8 @@ export const emailOnConciergeRequest = onDocumentCreated(
     const host = smtpHost.value().trim()
     const port = Number(smtpPort.value())
     const customerEmail = (data.email ?? '').trim()
-    const customerName = customerDisplayName(data).replace(/"/g, '') || 'Guest'
+    const fromMailbox = smtpFrom.value().trim() || mailbox
+    const senderLabel = sanitizeEmailDisplayName(notificationSenderDisplayName(data))
 
     try {
       const profileUsed = await sendMailWithSmtpFallback({
@@ -56,7 +62,7 @@ export const emailOnConciergeRequest = onDocumentCreated(
         host,
         port,
         mail: {
-          from: `"${customerName}" <${mailbox}>`,
+          from: `"${senderLabel}" <${fromMailbox}>`,
           to: notifyEmail.value(),
           replyTo: customerEmail || undefined,
           subject,

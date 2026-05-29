@@ -27,6 +27,22 @@ export function customerDisplayName(data: ConciergeRequestDoc): string {
   return [data.firstName, data.lastName].filter(Boolean).join(' ').trim()
 }
 
+/** Shown in the inbox From column (when From address ≠ To address). */
+export function notificationSenderDisplayName(data: ConciergeRequestDoc): string {
+  return customerDisplayName(data) || 'Guest'
+}
+
+export function buildRequestSubject(data: ConciergeRequestDoc): string {
+  const name = customerDisplayName(data)
+  if (name) return `Concierge Request from ${name}`
+  return FORM_NOTIFICATION_SUBJECT
+}
+
+/** Strip characters that break RFC5322 quoted display names. */
+export function sanitizeEmailDisplayName(name: string): string {
+  return name.replace(/[\r\n"]/g, '').trim()
+}
+
 function addressBlock(data: ConciergeRequestDoc): string {
   const parts = [
     data.addressLine1,
@@ -120,7 +136,7 @@ function renderValue(row: EmailRow): string {
 
 export function buildRequestEmail(data: ConciergeRequestDoc, _requestId: string) {
   const rows = buildRows(data)
-  const subject = FORM_NOTIFICATION_SUBJECT
+  const subject = buildRequestSubject(data)
 
   const text = rows.map((r) => `${r.label}\n${r.value}`).join('\n\n')
 

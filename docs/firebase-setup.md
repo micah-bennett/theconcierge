@@ -20,7 +20,7 @@ Without these keys, the form shows success but **does not write to Firestore**, 
 | Trigger | New document in `conciergeRequests` |
 | Function | `emailOnConciergeRequest` |
 | Inbox | `NOTIFY_EMAIL` (default `micah@hvconcierge.com`) |
-| SMTP | Google Workspace — `smtp.gmail.com:587` |
+| SMTP | `hvconciergeservices@gmail.com` via `smtp.gmail.com:587` |
 
 ### Google App Password (required)
 
@@ -30,7 +30,7 @@ Firestore saves work, but **email fails** if `SMTP_PASS` is your normal Gmail pa
 
 **Fix:**
 
-1. https://myaccount.google.com/apppasswords (2-Step Verification must be on)
+1. Sign in as **hvconciergeservices@gmail.com** → https://myaccount.google.com/apppasswords (2-Step Verification must be on)
 2. Create a new App Password (name: “Concierge website”)
 3. Test locally (must see ✓ before updating Firebase):
 
@@ -52,13 +52,16 @@ firebase deploy --only functions
 ### Optional params (`functions/.env.theconcierge-e94e8`)
 
 ```
-SMTP_USER=micah@hvconcierge.com
+SMTP_USER=hvconciergeservices@gmail.com
+SMTP_FROM=hvconciergeservices@gmail.com
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 NOTIFY_EMAIL=micah@hvconcierge.com
 ```
 
-Inbox shows **customer first + last name** as the sender name (e.g. `Anthony Jackson <micah@hvconcierge.com>`), delivered **to** `micah@hvconcierge.com`. **Reply** goes to the customer’s email.
+`SMTP_PASS` must be a **Google App Password for `hvconciergeservices@gmail.com`** (not Micah’s Workspace password).
+
+Notifications show **From** `Jane Doe` &lt;hvconciergeservices@gmail.com&gt;, **To** `micah@hvconcierge.com`, **Reply-To** = customer email.
 
 ## 3. Firestore rules
 
@@ -70,7 +73,7 @@ firebase deploy --only firestore:rules
 
 1. [Firestore → conciergeRequests](https://console.firebase.google.com/project/theconcierge-e94e8/firestore) — new row after submit
 2. [Functions → Logs](https://console.firebase.google.com/project/theconcierge-e94e8/functions/logs) — look for `SMTP send succeeded`
-3. Inbox at `micah@hvconcierge.com` — subject like `New request from Jane Doe — jane@example.com`
+3. Inbox at `micah@hvconcierge.com` — subject like `Concierge Request from Jane Doe`
 
 ## 5. Billing
 
