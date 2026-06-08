@@ -404,7 +404,7 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
 
         <div className="request-modal__inner">
         {success ? (
-          <div className="request-modal__success">
+          <div className="request-modal__success request-modal__card">
             <h2 id={id('title')} className="request-modal__title">
               Thank you
             </h2>
@@ -416,7 +416,8 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
               </p>
             ) : (
               <p className="request-modal__lead">
-                We received your request. A concierge will follow up shortly. You can also reach us at{' '}
+                We received your request. A confirmation email has been sent to you, and our team will
+                follow up shortly. You can also reach us at{' '}
                 <a href={`tel:${OFFICE_PHONE_TEL}`}>{OFFICE_PHONE_DISPLAY}</a>.
               </p>
             )}
@@ -425,7 +426,7 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
             </button>
           </div>
         ) : (
-          <form className="request-modal__form" onSubmit={handleSubmit} noValidate>
+          <form className="request-modal__form request-modal__card" onSubmit={handleSubmit} noValidate>
             <div className="request-modal__header">
               <p className="request-modal__intro">We offer services customized to meet your needs.</p>
               <h2 id={id('title')} className="request-modal__title">

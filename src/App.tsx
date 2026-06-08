@@ -14,9 +14,10 @@ import { ContactPage } from './pages/ContactPage'
 import { HomePage } from './pages/HomePage'
 import { PersonalServicesPage } from './pages/PersonalServicesPage'
 import { PlansPage } from './pages/PlansPage'
+import { useSiteMotion } from './hooks/useSiteMotion'
 import './App.css'
 
-const LOGO_IMAGE = '/logo-concierge.png'
+const LOGO_IMAGE = '/logo-concierge.png?v=7'
 
 const ConciergeRequestModal = lazy(() =>
   import('./components/ConciergeRequestModal').then((m) => ({
@@ -39,6 +40,7 @@ function ScrollToTop() {
 function AppRoutes() {
   const navigate = useNavigate()
   const location = useLocation()
+  useSiteMotion(location.pathname)
   const [chatOpen, setChatOpen] = useState(false)
   const onRequestPage = location.pathname === '/request'
   const headerRef = useRef<HTMLElement>(null)
@@ -78,17 +80,14 @@ function AppRoutes() {
           aria-label="Hudson Valley Concierge Service — home"
         >
           <img
-            className="site-header__brand-logo site-header__brand-logo--mark"
+            className="site-header__brand-logo"
             src={LOGO_IMAGE}
-            alt=""
-            width={160}
-            height={160}
+            alt="The Concierge"
+            width={205}
+            height={117}
             decoding="async"
           />
-          <div className="site-header__brand-copy">
-            <span className="site-header__brand-text">THE CONCIERGE</span>
-            <p className="site-header__tagline">We Give You Your Time Back</p>
-          </div>
+          <p className="site-header__tagline">We Give You Your Time Back</p>
         </Link>
         <nav className="site-header__nav site-header__nav--tabs" aria-label="Primary">
           <NavLink

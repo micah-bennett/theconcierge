@@ -27,13 +27,13 @@ export function PlanTierGraphic({ tier }: { tier: 'essential' | 'pro' | 'vip' })
         >
           <defs>
             <linearGradient id={proGoldId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f5e6c8" />
-              <stop offset="45%" stopColor="#d4af37" />
-              <stop offset="100%" stopColor="#a88620" />
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="45%" stopColor="#ffffff" />
+              <stop offset="100%" stopColor="#d8d8d8" />
             </linearGradient>
             <linearGradient id={proGoldDeepId} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#c9a227" />
-              <stop offset="100%" stopColor="#8b6914" />
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="100%" stopColor="#a8a8a8" />
             </linearGradient>
           </defs>
           <path
@@ -76,9 +76,9 @@ export function PlanTierGraphic({ tier }: { tier: 'essential' | 'pro' | 'vip' })
         >
           <defs>
             <linearGradient id={vipGoldId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f5e6c8" />
-              <stop offset="45%" stopColor="#d4af37" />
-              <stop offset="100%" stopColor="#a88620" />
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="45%" stopColor="#ffffff" />
+              <stop offset="100%" stopColor="#d8d8d8" />
             </linearGradient>
           </defs>
           <path

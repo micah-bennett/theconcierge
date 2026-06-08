@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { PlanTierGraphic } from '../components/PlanTierGraphic'
 import { OFFICE_PHONE_DISPLAY, OFFICE_PHONE_TEL } from '../site'
 
@@ -5,7 +6,7 @@ export function PlansPage() {
   return (
     <section className="slide slide--plans" aria-labelledby="plans-page-heading">
       <div className="plans-page">
-        <header className="slide-split__membership plans-page__intro">
+        <header className="slide-split__membership plans-page__intro motion-reveal">
           <h1 className="plans-page__title" id="plans-page-heading">
             Concierge Packages for Life, Business, and Everything in Motion
           </h1>
@@ -22,7 +23,7 @@ export function PlansPage() {
         </header>
 
         <div className="plans">
-          <article className="plans__tier plans__tier--essential" id="essential">
+          <article className="plans__tier plans__tier--essential motion-reveal motion-lift" id="essential" style={{ '--motion-delay': '80ms' } as CSSProperties}>
             <PlanTierGraphic tier="essential" />
             <h3 className="plans__title">
               <span className="plans__title-line">Essential Concierge</span>
@@ -65,7 +66,7 @@ export function PlansPage() {
             </a>
           </article>
 
-          <article className="plans__tier plans__tier--pro" id="professional">
+          <article className="plans__tier plans__tier--pro motion-reveal motion-lift" id="professional" style={{ '--motion-delay': '160ms' } as CSSProperties}>
             <PlanTierGraphic tier="pro" />
             <h3 className="plans__title">
               <span className="plans__title-line">Professional Concierge</span>
@@ -109,7 +110,7 @@ export function PlansPage() {
             </a>
           </article>
 
-          <article className="plans__tier plans__tier--vip" id="vip">
+          <article className="plans__tier plans__tier--vip motion-reveal motion-lift" id="vip" style={{ '--motion-delay': '240ms' } as CSSProperties}>
             <PlanTierGraphic tier="vip" />
             <h3 className="plans__title plans__title--vip">
               <span className="plans__title-line plans__title-line--vipstack">

@@ -161,3 +161,87 @@ ${tableRows}
 
   return { subject, text, html }
 }
+
+const CONCIERGE_PHONE_DISPLAY = '845-518-4827'
+const CONCIERGE_PHONE_TEL = '+18455184827'
+
+const EMAIL_LOGO_CID = 'concierge-logo'
+const EMAIL_LOGO_WIDTH = 168
+const EMAIL_LOGO_HEIGHT = 76
+
+function emailLogoMarkup(logoCid: string): string {
+  return `<div style="margin:0 0 20px;text-align:center">
+  <img src="cid:${logoCid}" alt="The Concierge" width="${EMAIL_LOGO_WIDTH}" height="${EMAIL_LOGO_HEIGHT}" style="display:inline-block;width:${EMAIL_LOGO_WIDTH}px;height:${EMAIL_LOGO_HEIGHT}px;max-width:100%;border:0;outline:none;text-decoration:none" />
+</div>`
+}
+
+export function customerConfirmationLogoAttachment(logoPath: string) {
+  return {
+    filename: 'concierge-logo.png',
+    path: logoPath,
+    cid: EMAIL_LOGO_CID,
+    contentType: 'image/png' as const,
+  }
+}
+
+export function buildCustomerConfirmationEmail(
+  data: ConciergeRequestDoc,
+  options: { logoCid?: string } = {},
+) {
+  const logoCid = options.logoCid ?? EMAIL_LOGO_CID
+  const firstName = (data.firstName ?? '').trim()
+  const greetingName = firstName || 'there'
+  const requestType = (data.requestType ?? '').trim()
+  const dateNeeded = formatDateUS(data.dateNeeded)
+  const timeNeeded = (data.timeNeeded ?? '').trim()
+
+  const summaryParts: string[] = []
+  if (requestType) summaryParts.push(`Request: ${requestType}`)
+  if (dateNeeded) summaryParts.push(`Date needed: ${dateNeeded}`)
+  if (timeNeeded) summaryParts.push(`Time: ${timeNeeded}`)
+  const summaryBlock = summaryParts.length > 0 ? summaryParts.join('\n') : 'Your request details are on file.'
+
+  const subject = 'We received your concierge request'
+
+  const text = `Hi ${greetingName},
+
+Thank you — we received your concierge request and our team will follow up shortly.
+
+${summaryBlock}
+
+If you need to reach us sooner, call ${CONCIERGE_PHONE_DISPLAY}.`
+
+  const summaryHtml = summaryParts
+    .map((line) => `<li style="margin:0;padding:0;line-height:1.35">${escapeHtml(line)}</li>`)
+    .join('')
+
+  const html = `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#141414;background:#f4f4f5">
+  <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e4e4e7;border-radius:8px">
+    <tr>
+      <td style="padding:28px 24px 8px;text-align:center">
+        ${emailLogoMarkup(logoCid)}
+        <h1 style="margin:0 0 16px;font-size:22px;font-weight:600;line-height:1.3;color:#141414;text-align:center">We received your request</h1>
+        <p style="margin:0 0 16px;text-align:left">Hi ${escapeHtml(greetingName)},</p>
+        <p style="margin:0 0 16px;text-align:left">Thank you — your request has been sent to our team. Someone will follow up with you shortly.</p>
+        ${
+          summaryParts.length > 0
+            ? `<ul style="margin:0 0 16px;padding:0 0 0 20px;list-style-position:outside">${summaryHtml}</ul>`
+            : ''
+        }
+        <p style="margin:0 0 8px;text-align:left">Need to reach us sooner?</p>
+        <p style="margin:0;text-align:left"><a href="tel:${CONCIERGE_PHONE_TEL}" style="color:#141414;font-weight:600;text-decoration:underline">${CONCIERGE_PHONE_DISPLAY}</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:16px 24px 28px;border-top:1px solid #ececee;color:#71717a;font-size:13px">
+        This is an automated confirmation. Please do not reply to this message.
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+  return { subject, text, html }
+}

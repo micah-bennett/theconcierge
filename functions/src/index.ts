@@ -1,9 +1,13 @@
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { initializeApp } from 'firebase-admin/app'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { logger } from 'firebase-functions/v2'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import {
+  buildCustomerConfirmationEmail,
   buildRequestEmail,
+  customerConfirmationLogoAttachment,
   notificationSenderDisplayName,
   sanitizeEmailDisplayName,
   type ConciergeRequestDoc,
@@ -33,6 +37,17 @@ const smtpFrom = defineString('SMTP_FROM', {
   default: 'hvconciergeservices@gmail.com',
   description: 'From address on notification emails (display name includes customer)',
 })
+const conciergeBrand = defineString('CONCIERGE_BRAND', {
+  default: 'The Concierge',
+  description: 'Display name on customer confirmation emails',
+})
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+const functionsDir = join(dirname(fileURLToPath(import.meta.url)), '..')
+const customerEmailLogoPath = join(functionsDir, 'assets', 'email-logo-dark.png')
 
 export const emailOnConciergeRequest = onDocumentCreated(
   {
@@ -54,13 +69,17 @@ export const emailOnConciergeRequest = onDocumentCreated(
     const customerEmail = (data.email ?? '').trim()
     const fromMailbox = smtpFrom.value().trim() || mailbox
     const senderLabel = sanitizeEmailDisplayName(notificationSenderDisplayName(data))
+    const brandLabel = sanitizeEmailDisplayName(conciergeBrand.value().trim() || 'The Concierge')
+    const smtpCredentials = {
+      user: mailbox,
+      pass: smtpPass.value().replace(/\s/g, ''),
+      host,
+      port,
+    }
 
     try {
       const profileUsed = await sendMailWithSmtpFallback({
-        user: mailbox,
-        pass: smtpPass.value().replace(/\s/g, ''),
-        host,
-        port,
+        ...smtpCredentials,
         mail: {
           from: `"${senderLabel}" <${fromMailbox}>`,
           to: notifyEmail.value(),
@@ -75,6 +94,39 @@ export const emailOnConciergeRequest = onDocumentCreated(
         to: notifyEmail.value(),
         smtpProfile: profileUsed,
       })
+
+      if (customerEmail && isValidEmail(customerEmail)) {
+        try {
+          const confirmation = buildCustomerConfirmationEmail(data)
+          const confirmProfile = await sendMailWithSmtpFallback({
+            ...smtpCredentials,
+            mail: {
+              from: `"${brandLabel}" <${fromMailbox}>`,
+              to: customerEmail,
+              subject: confirmation.subject,
+              text: confirmation.text,
+              html: confirmation.html,
+              attachments: [customerConfirmationLogoAttachment(customerEmailLogoPath)],
+            },
+          })
+          logger.info('Customer confirmation sent', {
+            requestId,
+            to: customerEmail,
+            smtpProfile: confirmProfile,
+          })
+        } catch (confirmErr) {
+          logger.error('Failed to send customer confirmation email', {
+            requestId,
+            to: customerEmail,
+            error: confirmErr instanceof Error ? confirmErr.message : String(confirmErr),
+          })
+        }
+      } else {
+        logger.warn('Skipped customer confirmation — missing or invalid email', {
+          requestId,
+          customerEmail: customerEmail || '(empty)',
+        })
+      }
     } catch (err) {
       logger.error('Failed to send request notification email', {
         requestId,

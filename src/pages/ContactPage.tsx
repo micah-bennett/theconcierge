@@ -37,14 +37,14 @@ export function ContactPage() {
   return (
     <section className="slide slide--contact" aria-labelledby="contact-page-heading">
       <div className="contact-page">
-        <header className="contact-page__intro">
+        <header className="contact-page__intro motion-reveal">
           <p className="contact-page__eyebrow">Hudson Valley, NY</p>
           <h1 className="contact-page__title" id="contact-page-heading">
             Contact
           </h1>
           <p className="contact-page__lead">
-            Call, email, or connect on social — we respond quickly and discreetly. Prefer a callback?
-            Submit a request and our team will reach out.
+            Call or connect on social — we respond quickly and discreetly. Prefer a callback? Submit a
+            request and our team will reach out.
           </p>
         </header>
 
@@ -52,19 +52,13 @@ export function ContactPage() {
           <a className="contact-phone-card" href={`tel:${COMPANY_CONTACT.phoneTel}`}>
             <span className="contact-phone-card__label">Call us</span>
             <span className="contact-phone-card__number">{COMPANY_CONTACT.phoneDisplay}</span>
-            <span className="contact-phone-card__hint">Tap to call · 24/7 VIP availability</span>
+            <span className="contact-phone-card__hint">Tap to call</span>
           </a>
 
-          <div className="contact-action-row">
-            <a className="contact-action" href={COMPANY_CONTACT.emailHref}>
-              <span className="contact-action__label">Email</span>
-              <span className="contact-action__value">{COMPANY_CONTACT.email}</span>
-            </a>
-            <Link className="contact-action contact-action--gold" to="/request">
-              <span className="contact-action__label">Request service</span>
-              <span className="contact-action__value">We&apos;ll call you back</span>
-            </Link>
-          </div>
+          <Link className="contact-action contact-action--gold contact-action--solo" to="/request">
+            <span className="contact-action__label">Request service</span>
+            <span className="contact-action__value">We&apos;ll call you back</span>
+          </Link>
         </div>
 
         <section className="contact-social" aria-labelledby="contact-social-heading">
@@ -99,23 +93,6 @@ export function ContactPage() {
             ))}
           </ul>
         </section>
-
-        <footer className="contact-page__meta">
-          <p className="contact-page__company">{COMPANY_CONTACT.name}</p>
-          <address className="contact-page__address">
-            {COMPANY_CONTACT.addressLine1}
-            <br />
-            {COMPANY_CONTACT.addressLine2}
-          </address>
-          <a
-            className="contact-page__web"
-            href={COMPANY_CONTACT.webHref}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {COMPANY_CONTACT.webLabel}
-          </a>
-        </footer>
       </div>
     </section>
   )

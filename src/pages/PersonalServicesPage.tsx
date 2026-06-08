@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import {
   PersonalServiceGraphic,
   type PersonalServiceIllustration,
@@ -87,7 +88,7 @@ export function PersonalServicesPage() {
   return (
     <section className="slide slide--services" aria-labelledby="services-page-heading">
       <div className="services-page">
-        <header className="services-page__hero">
+        <header className="services-page__hero motion-reveal">
           <h1 className="plans-page__title" id="services-page-heading">
             Personal Services
           </h1>
@@ -99,7 +100,7 @@ export function PersonalServicesPage() {
 
         <p className="services-page__what-label">What We Handle</p>
 
-        <div className="services-page__spotlight">
+        <div className="services-page__spotlight motion-reveal motion-lift motion-reveal--delay-1">
           <h2 className="services-page__spotlight-heading">
             <span className="plans__title-line">Modern Life, Fully Managed</span>
           </h2>
@@ -110,8 +111,12 @@ export function PersonalServicesPage() {
         </div>
 
         <div className="services-page__grid">
-          {SECTIONS.map((section) => (
-            <article key={section.title} className="services-card">
+          {SECTIONS.map((section, index) => (
+            <article
+              key={section.title}
+              className="services-card motion-reveal motion-lift"
+              style={{ '--motion-delay': `${100 + index * 70}ms` } as CSSProperties}
+            >
               <div className="services-card__icon-wrap">
                 <PersonalServiceGraphic
                   illustration={section.illustration}

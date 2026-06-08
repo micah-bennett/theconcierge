@@ -68,13 +68,13 @@ export function PersonalServiceGraphic({
     >
       <defs>
         <linearGradient id={goldId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f5e6c8" />
-          <stop offset="45%" stopColor="#d4af37" />
-          <stop offset="100%" stopColor="#a88620" />
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="45%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#d8d8d8" />
         </linearGradient>
         <linearGradient id={goldDeepId} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#c9a227" />
-          <stop offset="100%" stopColor="#8b6914" />
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#a8a8a8" />
         </linearGradient>
       </defs>
 
@@ -91,8 +91,8 @@ export function PersonalServiceGraphic({
 }
 
 /** Hand strokes are solid: gradient strokes on thin <line>s often fail to paint in browsers. */
-const CLOCK_HAND_HOUR = '#f5ecd4'
-const CLOCK_HAND_MINUTE = '#d4af37'
+const CLOCK_HAND_HOUR = '#ffffff'
+const CLOCK_HAND_MINUTE = '#ffffff'
 
 function ClockGraphic({ g, d }: { g: string; d: string }) {
   const cx = 36
