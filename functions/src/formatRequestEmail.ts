@@ -135,6 +135,7 @@ function renderValue(row: EmailRow): string {
 }
 
 export function buildRequestEmail(data: ConciergeRequestDoc, _requestId: string) {
+  void _requestId
   const rows = buildRows(data)
   const subject = buildRequestSubject(data)
 

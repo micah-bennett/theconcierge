@@ -161,7 +161,7 @@ function defaultDateParts(): Pick<FormState, 'dateMonth' | 'dateDay' | 'dateYear
 
 function defaultTimeParts(): Pick<FormState, 'hour' | 'minute' | 'ampm'> {
   const now = new Date()
-  let total = now.getHours() * 60 + now.getMinutes() + 1
+  const total = now.getHours() * 60 + now.getMinutes() + 1
   if (total >= 24 * 60) {
     return { hour: '11', minute: '45', ampm: 'PM' }
   }

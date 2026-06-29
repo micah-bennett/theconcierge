@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // Relative base so Capacitor iOS loads bundled assets correctly
+  base: './',
   // Load Vite env files from ./env (see env/*.example)
   envDir: 'env',
 })

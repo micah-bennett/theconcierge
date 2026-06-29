@@ -36,7 +36,7 @@
 /* Wrapped mobile header is taller than 6rem; JS sets exact px — this reduces overlap before measure */
 @media (max-width: 720px) {
   :root {
-    --site-header-h: 10.5rem;
+    --site-header-h: 7.5rem;
   }
 }
 

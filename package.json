@@ -11,9 +11,14 @@
     "preview": "vite preview",
     "deploy": "bash scripts/deploy-and-push.sh",
     "deploy:hosting": "bash scripts/deploy-and-push.sh hosting",
-    "deploy:functions": "bash scripts/deploy-and-push.sh functions"
+    "deploy:functions": "bash scripts/deploy-and-push.sh functions",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:ios": "npm run cap:sync && npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
     "firebase": "^12.12.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

@@ -9,6 +9,23 @@ type ChatLine = { role: 'user' | 'model'; text: string }
 const WELCOME =
   "Welcome to The Concierge. I’m your virtual concierge assistant. Tell me what you need help with, and I’ll guide you to the right next step."
 
+function formatChatError(error: unknown): string {
+  const raw =
+    error instanceof Error
+      ? error.message
+      : 'Something went wrong. Try again or call the number on the site.'
+
+  if (/prepayment credits are depleted|429|quota|billing/i.test(raw)) {
+    return 'The concierge assistant is temporarily unavailable. Please call us or submit a request — our team will help you directly.'
+  }
+
+  if (/fetch-error|failed to fetch|network/i.test(raw)) {
+    return 'Connection issue — try again in a moment, or call the number on the site.'
+  }
+
+  return raw
+}
+
 type ConciergeChatBotProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -98,11 +115,7 @@ export function ConciergeChatBot({ open, onOpenChange }: ConciergeChatBotProps) 
         })
       }
     } catch (e) {
-      const msg =
-        e instanceof Error
-          ? e.message
-          : 'Something went wrong. Try again or call the number on the site.'
-      setError(msg)
+      setError(formatChatError(e))
       setLines((prev) => {
         const next = [...prev]
         if (next.length > 0 && next[next.length - 1].role === 'model' && next[next.length - 1].text === '') {
