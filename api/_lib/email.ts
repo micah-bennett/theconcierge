@@ -19,7 +19,7 @@ export async function sendRequestEmails(data: ConciergeRequest, requestId: strin
   await resend.emails.send({
     from: FROM,
     to: notifyTo,
-    replyTo: customerEmail,
+    replyTo: REPLY_TO,
     subject: 'New Concierge Request Received',
     html: ownerNotificationTemplate(data, requestId),
   })
