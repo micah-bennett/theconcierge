@@ -16,19 +16,21 @@ export async function sendRequestEmails(data: ConciergeRequest, requestId: strin
   const notifyTo = process.env.NOTIFY_EMAIL?.trim() || NOTIFY_EMAIL
   const customerEmail = data.email.trim()
 
-  await resend.emails.send({
+  const { error: ownerError } = await resend.emails.send({
     from: FROM,
     to: notifyTo,
     replyTo: REPLY_TO,
     subject: 'New Concierge Request Received',
     html: ownerNotificationTemplate(data, requestId),
   })
+  if (ownerError) throw new Error(`Owner notification failed: ${ownerError.message}`)
 
-  await resend.emails.send({
+  const { error: customerError } = await resend.emails.send({
     from: FROM,
     to: customerEmail,
     replyTo: REPLY_TO,
     subject: 'Your Concierge Request Has Been Received',
     html: customerConfirmationTemplate(data),
   })
+  if (customerError) throw new Error(`Customer confirmation failed: ${customerError.message}`)
 }
