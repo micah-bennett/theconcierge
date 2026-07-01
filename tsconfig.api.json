@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "api/**/*.ts",
+    "functions/src/formatRequestEmail.ts",
+    "src/site.ts",
+    "src/site/conciergePlaybook.ts",
+    "src/site/plansKnowledge.ts"
+  ]
+}

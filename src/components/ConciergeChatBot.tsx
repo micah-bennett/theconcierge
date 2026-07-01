@@ -1,8 +1,4 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import type { ChatSession } from 'firebase/ai'
-
-import { isFirebaseConfigured } from '../firebase/envCheck'
-import { getConciergeGenerativeModel } from '../firebase/conciergeModel'
 
 type ChatLine = { role: 'user' | 'model'; text: string }
 
@@ -35,17 +31,14 @@ export function ConciergeChatBot({ open, onOpenChange }: ConciergeChatBotProps) 
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
-  const sessionRef = useRef<ChatSession | null>(null)
   const [input, setInput] = useState('')
   const [lines, setLines] = useState<ChatLine[]>(() => [
     { role: 'model', text: WELCOME },
   ])
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const ready = isFirebaseConfigured()
 
   const resetConversation = useCallback(() => {
-    sessionRef.current = null
     setLines([{ role: 'model', text: WELCOME }])
     setError(null)
   }, [])
@@ -64,56 +57,28 @@ export function ConciergeChatBot({ open, onOpenChange }: ConciergeChatBotProps) 
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onOpenChange])
 
-  const ensureSession = useCallback((): ChatSession | null => {
-    if (!ready) return null
-    if (!sessionRef.current) {
-      try {
-        const model = getConciergeGenerativeModel()
-        sessionRef.current = model.startChat()
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Could not start the assistant.'
-        setError(msg)
-        return null
-      }
-    }
-    return sessionRef.current
-  }, [ready])
-
   const send = useCallback(async () => {
     const text = input.trim()
     if (!text || pending) return
-    if (!ready) {
-      setError('Add your Firebase web config in env/.env.development to use the assistant.')
-      return
-    }
+    const conversation = [...lines.filter((line) => line.text && line.text !== WELCOME), { role: 'user' as const, text }]
     setInput('')
     setError(null)
-    setLines((prev) => [...prev, { role: 'user', text }])
+    setLines((prev) => [...prev, { role: 'user', text }, { role: 'model', text: '' }])
     setPending(true)
 
-    const session = ensureSession()
-    if (!session) {
-      setPending(false)
-      return
-    }
-
-    setLines((prev) => [...prev, { role: 'model', text: '' }])
-
     try {
-      const result = await session.sendMessageStream(text)
-      let assembled = ''
-      for await (const chunk of result.stream) {
-        const piece = chunk.text()
-        assembled += piece
-        setLines((prev) => {
-          const next = [...prev]
-          const last = next.length - 1
-          if (last >= 0 && next[last].role === 'model') {
-            next[last] = { role: 'model', text: assembled }
-          }
-          return next
-        })
-      }
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: conversation }),
+      })
+      const result = (await response.json().catch(() => null)) as { text?: string; error?: string } | null
+      if (!response.ok || !result?.text) throw new Error(result?.error || 'Could not reach the assistant.')
+      setLines((prev) => {
+        const next = [...prev]
+        next[next.length - 1] = { role: 'model', text: result.text || '' }
+        return next
+      })
     } catch (e) {
       setError(formatChatError(e))
       setLines((prev) => {
@@ -126,7 +91,7 @@ export function ConciergeChatBot({ open, onOpenChange }: ConciergeChatBotProps) 
     } finally {
       setPending(false)
     }
-  }, [input, pending, ready, ensureSession])
+  }, [input, lines, pending])
 
   return (
     <div className="concierge-chat">
@@ -183,11 +148,6 @@ export function ConciergeChatBot({ open, onOpenChange }: ConciergeChatBotProps) 
             <p className="concierge-chat__error" role="alert">
               {error}
             </p>
-          ) : !ready ? (
-            <p className="concierge-chat__hint">
-              Connect Firebase in <code>env/.env.development</code> and enable AI Logic in the Firebase
-              console to use this assistant.
-            </p>
           ) : null}
           <form
             className="concierge-chat__form"
@@ -206,10 +166,10 @@ export function ConciergeChatBot({ open, onOpenChange }: ConciergeChatBotProps) 
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type a question…"
               autoComplete="off"
-              disabled={!ready || pending}
+              disabled={pending}
               maxLength={2000}
             />
-            <button type="submit" className="concierge-chat__send" disabled={!ready || pending || !input.trim()}>
+            <button type="submit" className="concierge-chat__send" disabled={pending || !input.trim()}>
               Send
             </button>
           </form>

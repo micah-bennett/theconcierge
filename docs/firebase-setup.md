@@ -1,4 +1,6 @@
-# Firebase setup (theconcierge.life)
+# Legacy Firebase setup (retired)
+
+> This backend has been replaced by Vercel Functions and Neon Postgres. Keep this document only for migration reference and rollback. New deployments must follow `docs/vercel-setup.md`.
 
 ## 1. Website form saves requests (Hosting build)
 

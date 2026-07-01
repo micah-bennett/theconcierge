@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
-import { isFirebaseConfigured } from '../firebase/envCheck'
-import { submitConciergeRequest } from '../firebase/submitConciergeRequest'
+import { submitConciergeRequest } from '../api/submitConciergeRequest'
 import { OFFICE_PHONE_DISPLAY, OFFICE_PHONE_TEL } from '../site'
 
 const REQUEST_TYPES = [
@@ -213,7 +212,6 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [dateError, setDateError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [successKind, setSuccessKind] = useState<'remote' | 'local' | null>(null)
 
   const update = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -259,7 +257,6 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
     setError(null)
     setDateError(null)
     setSuccess(false)
-    setSuccessKind(null)
     setSubmitting(false)
   }, [open])
 
@@ -376,12 +373,7 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
         expYear: expYearDigits.length === 4 ? expYearDigits : '',
       }
 
-      if (isFirebaseConfigured()) {
-        await submitConciergeRequest(payload)
-        setSuccessKind('remote')
-      } else {
-        setSuccessKind('local')
-      }
+      await submitConciergeRequest(payload)
       setSuccess(true)
       setForm(emptyForm())
     } catch (err) {
@@ -408,19 +400,10 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
             <h2 id={id('title')} className="request-modal__title">
               Thank you
             </h2>
-            {successKind === 'local' ? (
-              <p className="request-modal__lead">
-                This site isn&apos;t connected to our database yet. To place your request, please call{' '}
-                <a href={`tel:${OFFICE_PHONE_TEL}`}>{OFFICE_PHONE_DISPLAY}</a> and we&apos;ll take care of
-                you.
-              </p>
-            ) : (
-              <p className="request-modal__lead">
-                We received your request. A confirmation email has been sent to you, and our team will
-                follow up shortly. You can also reach us at{' '}
-                <a href={`tel:${OFFICE_PHONE_TEL}`}>{OFFICE_PHONE_DISPLAY}</a>.
-              </p>
-            )}
+            <p className="request-modal__lead">
+              We received your request and our team will follow up shortly. You can also reach us at{' '}
+              <a href={`tel:${OFFICE_PHONE_TEL}`}>{OFFICE_PHONE_DISPLAY}</a>.
+            </p>
             <button type="button" className="request-modal__done" onClick={onClose}>
               Close
             </button>
@@ -845,13 +828,6 @@ export function ConciergeRequestModal({ open, onClose }: Props) {
                 </p>
               ) : null}
             </fieldset>
-
-            {!isFirebaseConfigured() ? (
-              <p className="request-modal__warn">
-                Firebase is not configured — requests are not saved online yet. Add keys in{' '}
-                <code>env/.env.development</code> to save submissions to Firestore.
-              </p>
-            ) : null}
 
             {error ? <p className="request-modal__error">{error}</p> : null}
 

@@ -13,6 +13,10 @@ functions/lib
 dist
 dist-ssr
 *.local
+.vercel
+.env
+.env.*
+!.env.example
 
 # Firebase / secrets (env profiles live in env/; commit only *.example)
 env/.env
@@ -32,3 +36,4 @@ functions/.env*
 *.njsproj
 *.sln
 *.sw?
+.env*
