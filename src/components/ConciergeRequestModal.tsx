@@ -42,7 +42,7 @@ function isValidEmail(value: string): boolean {
   if (labels.some((label) => !label.length || label.length > 63)) return false
   const tld = labels[labels.length - 1]
   if (!/^[a-z]{2,}$/i.test(tld)) return false
-  if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(local)) return false
+  if (!/^[a-z0-9](?:[a-z0-9.+_%+-]*[a-z0-9])?$/i.test(local)) return false
   return labels.every((label) => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(label))
 }
 
