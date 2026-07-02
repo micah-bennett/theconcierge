@@ -12,6 +12,7 @@ import {
 import { SiteFooter } from './components/SiteFooter'
 import { ContactPage } from './pages/ContactPage'
 import { HomePage } from './pages/HomePage'
+import { HopPage } from './pages/HopPage'
 import { PersonalServicesPage } from './pages/PersonalServicesPage'
 import { PlansPage } from './pages/PlansPage'
 import { useSiteMotion } from './hooks/useSiteMotion'
@@ -117,6 +118,14 @@ function AppRoutes() {
             Personal services
           </NavLink>
           <NavLink
+            to="/hop"
+            className={({ isActive }) =>
+              `site-header__nav-tab${isActive ? ' site-header__nav-tab--active' : ''}`
+            }
+          >
+            HOP
+          </NavLink>
+          <NavLink
             to="/plans"
             className={({ isActive }) =>
               `site-header__nav-tab${isActive ? ' site-header__nav-tab--active' : ''}`
@@ -159,6 +168,7 @@ function AppRoutes() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/personal-services" element={<PersonalServicesPage />} />
+              <Route path="/hop" element={<HopPage />} />
               <Route path="/plans" element={<PlansPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
