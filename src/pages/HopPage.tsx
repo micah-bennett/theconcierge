@@ -1,214 +1,336 @@
 import type { CSSProperties } from 'react'
-import { OFFICE_PHONE_DISPLAY, OFFICE_PHONE_TEL } from '../site'
 
-const HOP_SERVICES: readonly {
-  title: string
-  body: string
-  icon: React.ReactNode
-}[] = [
-  {
-    title: 'Transportation Coordination',
-    body: 'Ride scheduling, patient transport, and family logistics — handled before your staff ever has to think about it.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v7a2 2 0 0 1-2 2h-2" />
-        <circle cx="7" cy="17" r="2" />
-        <circle cx="17" cy="17" r="2" />
-        <path d="M9 17h6" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Prescription Pickup',
-    body: 'Pharmacy runs dispatched on demand. Medications picked up and delivered so patients and families don\'t have to wait.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <path d="M9 12h6M12 9v6" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Food & Grocery Support',
-    body: 'Meal pickup, grocery delivery, and nutrition coordination for patients, families, and staff — without pulling a nurse off the floor.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <path d="M16 10a4 4 0 0 1-8 0" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Deliveries & Errands',
-    body: 'Documents, supplies, personal items, and anything else that needs to move — picked up and dropped off on your timeline.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="M21 10H3M21 10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2M21 10l-4-7H7l-4 7" />
-        <circle cx="7" cy="17" r="1" />
-        <circle cx="17" cy="17" r="1" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Urgent Concierge Requests',
-    body: 'Same-day, immediate response for time-sensitive needs. When something can\'t wait, HOP moves first.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <circle cx="12" cy="12" r="10" />
-        <polyline points="12 6 12 12 16 14" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Patient & Family Support',
-    body: 'Help families navigate logistics — lodging, meals, errands — so they can focus on their loved ones and your staff can focus on care.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
-  },
-]
+// ── Donut chart ──────────────────────────────────────────────────
+const DONUT_R = 45
+const DONUT_CIRC = 2 * Math.PI * DONUT_R // ≈ 282.74
 
-const HOP_STEPS = [
-  {
-    number: '01',
-    title: 'Submit a Request',
-    body: 'Your team calls or contacts HOP. Takes sixty seconds. No forms, no friction.',
-  },
-  {
-    number: '02',
-    title: 'HOP Dispatches',
-    body: 'A dedicated HVCS concierge picks it up and handles everything start to finish.',
-  },
-  {
-    number: '03',
-    title: 'Handled.',
-    body: 'Your staff stays focused on patient care. We close the loop and confirm completion.',
-  },
-]
+const RAW_SEGMENTS = [
+  { pct: 0.42, color: '#f87171', label: 'Burned out', val: '42%' },
+  { pct: 0.31, color: '#fb923c', label: 'At risk', val: '31%' },
+  { pct: 0.27, color: '#4ade80', label: 'Thriving', val: '27%' },
+] as const
 
-const HOP_FOR = [
-  'Hospitals & health systems',
-  'Outpatient clinics',
-  'Private practices',
-  'Nursing & rehabilitation facilities',
-  'Home health agencies',
-  'Hospice care teams',
-]
+let _segAcc = 0
+const DONUT_SEGS = RAW_SEGMENTS.map((s) => {
+  const len = s.pct * DONUT_CIRC
+  const offset = _segAcc
+  _segAcc += len
+  return { ...s, len, offset }
+})
 
+function DonutChart() {
+  return (
+    <svg
+      viewBox="0 0 120 120"
+      className="hop-donut"
+      role="img"
+      aria-label="Clinician burnout status donut chart"
+    >
+      <circle cx="60" cy="60" r={DONUT_R} fill="none" stroke="#1e1b3a" strokeWidth="18" />
+      {DONUT_SEGS.map((s) => (
+        <circle
+          key={s.label}
+          cx="60"
+          cy="60"
+          r={DONUT_R}
+          fill="none"
+          stroke={s.color}
+          strokeWidth="18"
+          strokeDasharray={`${s.len} ${DONUT_CIRC}`}
+          strokeDashoffset={-s.offset}
+          transform="rotate(-90 60 60)"
+        />
+      ))}
+    </svg>
+  )
+}
+
+// ── Data ─────────────────────────────────────────────────────────
+const HERO_STATS = [
+  { val: '42%', color: '#f87171', label: 'of clinicians report burnout', source: 'AMA 2025' },
+  { val: '$500K+', color: '#fb923c', label: 'to replace one physician', source: 'avg replacement cost' },
+  { val: '$4.6B', color: '#fbbf24', label: 'lost to burnout annually', source: 'per year, US hospitals' },
+] as const
+
+const CHIPS = ['Rides', 'Meals', 'Errands', 'Wellness', 'Family & home', 'HOP AI'] as const
+
+const BAR_DATA = [
+  { label: 'Physician', pct: 94, color: '#f87171' },
+  { label: 'CRNA', pct: 31, color: '#fb923c' },
+  { label: 'NP/PA', pct: 22, color: '#fbbf24' },
+  { label: 'RN', pct: 13, color: '#6366f1' },
+  { label: 'LPN', pct: 6, color: '#06b6d4' },
+] as const
+
+const PROB_STATS = [
+  { icon: '⚠️', val: '2×', label: 'more likely to make a medical error when burned out' },
+  { icon: '💵', val: '$4.6B', label: 'lost to physician burnout per year (Han et al.)' },
+  { icon: '📋', val: '1 in 5', label: 'nurses plan to leave the profession this year' },
+  { icon: '📉', val: '-22%', label: 'patient satisfaction with short-staffed teams' },
+] as const
+
+const SERVICES = [
+  { icon: '🚗', label: 'Rides', desc: 'Airport, commute, anywhere', bg: '#1e1b4b' },
+  { icon: '🍴', label: 'Meals', desc: 'To your unit or home', bg: '#134e4a' },
+  { icon: '📦', label: 'Errands', desc: 'Pharmacy, dry cleaning, gifts', bg: '#2e1065' },
+  { icon: '❤️', label: 'Wellness', desc: 'Therapy, fitness, recovery', bg: '#4c0519' },
+  { icon: '🏠', label: 'Family & home', desc: 'Childcare, pet care, pickups', bg: '#451a03' },
+  { icon: '🤖', label: 'HOP AI', desc: 'Planning, research, anything', bg: '#1e1b4b' },
+] as const
+
+const HOW_STEPS = [
+  { num: '01', ico: '⚡', title: 'Ask once', desc: 'One request — any need' },
+  { num: '02', ico: '👥', title: 'Concierge acts', desc: 'Real person + HOP matches the best provider' },
+  { num: '03', ico: '📡', title: 'Track live', desc: 'Status updates in real time, zero chasing' },
+  { num: '04', ico: '✓', title: 'Verified done', desc: 'Proof on delivery. Auto-fallback if needed' },
+] as const
+
+const BEFORE_HOP = [
+  'Ends 12-hr shift, still needs to arrange a ride',
+  'Calls 3 apps, none available near the hospital',
+  'Skips picking up prescriptions (again)',
+  'Gets home exhausted, nothing done',
+  "Books tomorrow's shift dreading it",
+] as const
+
+const WITH_HOP = [
+  'Taps one request — ride, prescriptions, meal',
+  'HOP concierge handles everything instantly',
+  'Gets live status, no follow-up calls',
+  'Prescriptions waiting at home on arrival',
+  'Wakes up ready. Books next shift without hesitation',
+] as const
+
+// ── Component ─────────────────────────────────────────────────────
 export function HopPage() {
   return (
-    <section className="slide slide--hop" aria-labelledby="hop-page-heading">
-      <div className="hop-page">
+    <div className="hop-page">
 
-        {/* Hero */}
-        <header className="hop-hero motion-reveal">
-          <p className="hop-hero__eyebrow motion-reveal motion-reveal--delay-1">
-            Healthcare Concierge by HVCS
-          </p>
-          <h1 className="hop-hero__headline motion-reveal motion-reveal--delay-2" id="hop-page-heading">
-            Your Team Gives Everything.<br />
-            <span className="hop-hero__headline-accent">Let HOP Handle the Rest.</span>
-          </h1>
-          <p className="hop-hero__lead motion-reveal motion-reveal--delay-3">
-            HOP is a concierge support program powered by Hudson Valley Concierge Service. We handle
-            the non-clinical logistics — transportation, prescriptions, food, deliveries, and urgent
-            errands — so healthcare professionals can stay focused on what matters most: patient care.
-          </p>
-          <a
-            className="hop-hero__cta motion-reveal motion-reveal--delay-3"
-            href={`tel:${OFFICE_PHONE_TEL}`}
-          >
-            Partner with HOP — {OFFICE_PHONE_DISPLAY}
-          </a>
-        </header>
-
-        {/* Problem callout */}
-        <div className="hop-problem motion-reveal motion-reveal--delay-1">
-          <p className="hop-problem__label">The Problem</p>
-          <p className="hop-problem__statement">
-            Healthcare staff spend hours each week on non-clinical logistics — coordinating rides,
-            chasing prescriptions, managing family requests. Every minute spent on errands is a minute
-            away from patient care. HOP removes that burden entirely.
-          </p>
-        </div>
-
-        {/* What HOP handles */}
-        <section className="hop-services" aria-labelledby="hop-services-heading">
-          <h2 className="plans-page__title" id="hop-services-heading">
-            What HOP Handles
-          </h2>
-          <div className="hop-services__grid">
-            {HOP_SERVICES.map((service, index) => (
-              <article
-                key={service.title}
-                className="hop-card motion-reveal motion-lift"
-                style={{ '--motion-delay': `${80 + index * 70}ms` } as CSSProperties}
-              >
-                <div className="hop-card__icon" aria-hidden>
-                  {service.icon}
-                </div>
-                <h3 className="hop-card__title">{service.title}</h3>
-                <p className="hop-card__body">{service.body}</p>
-              </article>
-            ))}
+      {/* ── Hero ── */}
+      <section className="hop-section hop-section--hero" id="hop-hero">
+        <div className="hop-inner">
+          <div className="hop-ticker motion-reveal">
+            <span className="hop-ticker__dot" />
+            Radical Hospitality · where work-life balance is optimized
           </div>
-        </section>
 
-        {/* How it works */}
-        <section className="hop-how" aria-labelledby="hop-how-heading">
-          <h2 className="plans-page__title" id="hop-how-heading">
-            How It Works
-          </h2>
-          <div className="hop-how__steps">
-            {HOP_STEPS.map((step, index) => (
-              <div
-                key={step.number}
-                className="hop-step motion-reveal motion-lift"
-                style={{ '--motion-delay': `${80 + index * 100}ms` } as CSSProperties}
-              >
-                <span className="hop-step__number">{step.number}</span>
-                <h3 className="hop-step__title">{step.title}</h3>
-                <p className="hop-step__body">{step.body}</p>
+          <h1 className="hop-h1 motion-reveal">
+            Behind every patient is someone<br />
+            <em className="hop-h1__gradient">running on empty.</em>
+          </h1>
+
+          <p className="hop-hero__sub motion-reveal motion-reveal--delay-1">
+            HOP is the concierge for healthcare staff — one request handles the ride, meal,
+            errand, or anything else. So they can focus on patients, not logistics.
+          </p>
+
+          <div className="hop-hero__ctas motion-reveal motion-reveal--delay-2">
+            <a
+              className="hop-btn-primary"
+              href="https://hop-pilot-hvcs.pplx.app"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              See it from the floor →
+            </a>
+            <a
+              className="hop-btn-ghost"
+              href="https://hop-pilot-hvcs.pplx.app"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              VBC Dashboard
+            </a>
+          </div>
+
+          <div className="hop-hero__stats motion-reveal motion-reveal--delay-1">
+            {HERO_STATS.map((s) => (
+              <div key={s.val} className="hop-hero__stat-card">
+                <span className="hop-hero__stat-val" style={{ color: s.color }}>{s.val}</span>
+                <span className="hop-hero__stat-label">{s.label}</span>
+                <span className="hop-hero__stat-source">{s.source}</span>
               </div>
             ))}
           </div>
-        </section>
 
-        {/* Who it's for */}
-        <section className="hop-for motion-reveal" aria-labelledby="hop-for-heading">
-          <h2 className="plans-page__title" id="hop-for-heading">
-            Who It&apos;s For
-          </h2>
-          <ul className="hop-for__list">
-            {HOP_FOR.map((item, index) => (
-              <li
-                key={item}
-                className="hop-for__item motion-reveal"
-                style={{ '--motion-delay': `${60 + index * 60}ms` } as CSSProperties}
+          <div className="hop-ask motion-reveal motion-reveal--delay-2">
+            <div className="hop-ask__bar">
+              <span className="hop-ask__ico">⚡</span>
+              <span className="hop-ask__placeholder">Ask HOP for anything...</span>
+              <a
+                className="hop-ask__btn"
+                href="https://hop-pilot-hvcs.pplx.app"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                {item}
-              </li>
+                Request
+              </a>
+            </div>
+            <div className="hop-ask__chips">
+              {CHIPS.map((chip) => (
+                <span key={chip} className="hop-ask__chip">{chip}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── The Problem ── */}
+      <section className="hop-section" id="the-problem">
+        <div className="hop-inner">
+          <p className="hop-eyebrow motion-reveal">The Crisis No One Is Solving</p>
+          <h2 className="hop-h2 motion-reveal motion-reveal--delay-1">
+            Your care team is running on empty.
+          </h2>
+          <p className="hop-sub motion-reveal motion-reveal--delay-2">
+            No paragraph needed. The data says it all.
+          </p>
+
+          <div className="hop-charts motion-reveal motion-reveal--delay-1">
+            <div className="hop-chart-card">
+              <div className="hop-chart-card__hd">
+                <strong>Clinician burnout status</strong>
+                <span>% of US physicians &amp; nurses — AMA 2025</span>
+              </div>
+              <div className="hop-donut-row">
+                <DonutChart />
+                <div className="hop-donut-legend">
+                  {RAW_SEGMENTS.map((s) => (
+                    <div key={s.label} className="hop-legend-item">
+                      <span className="hop-legend-dot" style={{ background: s.color }} />
+                      <span className="hop-legend-name">{s.label}</span>
+                      <span className="hop-legend-val" style={{ color: s.color }}>{s.val}</span>
+                    </div>
+                  ))}
+                  <div className="hop-legend-badge">73% need support now</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="hop-chart-card">
+              <div className="hop-chart-card__hd">
+                <strong>Cost to replace one clinician</strong>
+                <span>Average replacement cost in $K · NSI 2025</span>
+              </div>
+              <div className="hop-bar-chart">
+                <div className="hop-bar-chart__y">
+                  {['$800K', '$600K', '$400K', '$200K', '$0K'].map((l) => (
+                    <span key={l}>{l}</span>
+                  ))}
+                </div>
+                <div className="hop-bar-chart__cols">
+                  {BAR_DATA.map((b) => (
+                    <div key={b.label} className="hop-bar-col">
+                      <div
+                        className="hop-bar-col__fill"
+                        style={{ height: `${b.pct}%`, background: b.color }}
+                      />
+                      <span className="hop-bar-col__lbl">{b.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="hop-prob-stats">
+            {PROB_STATS.map((s, i) => (
+              <div
+                key={s.val}
+                className="hop-prob-stat motion-reveal"
+                style={{ '--motion-delay': `${i * 65}ms` } as CSSProperties}
+              >
+                <span className="hop-prob-stat__ico">{s.icon}</span>
+                <span className="hop-prob-stat__val">{s.val}</span>
+                <span className="hop-prob-stat__lbl">{s.label}</span>
+              </div>
             ))}
-          </ul>
-        </section>
+          </div>
+        </div>
+      </section>
 
-        {/* CTA */}
-        <section className="contact-block hop-cta" aria-labelledby="hop-cta-heading">
-          <p className="hop-cta__eyebrow">Ready to reduce staff burnout?</p>
-          <h3 className="contact-block__title" id="hop-cta-heading">
-            Call to learn how HOP can support your team
-          </h3>
-          <a className="contact-block__phone" href={`tel:${OFFICE_PHONE_TEL}`}>
-            {OFFICE_PHONE_DISPLAY}
-          </a>
-        </section>
+      {/* ── What's Included ── */}
+      <section className="hop-section" id="whats-included">
+        <div className="hop-inner">
+          <h2 className="hop-h2 motion-reveal">One request. Consider it handled.</h2>
+          <p className="hop-sub motion-reveal motion-reveal--delay-1">
+            HOP covers every need — a real concierge takes it from submission to done.
+          </p>
 
-      </div>
-    </section>
+          <div className="hop-services-grid">
+            {SERVICES.map((s, i) => (
+              <div
+                key={s.label}
+                className="hop-service-card motion-reveal motion-lift"
+                style={{ '--motion-delay': `${50 + i * 55}ms` } as CSSProperties}
+              >
+                <div className="hop-service-card__ico" style={{ background: s.bg }}>
+                  {s.icon}
+                </div>
+                <strong className="hop-service-card__name">{s.label}</strong>
+                <span className="hop-service-card__desc">{s.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How It Works ── */}
+      <section className="hop-section" id="how-it-works">
+        <div className="hop-inner">
+          <h2 className="hop-h2 motion-reveal">How HOP gives the day back</h2>
+          <p className="hop-sub motion-reveal motion-reveal--delay-1">
+            Four steps. One request. Zero follow-up.
+          </p>
+
+          <div className="hop-steps">
+            {HOW_STEPS.map((step, i) => (
+              <div
+                key={step.num}
+                className="hop-step motion-reveal"
+                style={{ '--motion-delay': `${50 + i * 65}ms` } as CSSProperties}
+              >
+                <div className="hop-step__circle">
+                  <span className="hop-step__ico">{step.ico}</span>
+                </div>
+                <span className="hop-step__num">{step.num}</span>
+                <strong className="hop-step__title">{step.title}</strong>
+                <span className="hop-step__desc">{step.desc}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="hop-compare motion-reveal motion-reveal--delay-1">
+            <div className="hop-compare__col hop-compare__col--before">
+              <div className="hop-compare__hd">
+                <span>⚠️</span>
+                <strong>Before HOP</strong>
+              </div>
+              <ul className="hop-compare__list">
+                {BEFORE_HOP.map((item) => (
+                  <li key={item} className="hop-compare__item hop-compare__item--before">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="hop-compare__col hop-compare__col--after">
+              <div className="hop-compare__hd">
+                <span>✅</span>
+                <strong>With HOP</strong>
+              </div>
+              <ul className="hop-compare__list">
+                {WITH_HOP.map((item) => (
+                  <li key={item} className="hop-compare__item hop-compare__item--after">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
   )
 }
