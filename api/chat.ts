@@ -26,40 +26,38 @@ function validMessages(value: unknown): ChatMessage[] {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const token =
-    process.env.AI_GATEWAY_API_KEY?.trim() ||
-    process.env.VERCEL_OIDC_TOKEN?.trim() ||
-    request.headers.get('x-vercel-oidc-token')?.trim()
-  if (!token) return Response.json({ error: 'The assistant is not configured' }, { status: 503 })
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
+  if (!apiKey) return Response.json({ error: 'The assistant is not configured' }, { status: 503 })
 
   try {
     const body = (await request.json()) as { messages?: unknown }
     const messages = validMessages(body.messages)
-    const model = process.env.AI_MODEL?.trim() || 'google/gemini-2.5-flash'
-    const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+    const model = process.env.AI_MODEL?.trim() || 'claude-haiku-4-5-20251001'
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: 'system', content: SYSTEM_INSTRUCTION },
-          ...messages.map((message) => ({
-            role: message.role === 'model' ? 'assistant' : 'user',
-            content: message.text,
-          })),
-        ],
-        temperature: 0.65,
         max_tokens: 1536,
-        top_p: 0.95,
+        system: SYSTEM_INSTRUCTION,
+        messages: messages.map((m) => ({
+          role: m.role === 'model' ? 'assistant' : 'user',
+          content: m.text,
+        })),
       }),
     })
 
     const result = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
+      content?: Array<{ type: string; text?: string }>
       error?: { message?: string }
     }
     if (!response.ok) throw new Error(result.error?.message || 'Assistant request failed')
-    const text = result.choices?.[0]?.message?.content?.trim()
+    const text = result.content?.find((b) => b.type === 'text')?.text?.trim()
     if (!text) throw new Error('The assistant returned an empty response')
     return Response.json({ text }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
