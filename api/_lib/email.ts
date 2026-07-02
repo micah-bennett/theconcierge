@@ -16,21 +16,31 @@ export async function sendRequestEmails(data: ConciergeRequest, requestId: strin
   const notifyTo = process.env.NOTIFY_EMAIL?.trim() || NOTIFY_EMAIL
   const customerEmail = data.email.trim()
 
-  const { error: ownerError } = await resend.emails.send({
+  console.log('[email] sending owner notification', { to: notifyTo, requestId })
+  const { data: ownerData, error: ownerError } = await resend.emails.send({
     from: FROM,
     to: notifyTo,
     replyTo: REPLY_TO,
     subject: 'New Concierge Request Received',
     html: ownerNotificationTemplate(data, requestId),
   })
-  if (ownerError) throw new Error(`Owner notification failed: ${ownerError.message}`)
+  if (ownerError) {
+    console.error('[email] owner notification failed', { error: ownerError, requestId })
+    throw new Error(`Owner notification failed: ${ownerError.message}`)
+  }
+  console.log('[email] owner notification sent', { id: ownerData?.id, requestId })
 
-  const { error: customerError } = await resend.emails.send({
+  console.log('[email] sending customer confirmation', { to: customerEmail, requestId })
+  const { data: customerData, error: customerError } = await resend.emails.send({
     from: FROM,
     to: customerEmail,
     replyTo: REPLY_TO,
     subject: 'Your Concierge Request Has Been Received',
     html: customerConfirmationTemplate(data),
   })
-  if (customerError) throw new Error(`Customer confirmation failed: ${customerError.message}`)
+  if (customerError) {
+    console.error('[email] customer confirmation failed', { error: customerError, requestId })
+    throw new Error(`Customer confirmation failed: ${customerError.message}`)
+  }
+  console.log('[email] customer confirmation sent', { id: customerData?.id, requestId })
 }
