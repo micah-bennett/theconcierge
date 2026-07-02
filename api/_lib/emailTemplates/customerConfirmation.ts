@@ -5,6 +5,9 @@ const SITE_URL = 'https://theconcierge.life'
 const PHONE_DISPLAY = '(845) 518-4827'
 const PHONE_TEL = '+18455184827'
 
+const FONT_SANS = "'DM Sans', 'Helvetica Neue', Arial, sans-serif"
+const FONT_SERIF = "'Playfair Display', 'Cormorant Garamond', Georgia, serif"
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -30,10 +33,10 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
     summaryRows.push(`
       <tr>
         <td style="padding:10px 14px;border-bottom:1px solid #e8e8ec;width:40%;vertical-align:top">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#9ca3af">Request</span>
+          <span style="font-family:${FONT_SANS};font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#9ca3af">Request</span>
         </td>
         <td style="padding:10px 14px;border-bottom:1px solid #e8e8ec;vertical-align:top">
-          <span style="font-size:13px;color:#1a1a2e">${escapeHtml(requestType)}</span>
+          <span style="font-family:${FONT_SANS};font-size:13px;color:#1a1a2e">${escapeHtml(requestType)}</span>
         </td>
       </tr>`)
   }
@@ -41,10 +44,10 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
     summaryRows.push(`
       <tr>
         <td style="padding:10px 14px;border-bottom:1px solid #e8e8ec;background:#fafafa;vertical-align:top">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#9ca3af">Date</span>
+          <span style="font-family:${FONT_SANS};font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#9ca3af">Date</span>
         </td>
         <td style="padding:10px 14px;border-bottom:1px solid #e8e8ec;background:#fafafa;vertical-align:top">
-          <span style="font-size:13px;color:#1a1a2e">${escapeHtml(dateNeeded)}</span>
+          <span style="font-family:${FONT_SANS};font-size:13px;color:#1a1a2e">${escapeHtml(dateNeeded)}</span>
         </td>
       </tr>`)
   }
@@ -52,10 +55,10 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
     summaryRows.push(`
       <tr>
         <td style="padding:10px 14px;vertical-align:top">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#9ca3af">Time</span>
+          <span style="font-family:${FONT_SANS};font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#9ca3af">Time</span>
         </td>
         <td style="padding:10px 14px;vertical-align:top">
-          <span style="font-size:13px;color:#1a1a2e">${escapeHtml(timeNeeded)}</span>
+          <span style="font-family:${FONT_SANS};font-size:13px;color:#1a1a2e">${escapeHtml(timeNeeded)}</span>
         </td>
       </tr>`)
   }
@@ -75,18 +78,23 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>Your Concierge Request Has Been Received</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+  body { margin:0; padding:0; background:#eef0f5; }
+</style>
 </head>
-<body style="margin:0;padding:0;background:#eef0f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+<body style="margin:0;padding:0;background:#eef0f5;font-family:${FONT_SANS}">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef0f5;padding:40px 16px">
     <tr>
       <td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.12)">
 
-          <!-- Header -->
+          <!-- Header: logo + business name -->
           <tr>
-            <td style="background:#0d1b35;padding:36px 40px;text-align:center">
-              <a href="${SITE_URL}" style="display:inline-block;border:0">
-                <img src="${LOGO_URL}" alt="The Concierge" width="168" height="76" style="display:block;border:0;max-width:100%;height:auto">
+            <td style="background:#0d1b35;padding:40px 40px 32px;text-align:center">
+              <a href="${SITE_URL}" style="display:inline-block;border:0;text-decoration:none">
+                <img src="${LOGO_URL}" alt="" width="80" height="80" style="display:block;border:0;width:80px;height:auto;margin:0 auto 16px">
+                <span style="display:block;font-family:${FONT_SERIF};font-size:22px;font-weight:700;letter-spacing:4px;color:#ffffff;text-transform:uppercase;line-height:1.2">The Concierge</span>
               </a>
             </td>
           </tr>
@@ -94,29 +102,29 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
           <!-- Navy accent band -->
           <tr>
             <td style="background:#1a3060;padding:12px 40px;text-align:center">
-              <span style="color:#ffffff;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase">Request Confirmed</span>
+              <span style="font-family:${FONT_SANS};color:#ffffff;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase">Request Confirmed</span>
             </td>
           </tr>
 
           <!-- Body -->
           <tr>
             <td style="background:#ffffff;padding:40px 40px 32px">
-              <p style="margin:0 0 20px;font-size:15px;color:#1a1a2e;line-height:1.7">${greeting}</p>
+              <p style="margin:0 0 20px;font-family:${FONT_SANS};font-size:15px;color:#1a1a2e;line-height:1.7">${greeting}</p>
 
-              <p style="margin:0 0 20px;font-size:15px;color:#1a1a2e;line-height:1.7">
+              <p style="margin:0 0 20px;font-family:${FONT_SANS};font-size:15px;color:#1a1a2e;line-height:1.7">
                 Thank you for reaching out to The Concierge. We have successfully received your request
                 and our team is reviewing it now.
               </p>
 
               ${summaryTable}
 
-              <p style="margin:0 0 20px;font-size:15px;color:#1a1a2e;line-height:1.7">
+              <p style="margin:0 0 20px;font-family:${FONT_SANS};font-size:15px;color:#1a1a2e;line-height:1.7">
                 A concierge specialist will contact you shortly to confirm details and next steps.
                 We appreciate the opportunity to assist you.
               </p>
 
-              <p style="margin:0 0 4px;font-size:15px;color:#1a1a2e;line-height:1.7">Warm regards,</p>
-              <p style="margin:0;font-size:15px;font-weight:600;color:#0d1b35">The Concierge Team</p>
+              <p style="margin:0 0 4px;font-family:${FONT_SANS};font-size:15px;color:#1a1a2e;line-height:1.7">Warm regards,</p>
+              <p style="margin:0;font-family:${FONT_SERIF};font-size:16px;font-weight:700;color:#0d1b35">The Concierge</p>
             </td>
           </tr>
 
@@ -130,8 +138,8 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
           <!-- Contact strip -->
           <tr>
             <td style="background:#ffffff;padding:24px 40px;text-align:center">
-              <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af">Reach Us Anytime</p>
-              <p style="margin:0;font-size:14px;color:#1a1a2e">
+              <p style="margin:0 0 8px;font-family:${FONT_SANS};font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af">Reach Us Anytime</p>
+              <p style="margin:0;font-family:${FONT_SANS};font-size:14px;color:#1a1a2e">
                 <a href="tel:${PHONE_TEL}" style="color:#0d1b35;text-decoration:underline;font-weight:600">${escapeHtml(PHONE_DISPLAY)}</a>
               </p>
             </td>
@@ -140,8 +148,8 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
           <!-- Dark footer -->
           <tr>
             <td style="background:#0d1b35;padding:24px 40px;text-align:center">
-              <p style="margin:0 0 8px;font-size:12px;color:#ffffff;letter-spacing:1.5px;text-transform:uppercase;font-weight:600">The Concierge</p>
-              <p style="margin:0;font-size:12px;color:#8a9bb5;line-height:1.8">
+              <p style="margin:0 0 8px;font-family:${FONT_SERIF};font-size:13px;color:#ffffff;letter-spacing:2px;text-transform:uppercase;font-weight:700">The Concierge</p>
+              <p style="margin:0;font-family:${FONT_SANS};font-size:12px;color:#8a9bb5;line-height:1.8">
                 <a href="${SITE_URL}" style="color:#8a9bb5;text-decoration:none">${SITE_URL.replace('https://', '')}</a>
                 &nbsp;&middot;&nbsp;
                 <a href="tel:${PHONE_TEL}" style="color:#8a9bb5;text-decoration:none">${escapeHtml(PHONE_DISPLAY)}</a>
