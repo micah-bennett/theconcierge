@@ -106,12 +106,24 @@
 }
 
 .site-header__brand-logo {
-  width: auto;
-  height: clamp(1.85rem, 3.8vw, 2.45rem);
-  max-width: min(5.5rem, 28vw);
+  width: clamp(2.2rem, 4.5vw, 3rem);
+  height: clamp(2.2rem, 4.5vw, 3rem);
   object-fit: contain;
   flex-shrink: 0;
   display: block;
+}
+
+.site-header__brand-name {
+  margin: 0;
+  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(0.6rem, 1.1vw, 0.78rem);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffffff;
 }
 
 .site-header__tagline {
@@ -270,8 +282,13 @@
   }
 
   .site-header__brand-logo {
-    max-width: min(4.25rem, 22vw);
-    height: clamp(1.55rem, 6.25vw, 1.9rem);
+    width: clamp(1.8rem, 7vw, 2.4rem);
+    height: clamp(1.8rem, 7vw, 2.4rem);
+  }
+
+  .site-header__brand-name {
+    font-size: clamp(0.52rem, 2.2vw, 0.65rem);
+    letter-spacing: 0.18em;
   }
 
   .site-header__tagline {

@@ -17,7 +17,7 @@ import { PlansPage } from './pages/PlansPage'
 import { useSiteMotion } from './hooks/useSiteMotion'
 import './App.css'
 
-const LOGO_IMAGE = '/logo-concierge.png?v=7'
+const LOGO_IMAGE = '/logo-mark-white.png?v=1'
 
 const ConciergeRequestModal = lazy(() =>
   import('./components/ConciergeRequestModal').then((m) => ({
@@ -83,10 +83,11 @@ function AppRoutes() {
             className="site-header__brand-logo"
             src={LOGO_IMAGE}
             alt="The Concierge"
-            width={205}
-            height={117}
+            width={80}
+            height={80}
             decoding="async"
           />
+          <p className="site-header__brand-name">The Concierge</p>
           <p className="site-header__tagline">We Give You Your Time Back</p>
         </Link>
         <nav className="site-header__nav site-header__nav--tabs" aria-label="Primary">

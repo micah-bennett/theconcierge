@@ -1,6 +1,6 @@
 import type { ConciergeRequest } from '../requestValidation.js'
 
-const LOGO_URL = 'https://theconcierge.life/email-logo-light.png'
+const LOGO_URL = 'https://theconcierge.life/logo-mark-white.png'
 const SITE_URL = 'https://theconcierge.life'
 const PHONE_DISPLAY = '(845) 518-4827'
 const PHONE_TEL = '+18455184827'
