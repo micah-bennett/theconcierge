@@ -44,7 +44,7 @@ function buildRows(data: ConciergeRequest, requestId: string): Row[] {
     .join('\n')
 
   const rows: Row[] = [
-    { label: 'Reference', value: toJobId(requestId) },
+    { label: 'Request ID', value: toJobId(requestId) },
     { label: 'Name', value: `${data.firstName} ${data.lastName}`.trim() },
     { label: 'Phone', value: formatPhoneUS(data.phone), isPhone: true },
     { label: 'Email', value: data.email, isEmail: true },
@@ -125,7 +125,7 @@ export function ownerNotificationTemplate(data: ConciergeRequest, requestId: str
           <tr>
             <td style="background:#0d1b35;padding:40px 40px 32px;text-align:center">
               <a href="${SITE_URL}" style="display:inline-block;border:0;text-decoration:none">
-                <img src="${LOGO_URL}" alt="" width="80" height="80" style="display:block;border:0;width:80px;height:auto;margin:0 auto 16px">
+                <img src="${LOGO_URL}" alt="" width="110" height="110" style="display:block;border:0;width:110px;height:auto;margin:0 auto 16px">
                 <span style="display:block;font-family:${FONT_SERIF};font-size:22px;font-weight:700;letter-spacing:4px;color:#ffffff;text-transform:uppercase;line-height:1.2">The Concierge</span>
               </a>
             </td>
