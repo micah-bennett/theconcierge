@@ -88,7 +88,6 @@ function AppRoutes() {
             decoding="async"
           />
           <p className="site-header__brand-name">The Concierge</p>
-          <p className="site-header__tagline">We Give You Your Time Back</p>
         </Link>
         <nav className="site-header__nav site-header__nav--tabs" aria-label="Primary">
           <NavLink
