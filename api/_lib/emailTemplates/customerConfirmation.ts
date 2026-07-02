@@ -4,7 +4,6 @@ const LOGO_URL = 'https://theconcierge.life/email-logo-light.png'
 const SITE_URL = 'https://theconcierge.life'
 const PHONE_DISPLAY = '(845) 518-4827'
 const PHONE_TEL = '+18455184827'
-const CONTACT_EMAIL = 'requests@theconcierge.life'
 
 function escapeHtml(s: string): string {
   return s
@@ -92,9 +91,9 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
             </td>
           </tr>
 
-          <!-- Gold accent band -->
+          <!-- Navy accent band -->
           <tr>
-            <td style="background:#c4a35a;padding:12px 40px;text-align:center">
+            <td style="background:#1a3060;padding:12px 40px;text-align:center">
               <span style="color:#ffffff;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase">Request Confirmed</span>
             </td>
           </tr>
@@ -133,7 +132,7 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
             <td style="background:#ffffff;padding:24px 40px;text-align:center">
               <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af">Reach Us Anytime</p>
               <p style="margin:0;font-size:14px;color:#1a1a2e">
-                <a href="tel:${PHONE_TEL}" style="color:#c4a35a;text-decoration:none;font-weight:600">${escapeHtml(PHONE_DISPLAY)}</a>
+                <a href="tel:${PHONE_TEL}" style="color:#0d1b35;text-decoration:underline;font-weight:600">${escapeHtml(PHONE_DISPLAY)}</a>
               </p>
             </td>
           </tr>
@@ -141,11 +140,9 @@ export function customerConfirmationTemplate(data: ConciergeRequest): string {
           <!-- Dark footer -->
           <tr>
             <td style="background:#0d1b35;padding:24px 40px;text-align:center">
-              <p style="margin:0 0 8px;font-size:12px;color:#c4a35a;letter-spacing:1.5px;text-transform:uppercase;font-weight:600">The Concierge</p>
+              <p style="margin:0 0 8px;font-size:12px;color:#ffffff;letter-spacing:1.5px;text-transform:uppercase;font-weight:600">The Concierge</p>
               <p style="margin:0;font-size:12px;color:#8a9bb5;line-height:1.8">
                 <a href="${SITE_URL}" style="color:#8a9bb5;text-decoration:none">${SITE_URL.replace('https://', '')}</a>
-                &nbsp;&middot;&nbsp;
-                <a href="mailto:${CONTACT_EMAIL}" style="color:#8a9bb5;text-decoration:none">${CONTACT_EMAIL}</a>
                 &nbsp;&middot;&nbsp;
                 <a href="tel:${PHONE_TEL}" style="color:#8a9bb5;text-decoration:none">${escapeHtml(PHONE_DISPLAY)}</a>
               </p>

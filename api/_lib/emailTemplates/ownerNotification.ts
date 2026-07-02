@@ -22,6 +22,11 @@ function formatPhoneUS(digits: string): string {
   return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : digits
 }
 
+function toJobId(uuid: string): string {
+  const digits = uuid.replace(/[^0-9]/g, '')
+  return 'REQ-' + digits.slice(-6).padStart(6, '0')
+}
+
 type Row = { label: string; value: string; isEmail?: boolean; isPhone?: boolean }
 
 function buildRows(data: ConciergeRequest, requestId: string): Row[] {
@@ -36,7 +41,7 @@ function buildRows(data: ConciergeRequest, requestId: string): Row[] {
     .join('\n')
 
   const rows: Row[] = [
-    { label: 'Request ID', value: requestId },
+    { label: 'Reference', value: toJobId(requestId) },
     { label: 'Name', value: `${data.firstName} ${data.lastName}`.trim() },
     { label: 'Phone', value: formatPhoneUS(data.phone), isPhone: true },
     { label: 'Email', value: data.email, isEmail: true },
@@ -65,12 +70,12 @@ function buildRows(data: ConciergeRequest, requestId: string): Row[] {
 function renderCell(row: Row): string {
   if (row.isEmail && row.value !== '—') {
     const e = escapeHtml(row.value)
-    return `<a href="mailto:${e}" style="color:#c4a35a;text-decoration:none;font-weight:500">${e}</a>`
+    return `<a href="mailto:${e}" style="color:#0d1b35;text-decoration:underline;font-weight:500">${e}</a>`
   }
   if (row.isPhone && row.value !== '—') {
     const e = escapeHtml(row.value)
     const tel = row.value.replace(/\D/g, '')
-    return `<a href="tel:+1${tel}" style="color:#c4a35a;text-decoration:none;font-weight:500">${e}</a>`
+    return `<a href="tel:+1${tel}" style="color:#0d1b35;text-decoration:underline;font-weight:500">${e}</a>`
   }
   return escapeHtml(row.value).replace(/\n/g, '<br>')
 }
@@ -118,9 +123,9 @@ export function ownerNotificationTemplate(data: ConciergeRequest, requestId: str
             </td>
           </tr>
 
-          <!-- Gold accent band -->
+          <!-- Navy accent band -->
           <tr>
-            <td style="background:#c4a35a;padding:12px 40px;text-align:center">
+            <td style="background:#1a3060;padding:12px 40px;text-align:center">
               <span style="color:#ffffff;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase">New Request Received</span>
             </td>
           </tr>
