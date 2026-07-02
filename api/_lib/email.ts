@@ -16,6 +16,12 @@ export async function sendRequestEmails(data: ConciergeRequest, requestId: strin
   const notifyTo = process.env.NOTIFY_EMAIL?.trim() || NOTIFY_EMAIL
   const customerEmail = data.email.trim()
 
+  console.log('CALLING RESEND NOW', {
+    requestId,
+    keyPrefix: apiKey.slice(0, 8) + '...',
+    from: FROM,
+    to: notifyTo,
+  })
   console.log('[email] sending owner notification', { to: notifyTo, requestId })
   const { data: ownerData, error: ownerError } = await resend.emails.send({
     from: FROM,
