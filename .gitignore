@@ -8,7 +8,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-functions/lib
 .npm-cache
 dist
 dist-ssr
@@ -17,14 +16,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
-
-# Firebase / secrets (env profiles live in env/; commit only *.example)
-env/.env
-env/.env.*
-!env/.env*.example
-functions/.env*
-!functions/.env.example
-.firebase/
+.env*
+!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -36,4 +29,3 @@ functions/.env*
 *.njsproj
 *.sln
 *.sw?
-.env*

@@ -6,6 +6,4 @@ export default defineConfig({
   plugins: [react()],
   // Relative base so Capacitor iOS loads bundled assets correctly
   base: './',
-  // Load Vite env files from ./env (see env/*.example)
-  envDir: 'env',
 })
