@@ -1,0 +1,74 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useHopAuth } from '../../hop/useHopAuth'
+
+export function HopLoginPage() {
+  const { login } = useHopAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
+    setSubmitting(true)
+    try {
+      const user = await login(email, password)
+      const from = (location.state as { from?: string } | null)?.from
+      navigate(user.role === 'admin' ? '/hop/admin' : from || '/hop/app', { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not sign in')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="hop-auth-page">
+      <form className="hop-auth-card" onSubmit={handleSubmit}>
+        <Link to="/hop" className="hop-auth-card__brand">HOP</Link>
+        <h1 className="hop-auth-card__title">Welcome back</h1>
+        <p className="hop-auth-card__sub">Sign in to manage your requests and integrations.</p>
+
+        {error && <div className="hop-auth-card__error">{error}</div>}
+
+        <label className="hop-field">
+          <span>Email</span>
+          <input
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </label>
+
+        <label className="hop-field">
+          <span>Password</span>
+          <input
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
+
+        <button type="submit" className="hop-btn-primary" disabled={submitting}>
+          {submitting ? 'Signing in…' : 'Sign in'}
+        </button>
+
+        <p className="hop-auth-card__footer">
+          New to HOP? <Link to="/hop/signup">Create an account</Link>
+        </p>
+        <p className="hop-auth-card__footer hop-auth-card__footer--muted">
+          <Link to="/hop/admin/login">Admin sign in</Link>
+        </p>
+      </form>
+    </div>
+  )
+}

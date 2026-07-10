@@ -1,0 +1,488 @@
+/* HOP app + admin portal — shares the marketing page's dark indigo/violet theme. */
+
+.hop-shell,
+.hop-auth-page {
+  --hop-bg: #0d0f1a;
+  --hop-panel: #161a2c;
+  --hop-border: rgba(255, 255, 255, 0.1);
+  --hop-indigo: #6366f1;
+  --hop-violet: #8b5cf6;
+  --hop-text: rgba(255, 255, 255, 0.92);
+  --hop-muted: rgba(255, 255, 255, 0.58);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--hop-text);
+}
+
+.hop-app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: rgba(255, 255, 255, 0.6);
+  background: #0d0f1a;
+}
+
+/* ── Auth pages ─────────────────────────────── */
+.hop-auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  background: radial-gradient(circle at 50% 0%, #1e1b3a 0%, var(--hop-bg) 60%);
+}
+
+.hop-auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--hop-panel);
+  border: 1px solid var(--hop-border);
+  border-radius: 16px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hop-auth-card__brand {
+  font-weight: 800;
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.hop-auth-card__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.hop-auth-card__sub {
+  margin: -0.5rem 0 0;
+  color: var(--hop-muted);
+  font-size: 0.92rem;
+}
+
+.hop-auth-card__error {
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fca5a5;
+  font-size: 0.88rem;
+}
+
+.hop-auth-card__footer {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--hop-muted);
+}
+
+.hop-auth-card__footer a {
+  color: #a5b4fc;
+}
+
+.hop-auth-card__footer--muted {
+  margin-top: -0.5rem;
+}
+
+/* ── Form fields ────────────────────────────── */
+.hop-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--hop-muted);
+}
+
+.hop-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.hop-field input,
+.hop-field select,
+.hop-field textarea {
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--hop-text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hop-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+}
+
+.hop-field input:focus,
+.hop-field select:focus,
+.hop-field textarea:focus {
+  outline: 2px solid var(--hop-indigo);
+  outline-offset: 1px;
+}
+
+.hop-field__hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── App shell ──────────────────────────────── */
+.hop-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--hop-bg);
+}
+
+.hop-shell__sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem 1.1rem;
+  background: var(--hop-panel);
+  border-right: 1px solid var(--hop-border);
+}
+
+.hop-shell__brand {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  font-size: 1.1rem;
+}
+
+.hop-shell__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.hop-shell__nav-link {
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  color: var(--hop-muted);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.hop-shell__nav-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--hop-text);
+}
+
+.hop-shell__nav-link--active {
+  background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
+  color: #fff;
+}
+
+.hop-shell__user {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hop-border);
+}
+
+.hop-shell__user-name {
+  font-size: 0.85rem;
+  color: var(--hop-muted);
+}
+
+.hop-shell__logout {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: #a5b4fc;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.hop-shell__content {
+  flex: 1;
+  padding: 2.25rem clamp(1.25rem, 4vw, 3rem);
+  overflow-y: auto;
+}
+
+.hop-page-body {
+  max-width: 920px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.hop-page-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+}
+
+.hop-page-sub {
+  margin: -1rem 0 0;
+  color: var(--hop-muted);
+}
+
+/* ── Cards ──────────────────────────────────── */
+.hop-card {
+  background: var(--hop-panel);
+  border: 1px solid var(--hop-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hop-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.hop-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hop-card__header a {
+  color: #a5b4fc;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.hop-muted {
+  color: var(--hop-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ── Quick-request grid ─────────────────────── */
+.hop-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.85rem;
+}
+
+.hop-quick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.1rem 0.5rem;
+  background: var(--hop-panel);
+  border: 1px solid var(--hop-border);
+  border-radius: 12px;
+  color: var(--hop-text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.hop-quick-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.hop-quick-card__icon {
+  font-size: 1.5rem;
+}
+
+/* ── Events / tables ────────────────────────── */
+.hop-event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hop-event-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--hop-border);
+}
+
+.hop-event-list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.hop-event-list__time {
+  color: var(--hop-muted);
+  white-space: nowrap;
+}
+
+.hop-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.hop-table th {
+  text-align: left;
+  color: var(--hop-muted);
+  font-weight: 600;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--hop-border);
+}
+
+.hop-table td {
+  padding: 0.6rem;
+  border-bottom: 1px solid var(--hop-border);
+  vertical-align: top;
+}
+
+.hop-table select {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--hop-text);
+  border: 1px solid var(--hop-border);
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+}
+
+.hop-status {
+  display: inline-flex;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hop-status--active,
+.hop-status--completed,
+.hop-status--connected {
+  background: rgba(74, 222, 128, 0.18);
+  color: #86efac;
+}
+
+.hop-status--disabled,
+.hop-status--cancelled,
+.hop-status--error {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fca5a5;
+}
+
+.hop-status--submitted,
+.hop-status--in_progress,
+.hop-status--disconnected {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fde68a;
+}
+
+/* ── Integrations ───────────────────────────── */
+.hop-integration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.hop-integration-card {
+  gap: 0.75rem;
+}
+
+.hop-integration-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hop-integration-card__icon {
+  font-size: 1.4rem;
+}
+
+.hop-banner {
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.hop-banner--success {
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  color: #86efac;
+}
+
+.hop-banner--error {
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fca5a5;
+}
+
+/* ── Profile ────────────────────────────────── */
+.hop-profile-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.hop-profile-list dt {
+  font-size: 0.78rem;
+  color: var(--hop-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hop-profile-list dd {
+  margin: 0.15rem 0 0;
+  font-size: 1rem;
+}
+
+/* ── Admin stats ────────────────────────────── */
+.hop-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.hop-stat-card {
+  align-items: flex-start;
+}
+
+.hop-stat-card__value {
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.hop-stat-card__label {
+  color: var(--hop-muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .hop-shell {
+    flex-direction: column;
+  }
+
+  .hop-shell__sidebar {
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+    border-right: none;
+    border-bottom: 1px solid var(--hop-border);
+  }
+
+  .hop-shell__nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .hop-shell__user {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .hop-field-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { Link } from 'react-router-dom'
 
 // ── Donut chart ──────────────────────────────────────────────────
 const DONUT_R = 45
@@ -125,8 +126,16 @@ export function HopPage() {
           </p>
 
           <div className="hop-hero__ctas motion-reveal motion-reveal--delay-2">
+            <Link className="hop-btn-primary" to="/hop/signup">
+              Get started →
+            </Link>
+            <Link className="hop-btn-ghost" to="/hop/login">
+              Log in
+            </Link>
+          </div>
+          <div className="hop-hero__ctas hop-hero__ctas--secondary motion-reveal motion-reveal--delay-2">
             <a
-              className="hop-btn-primary"
+              className="hop-link-inline"
               href="https://hop-pilot-hvcs.pplx.app"
               target="_blank"
               rel="noopener noreferrer"
@@ -134,7 +143,7 @@ export function HopPage() {
               See it from the floor →
             </a>
             <a
-              className="hop-btn-ghost"
+              className="hop-link-inline"
               href="https://hop-pilot-hvcs.pplx.app"
               target="_blank"
               rel="noopener noreferrer"

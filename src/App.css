@@ -3508,6 +3508,23 @@
   border-color: rgba(255, 255, 255, 0.4);
 }
 
+.hop-hero__ctas--secondary {
+  margin-top: -1.4rem;
+  gap: 1.4rem;
+}
+
+.hop-link-inline {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: none;
+  transition: color 0.3s var(--motion-ease-soft);
+}
+
+.hop-link-inline:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
 /* ── Hero stat cards ─────────────────────────── */
 .hop-hero__stats {
   display: grid;
