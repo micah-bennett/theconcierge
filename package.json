@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "db:migrate": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f db/schema.sql",
     "hop:create-admin": "node scripts/create-hop-admin.mjs",
-    "cap:sync": "npm run build && npx cap sync",
+    "cap:sync": "npm run build -- --base=./ && npx cap sync",
     "cap:ios": "npm run cap:sync && npx cap open ios"
   },
   "dependencies": {
