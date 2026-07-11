@@ -1,8 +1,11 @@
 import { Resend } from 'resend'
 
 import type { ConciergeRequest } from './requestValidation.js'
+import type { ReliefCallRequest } from './reliefValidation.js'
 import { ownerNotificationTemplate } from './emailTemplates/ownerNotification.js'
 import { customerConfirmationTemplate } from './emailTemplates/customerConfirmation.js'
+import { reliefOwnerNotificationTemplate } from './emailTemplates/reliefOwnerNotification.js'
+import { hopWelcomeTemplate } from './emailTemplates/hopWelcome.js'
 
 const FROM = 'The Concierge <requests@theconcierge.life>'
 const REPLY_TO = 'micah@hvconcierge.com'
@@ -49,4 +52,36 @@ export async function sendRequestEmails(data: ConciergeRequest, requestId: strin
     throw new Error(`Customer confirmation failed: ${customerError.message}`)
   }
   console.log('[email] customer confirmation sent', { id: customerData?.id, requestId })
+}
+
+export async function sendReliefEmail(data: ReliefCallRequest): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY?.trim()
+  if (!apiKey) throw new Error('RESEND_API_KEY is not configured')
+
+  const resend = new Resend(apiKey)
+  const notifyTo = process.env.NOTIFY_EMAIL?.trim() || NOTIFY_EMAIL
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: notifyTo,
+    replyTo: data.email,
+    subject: 'New Relief Call Request',
+    html: reliefOwnerNotificationTemplate(data),
+  })
+  if (error) throw new Error(`Relief call notification failed: ${error.message}`)
+}
+
+export async function sendHopWelcomeEmail(email: string, firstName: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY?.trim()
+  if (!apiKey) throw new Error('RESEND_API_KEY is not configured')
+
+  const resend = new Resend(apiKey)
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: email,
+    replyTo: REPLY_TO,
+    subject: 'Welcome to HOP',
+    html: hopWelcomeTemplate(firstName),
+  })
+  if (error) throw new Error(`HOP welcome email failed: ${error.message}`)
 }

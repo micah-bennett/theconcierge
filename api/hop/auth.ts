@@ -1,4 +1,5 @@
 import { dbUnavailable, getSql } from '../_lib/hopDb.js'
+import { sendHopWelcomeEmail } from '../_lib/email.js'
 import {
   checkLoginLock,
   clearSessionCookie,
@@ -56,6 +57,16 @@ async function handleSignup(request: Request): Promise<Response> {
     const row = rows[0] as { id: string; email: string; first_name: string; last_name: string; role: string }
 
     const token = await createSession(sql, row.id, request)
+
+    try {
+      await sendHopWelcomeEmail(row.email, row.first_name)
+    } catch (error) {
+      console.error('HOP welcome email failed (account still created)', {
+        userId: row.id,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+
     return jsonWithCookie({ user: toPublicUser(row) }, 201, setSessionCookie(request, token))
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not create account'

@@ -30,7 +30,7 @@ export function HopSignupPage() {
   return (
     <div className="hop-auth-page">
       <form className="hop-auth-card" onSubmit={handleSubmit}>
-        <Link to="/hop" className="hop-auth-card__brand">HOP</Link>
+        <Link to="/" className="hop-auth-card__brand">HOP</Link>
         <h1 className="hop-auth-card__title">Create your HOP account</h1>
         <p className="hop-auth-card__sub">One request handles the ride, meal, errand, or anything else.</p>
 

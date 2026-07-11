@@ -40,6 +40,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS concierge_requests_firebase_document_id_idx
   ON concierge_requests (firebase_document_id)
   WHERE firebase_document_id IS NOT NULL;
 
+ALTER TABLE concierge_requests
+  ADD COLUMN IF NOT EXISTS path TEXT NOT NULL DEFAULT 'individual';
+
+-- ── Relief call (facility discovery-call) requests ─────────────────────────
+
+CREATE TABLE IF NOT EXISTS relief_call_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  title_facility TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  notes TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS relief_call_requests_created_at_idx
+  ON relief_call_requests (created_at DESC);
+
 -- ── HOP: users, sessions, service requests, integrations ──────────────────
 
 CREATE TABLE IF NOT EXISTS hop_users (

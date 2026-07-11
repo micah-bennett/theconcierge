@@ -19,11 +19,11 @@ export async function POST(request: Request): Promise<Response> {
     const sql = neon(databaseUrl)
     const rows = await sql`
       INSERT INTO concierge_requests (
-        first_name, last_name, address_line_1, address_line_2, city, state, zip, country,
+        path, first_name, last_name, address_line_1, address_line_2, city, state, zip, country,
         phone, email, date_needed, time_needed, request_type, details, hear_about_us,
         payment_method, cardholder_name, card_last_four, exp_month, exp_year
       ) VALUES (
-        ${data.firstName}, ${data.lastName}, ${data.addressLine1}, ${data.addressLine2},
+        ${data.path}, ${data.firstName}, ${data.lastName}, ${data.addressLine1}, ${data.addressLine2},
         ${data.city}, ${data.state}, ${data.zip}, ${data.country}, ${data.phone},
         ${data.email}, ${data.dateNeeded}, ${data.timeNeeded}, ${data.requestType},
         ${data.details}, ${data.hearAboutUs}, ${data.paymentMethod}, ${data.cardholderName},

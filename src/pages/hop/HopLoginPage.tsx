@@ -1,16 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useHopAuth } from '../../hop/useHopAuth'
 
 export function HopLoginPage() {
-  const { login } = useHopAuth()
+  const { login, user, loading } = useHopAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (loading || !user) return
+    navigate(user.role === 'admin' ? '/hop/admin' : '/hop/app', { replace: true })
+  }, [loading, user, navigate])
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -30,7 +35,7 @@ export function HopLoginPage() {
   return (
     <div className="hop-auth-page">
       <form className="hop-auth-card" onSubmit={handleSubmit}>
-        <Link to="/hop" className="hop-auth-card__brand">HOP</Link>
+        <Link to="/" className="hop-auth-card__brand">HOP</Link>
         <h1 className="hop-auth-card__title">Welcome back</h1>
         <p className="hop-auth-card__sub">Sign in to manage your requests and integrations.</p>
 
