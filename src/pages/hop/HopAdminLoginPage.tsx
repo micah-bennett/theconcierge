@@ -32,7 +32,7 @@ export function HopAdminLoginPage() {
   return (
     <div className="hop-auth-page hop-auth-page--admin">
       <form className="hop-auth-card" onSubmit={handleSubmit}>
-        <Link to="/" className="hop-auth-card__brand">HOP admin</Link>
+        <span className="hop-auth-card__brand">HOP admin</span>
         <h1 className="hop-auth-card__title">Concierge staff sign in</h1>
         <p className="hop-auth-card__sub">Manage HOP users, requests, and integrations.</p>
 
@@ -66,9 +66,6 @@ export function HopAdminLoginPage() {
 
         <p className="hop-auth-card__footer hop-auth-card__footer--muted">
           <Link to="/hop/forgot-password">Forgot password?</Link>
-        </p>
-        <p className="hop-auth-card__footer hop-auth-card__footer--muted">
-          <Link to="/hop/login">User sign in</Link>
         </p>
       </form>
     </div>
