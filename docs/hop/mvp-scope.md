@@ -38,3 +38,35 @@ doesn't assume more exists than does. Update this file whenever scope changes.
 
 Before building any of the above, re-check this file and `architecture.md` — don't assume a
 stubbed integration is further along than described here.
+
+## 2026-07-11: public homepage redesign → reverted, moved into HOP dashboard
+
+A separate workstream rebuilt the entire public marketing site (new Syne/Inter fonts, indigo/cyan
+palette, one-page structure: hero, burnout stats, how-it-works, 6 service cards, HOP teaser,
+about, an inline request form + "Book a Relief Call" sidebar) based on a leadership-provided
+prototype PDF. It also replaced the public `/hop` marketing page with a redirect and the
+`/request` modal with an inline section.
+
+Leadership then decided that content was healthcare-specific and belonged in HOP's **post-login**
+experience, not the general-audience public homepage (which serves families/seniors/businesses
+too). Result:
+
+- **Reverted**: the public homepage, nav, footer, fonts/colors, `/hop` marketing page, and
+  `/request` modal are all back to their original (pre-redesign) versions. The public site today
+  is exactly as described elsewhere in these docs — nothing healthcare-specific on `/`.
+- **Kept, moved into HOP**: the redesign's sections were componentized (not copy-pasted) into
+  `src/hop/dashboard/` and appended below the functional content on `/hop/app` — see
+  "Dashboard 'sell' content" in `architecture.md`.
+- **Orphaned (backend kept, no frontend)**: the "Book a Relief Call" facility-lead-capture feature
+  (`api/relief.ts`, `relief_call_requests` table, `sendReliefEmail`) has no page linking to it
+  anymore — its sidebar was part of the reverted homepage. It still works end-to-end if called
+  directly; it just isn't reachable from any UI right now. If asked to add a facility-contact
+  flow, check here first before rebuilding it — a natural home would be the Contact page.
+- **Reverted**: the `path` (`'individual' | 'facility'`) field that was added to
+  `concierge_requests`/`api/requests.ts`/`api/_lib/requestValidation.ts` for the redesign's toggle
+  was removed from the app layer. The `path` column itself is still in the DB (harmless, unused,
+  additive-only — matches this repo's no-DROP-COLUMN convention), so don't be surprised to see it
+  in `db/schema.sql`.
+
+**Do not re-propose putting the burnout-stats/service-cards/story content back on the public
+homepage** — that exact change was made and explicitly reversed by leadership.

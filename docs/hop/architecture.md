@@ -18,7 +18,7 @@ how it might look eventually — check `mvp-scope.md` for what's real vs. stubbe
   the request body on a flat file instead (see `api/hop/auth.ts`'s `?action=` dispatch and
   `api/hop/requests.ts`'s body-based `PATCH`). This also matters for the Hobby-plan
   12-Serverless-Function cap — flat, multi-action files keep the function count down
-  (currently 8 HOP functions + the original 2).
+  (currently 9 total: `chat.ts`, `requests.ts`, `relief.ts`, and 6 under `api/hop/**`).
 - **Database**: Neon serverless Postgres via `@neondatabase/serverless`'s `neon()` tagged-template
   client. One schema file, `db/schema.sql`, written idempotently (`CREATE TABLE IF NOT EXISTS`,
   `ADD COLUMN IF NOT EXISTS`, etc.) and applied with `npm run db:migrate`.
@@ -54,6 +54,17 @@ working, unrelated code.
 Auth state lives in `src/hop/AuthContext.tsx`, scoped to a layout route that wraps only the
 `/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/app/*`, `/hop/admin/*` subtree — so
 loading the marketing site (including plain `/hop`) never triggers a session check.
+
+## Dashboard "sell" content (`src/hop/dashboard/`)
+
+`HopDashboardPage.tsx` (`/hop/app`) has two parts: the functional top section (quick-request
+tiles, calendar preview — unchanged since the original build) and, below it, a set of
+componentized informational/"why HOP" sections: `HopWhyBanner`, `HopBurnoutStats`,
+`HopHowItWorks`, `HopServicesOverview`, `HopFeatureHighlights`, `HopAboutStory`. These are ported
+from a reverted public-homepage redesign (see `mvp-scope.md`) — reuse or extend them for any
+"tell the user why HOP matters" content; don't rebuild similar content from scratch. Styled by
+`src/styles/hopDashboard.css` (a `hop-dash-*` prefix, deliberately distinct from the core app's
+`.hop-card`/`.hop-stat*` classes in `hopApp.css` to avoid collisions on the same page).
 
 ## Auth model
 
