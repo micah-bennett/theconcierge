@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useHopAuth } from '../../../hop/useHopAuth'
 import { hopGoogleCalendarEvents, type HopCalendarEvent } from '../../../hop/api'
+import { HopWhyBanner } from '../../../hop/dashboard/HopWhyBanner'
+import { HopBurnoutStats } from '../../../hop/dashboard/HopBurnoutStats'
+import { HopHowItWorks } from '../../../hop/dashboard/HopHowItWorks'
+import { HopServicesOverview } from '../../../hop/dashboard/HopServicesOverview'
+import { HopFeatureHighlights } from '../../../hop/dashboard/HopFeatureHighlights'
+import { HopAboutStory } from '../../../hop/dashboard/HopAboutStory'
 
 const QUICK_REQUESTS = [
   { type: 'ride', icon: '🚗', label: 'Ride' },
@@ -73,6 +79,28 @@ export function HopDashboardPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <HopWhyBanner />
+
+      <section className="hop-dash-section">
+        <HopBurnoutStats />
+      </section>
+
+      <section className="hop-dash-section">
+        <HopHowItWorks />
+      </section>
+
+      <section className="hop-dash-section">
+        <HopServicesOverview />
+      </section>
+
+      <section className="hop-dash-section">
+        <HopFeatureHighlights />
+      </section>
+
+      <section className="hop-dash-section">
+        <HopAboutStory />
       </section>
     </div>
   )

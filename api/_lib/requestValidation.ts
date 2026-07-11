@@ -1,5 +1,4 @@
 export type ConciergeRequest = {
-  path: 'individual' | 'facility'
   firstName: string
   lastName: string
   addressLine1: string
@@ -23,7 +22,6 @@ export type ConciergeRequest = {
 }
 
 const LIMITS: Record<keyof ConciergeRequest, number> = {
-  path: 20,
   firstName: 80,
   lastName: 80,
   addressLine1: 160,
@@ -64,7 +62,6 @@ export function validateRequestPayload(value: unknown): ConciergeRequest {
     (Object.keys(LIMITS) as Array<keyof ConciergeRequest>).map((key) => [key, stringField(source, key)]),
   ) as ConciergeRequest
 
-  if (data.path !== 'individual' && data.path !== 'facility') throw new Error('Invalid path')
   if (!data.firstName || !data.lastName || !data.requestType) throw new Error('Required fields are missing')
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) throw new Error('Enter a valid email address')
   if (!/^\d{10,15}$/.test(data.phone.replace(/\D/g, ''))) throw new Error('Enter a valid phone number')

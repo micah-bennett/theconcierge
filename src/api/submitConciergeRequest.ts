@@ -1,5 +1,4 @@
 export type ConciergeRequestPayload = {
-  path: 'individual' | 'facility'
   firstName: string
   lastName: string
   addressLine1: string

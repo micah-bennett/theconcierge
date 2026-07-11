@@ -1,0 +1,167 @@
+/* ============================================================
+   HOP Dashboard — "why HOP" sell/info panels shown after login.
+   Ported from the marketing site's one-page design, componentized
+   and restyled to fit the authenticated app shell (hop-shell tokens).
+   Namespaced `hop-dash-` to avoid clashing with hopApp.css's own
+   `.hop-card`/`.hop-stat*` classes used elsewhere in the app.
+   ============================================================ */
+
+.hop-dash-section {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--hop-border);
+}
+
+.hop-dash-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hop-indigo);
+  margin: 0 0 0.5rem;
+}
+
+.hop-dash-title {
+  font-family: var(--hop-font-display);
+  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+  font-weight: 800;
+  color: var(--hop-text);
+  margin: 0 0 0.5rem;
+}
+
+.hop-dash-sub {
+  font-size: 0.92rem;
+  color: var(--hop-muted);
+  max-width: 640px;
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+}
+
+.hop-dash-gradient {
+  background: linear-gradient(135deg, var(--hop-indigo), var(--hop-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Why banner ─────────────────────────────── */
+.hop-dash-banner {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: var(--hop-radius-lg);
+  padding: 1.75rem 2rem;
+  margin-top: 2rem;
+}
+
+.hop-dash-banner__quote {
+  font-family: var(--hop-font-display);
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--hop-text);
+  margin: 0;
+}
+
+/* ── Stats / charts ─────────────────────────── */
+.hop-dash-chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem; }
+.hop-dash-chart-card { background: var(--hop-panel); border: 1px solid var(--hop-border); border-radius: var(--hop-radius-lg); padding: 1.5rem; }
+.hop-dash-chart-card__label { font-family: var(--hop-font-display); font-size: 0.92rem; font-weight: 700; margin: 0 0 0.2rem; color: var(--hop-text); }
+.hop-dash-chart-card__sub { font-size: 0.7rem; color: var(--hop-muted); margin: 0 0 1.25rem; }
+
+.hop-dash-donut-wrap { position: relative; width: 150px; height: 150px; margin: 0 auto 1rem; }
+.hop-dash-donut-chart { width: 100%; height: 100%; transform: rotate(-90deg); }
+.hop-dash-donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+.hop-dash-donut-pct { display: block; font-family: var(--hop-font-display); font-size: 1.7rem; font-weight: 800; color: var(--hop-text); }
+.hop-dash-donut-lbl { font-size: 0.65rem; color: var(--hop-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.hop-dash-legend { display: flex; flex-direction: column; gap: 0.5rem; }
+.hop-dash-legend__item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--hop-muted); }
+.hop-dash-legend__dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+.hop-dash-bar-chart { display: flex; flex-direction: column; gap: 0.9rem; }
+.hop-dash-bar-row { display: flex; flex-direction: column; gap: 4px; }
+.hop-dash-bar-lbl { font-size: 0.72rem; color: var(--hop-muted); }
+.hop-dash-bar-track { height: 9px; background: rgba(255, 255, 255, 0.06); border-radius: 10px; overflow: hidden; }
+.hop-dash-bar-fill { height: 100%; border-radius: 10px; }
+.hop-dash-bar-val { font-size: 0.72rem; font-weight: 600; color: var(--hop-muted); }
+.hop-dash-bar-val--green { color: var(--hop-cyan); }
+
+.hop-dash-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.hop-dash-strip-card { background: var(--hop-panel); border: 1px solid var(--hop-border); border-radius: 12px; padding: 1rem; text-align: center; }
+.hop-dash-strip-card__num { font-family: var(--hop-font-display); font-size: 1.35rem; font-weight: 800; color: var(--hop-indigo); }
+.hop-dash-strip-card__lbl { font-size: 0.68rem; color: var(--hop-muted); line-height: 1.3; }
+
+.hop-dash-insight { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.hop-dash-kpi-card { background: var(--hop-panel-2); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 1rem; }
+.hop-dash-kpi-card--highlight { background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.1)); }
+.hop-dash-kpi-num { font-family: var(--hop-font-display); font-size: 1.3rem; font-weight: 800; background: linear-gradient(90deg, var(--hop-indigo), var(--hop-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hop-dash-kpi-card--highlight .hop-dash-kpi-num { font-size: 0.95rem; }
+.hop-dash-kpi-lbl { font-size: 0.75rem; color: var(--hop-muted); margin: 0.2rem 0 0; }
+
+@media (max-width: 800px) {
+  .hop-dash-chart-grid, .hop-dash-insight { grid-template-columns: 1fr; }
+  .hop-dash-strip { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── How it works ───────────────────────────── */
+.hop-dash-steps { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.hop-dash-step { flex: 1; min-width: 140px; background: var(--hop-panel); border: 1px solid var(--hop-border); border-radius: 12px; padding: 1rem; text-align: center; }
+.hop-dash-step__icon { font-size: 1.3rem; margin-bottom: 0.4rem; display: block; }
+.hop-dash-step__num { font-size: 0.65rem; font-weight: 700; color: var(--hop-indigo); letter-spacing: 0.08em; }
+.hop-dash-step__title { font-size: 0.88rem; font-weight: 700; color: var(--hop-text); margin: 0.2rem 0; }
+.hop-dash-step__desc { font-size: 0.75rem; color: var(--hop-muted); line-height: 1.4; margin: 0; }
+
+.hop-dash-ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.hop-dash-ba-card { background: var(--hop-panel); border-radius: 12px; padding: 1.25rem; }
+.hop-dash-ba-card--before { border: 1px solid rgba(239, 68, 68, 0.2); }
+.hop-dash-ba-card--after { border: 1px solid rgba(6, 182, 212, 0.2); }
+.hop-dash-ba-card__hd { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.85rem; margin-bottom: 0.75rem; }
+.hop-dash-ba-card--before .hop-dash-ba-card__hd { color: #ef4444; }
+.hop-dash-ba-card--after .hop-dash-ba-card__hd { color: var(--hop-cyan); }
+.hop-dash-ba-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.hop-dash-ba-list li { font-size: 0.78rem; color: var(--hop-muted); padding-left: 18px; position: relative; }
+.hop-dash-ba-card--before .hop-dash-ba-list li::before { content: '✗'; position: absolute; left: 0; color: #ef4444; font-size: 0.7rem; }
+.hop-dash-ba-card--after .hop-dash-ba-list li::before { content: '✓'; position: absolute; left: 0; color: var(--hop-cyan); font-size: 0.7rem; }
+
+@media (max-width: 700px) {
+  .hop-dash-ba-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Services overview ──────────────────────── */
+.hop-dash-svc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.hop-dash-svc-card { background: var(--hop-panel); border: 1px solid var(--hop-border); border-radius: 14px; padding: 1.25rem; }
+.hop-dash-svc-card__icon { font-size: 1.2rem; color: var(--hop-indigo); margin-bottom: 0.5rem; display: block; }
+.hop-dash-svc-card__title { font-size: 0.9rem; font-weight: 700; color: var(--hop-text); margin: 0 0 0.4rem; }
+.hop-dash-svc-card__desc { font-size: 0.78rem; color: var(--hop-muted); line-height: 1.5; margin: 0; }
+
+/* ── Feature highlights ─────────────────────── */
+.hop-dash-feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.hop-dash-feature-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 14px; padding: 1.25rem; }
+.hop-dash-feature-card__icon { font-size: 1.4rem; margin-bottom: 0.6rem; display: block; }
+.hop-dash-feature-card__title { font-size: 0.92rem; font-weight: 700; color: var(--hop-text); margin: 0 0 0.35rem; }
+.hop-dash-feature-card__desc { font-size: 0.8rem; color: var(--hop-muted); line-height: 1.5; margin: 0; }
+
+/* ── About / story ──────────────────────────── */
+.hop-dash-story-lead {
+  font-size: 0.95rem;
+  color: var(--hop-text);
+  line-height: 1.7;
+  font-style: italic;
+  border-left: 3px solid var(--hop-indigo);
+  padding-left: 1rem;
+  margin: 0 0 1rem;
+}
+.hop-dash-para { font-size: 0.85rem; color: var(--hop-muted); line-height: 1.65; margin: 0 0 0.85rem; }
+.hop-dash-moment {
+  display: flex;
+  gap: 0.85rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+.hop-dash-moment__icon { font-size: 1.3rem; flex-shrink: 0; }
+.hop-dash-moment p { font-size: 0.88rem; color: var(--hop-text); line-height: 1.6; margin: 0; }
+.hop-dash-moment strong { color: #a5b4fc; }
+.hop-dash-badges { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.25rem; }
+.hop-dash-badge-item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--hop-muted); }

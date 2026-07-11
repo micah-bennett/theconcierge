@@ -4,11 +4,15 @@
 .hop-auth-page {
   --hop-bg: #0d0f1a;
   --hop-panel: #161a2c;
+  --hop-panel-2: #1a1a2e;
   --hop-border: rgba(255, 255, 255, 0.1);
   --hop-indigo: #6366f1;
   --hop-violet: #8b5cf6;
+  --hop-cyan: #06b6d4;
   --hop-text: rgba(255, 255, 255, 0.92);
   --hop-muted: rgba(255, 255, 255, 0.58);
+  --hop-radius-lg: 20px;
+  --hop-font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--hop-text);
 }
