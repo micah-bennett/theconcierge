@@ -47,13 +47,15 @@ working, unrelated code.
 
 - `/hop` — the existing marketing page (`src/pages/HopPage.tsx`), untouched except for a
   login/signup CTA in the hero.
-- `/hop/login`, `/hop/signup`, `/hop/admin/login` — auth pages, public.
+- `/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/forgot-password`, `/hop/reset-password`
+  — auth pages, public.
 - `/hop/app/*` — authenticated **user** portal (`src/pages/hop/app/`), behind `RequireAuth`.
 - `/hop/admin/*` — authenticated **admin** portal (`src/pages/hop/admin/`), behind `RequireAdmin`.
 
 Auth state lives in `src/hop/AuthContext.tsx`, scoped to a layout route that wraps only the
-`/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/app/*`, `/hop/admin/*` subtree — so
-loading the marketing site (including plain `/hop`) never triggers a session check.
+`/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/forgot-password`, `/hop/reset-password`,
+`/hop/app/*`, `/hop/admin/*` subtree — so loading the marketing site (including plain `/hop`)
+never triggers a session check.
 
 ## Dashboard "sell" content (`src/hop/dashboard/`)
 
@@ -76,8 +78,37 @@ from a reverted public-homepage redesign (see `mvp-scope.md`) — reuse or exten
 - Two roles, `user` and `admin`, on the same `hop_users` table — not separate tables. There is
   no self-serve admin signup; admin accounts are created with `scripts/create-hop-admin.mjs`.
 - Basic brute-force protection: after 8 failed logins, an account locks for 15 minutes
-  (`hop_users.failed_login_attempts` / `locked_until`). No IP-based rate limiting yet, and no
-  password-reset flow yet — both are reasonable follow-ups, not built in this pass.
+  (`hop_users.failed_login_attempts` / `locked_until`). No IP-based rate limiting yet.
+- Password reset: `hop_password_resets` (id, user_id, token_hash, expires_at, used_at). Same
+  "store the hash, not the raw token" pattern as sessions — `createPasswordResetToken` /
+  `consumePasswordResetToken` in `hopAuth.ts`, dispatched via `api/hop/auth.ts`'s
+  `?action=forgot-password|reset-password` (no new top-level function). Tokens expire after 30
+  minutes and are single-use (`used_at`). `forgot-password` always returns the same generic
+  message regardless of whether the email matched an account, to avoid leaking which emails have
+  HOP accounts. A successful reset destroys *all* of that user's existing sessions
+  (`destroyAllSessions`), forcing re-login everywhere. Requires `RESEND_API_KEY` to actually
+  deliver the email — without it, the token is still created but the email send fails silently
+  (logged, not thrown) so the generic response is unaffected.
+
+## Theme (dark/light)
+
+- `src/hop/ThemeContext.tsx` (`HopThemeProvider`) + `useHopTheme()` — `localStorage`-backed
+  (`hop-theme`), defaults to `dark`. Renders a `<div data-hop-theme="dark|light">` wrapper around
+  everything inside the HOP route tree (both the auth pages and the authenticated app/admin
+  shells sit inside it).
+- Scope is deliberately narrow: **HOP app + admin only**. The public marketing site keeps its
+  fixed dark "cinematic canvas" design — it has no theme toggle and isn't wrapped in
+  `HopThemeProvider`.
+- `src/styles/hopApp.css` defines the base (dark) values for the `--hop-*` custom properties on
+  `.hop-shell, .hop-auth-page`, plus a `[data-hop-theme='light'] .hop-shell, [data-hop-theme='light']
+  .hop-auth-page` block overriding them for light mode. Every HOP rule should read colors via
+  `var(--hop-*)` — never hardcode a hex/rgba color in HOP CSS — so the whole app (core pages +
+  the componentized dashboard sections) reskins for free. Watch out for bare `h1`/`h2` elements:
+  the marketing site's global `index.css` sets `h1, h2 { color: var(--text-h) }`, and `--text-h`
+  follows the *browser's* OS color-scheme preference, not HOP's own toggle — any HOP heading needs
+  its own explicit `color: var(--hop-text)` (see `.hop-auth-card__title`, `.hop-page-title`,
+  `.hop-card h2`) or it'll silently ignore the HOP theme.
+- Toggle buttons live in `HopAppLayout.tsx` and `HopAdminLayout.tsx`, next to "Log out".
 
 ## Integrations model
 
@@ -89,3 +120,39 @@ from a reverted public-homepage redesign (see `mvp-scope.md`) — reuse or exten
 - The other providers exist only so the UI (`HopIntegrationsPage.tsx`) can render a consistent
   "connect this" card per provider; their connect buttons are disabled ("Coming soon") and hit
   no API. `hop_wearable_metrics` exists in the schema but nothing writes to it yet.
+
+## Deployments
+
+There are **two** Vercel projects sharing this one GitHub repo and this one Neon database. Don't
+try to merge them back into one — the whole point is that staff/admin gets its own domain,
+decoupled from the consumer-facing product, as the seed of a future standalone ERP.
+
+- **`theconcierge`** (`ay-projects3/theconcierge`, production domain `theconcierge.life`) — tracks
+  the `main` branch. Full app: public marketing site + consumer HOP signup/login (`/hop/app/*`) +
+  admin portal (`/hop/admin/*`).
+- **`theconcierge-staff`** (`ay-projects3/theconcierge-staff`, `theconcierge-staff.vercel.app` for
+  now — no custom domain attached yet) — tracks the `staff-portal` branch. `src/App.tsx` on this
+  branch is trimmed down to admin/staff only: `/hop/admin/login`, the `RequireAdmin` → `/hop/admin/*`
+  tree, and the shared `/hop/forgot-password` + `/hop/reset-password` routes. Every other path
+  (`/`, `/hop`, `/hop/login`, `/hop/signup`, `/hop/app/*`, marketing pages) redirects to
+  `/hop/admin/login`. `api/**` is untouched and identical on both branches/deployments — same
+  Vercel Functions, same `DATABASE_URL`, so admin accounts, sessions, and data are consistent
+  across both domains. Env vars (`DATABASE_URL`, `SESSION_HASH_SECRET`) were copied over from the
+  main project; `RESEND_API_KEY` still needs to be added to `theconcierge-staff` in the Vercel
+  dashboard for password-reset emails to actually send there (the token still gets created
+  without it — see the password-reset note above — it just won't be emailed).
+- Keeping `staff-portal` in sync: it's based on `main` as of the branch-creation commit. Any
+  future `api/**`, `hop/AuthContext.tsx`/`RequireAuth.tsx`/theme/CSS change made on `main` that
+  should also apply to staff/admin needs to be merged or cherry-picked into `staff-portal`
+  manually — the branches are not auto-synced. `src/App.tsx` is the one file that's *expected* to
+  permanently diverge between the two branches (full routes vs. trimmed admin-only routes); don't
+  try to reconcile it.
+- Deploying `staff-portal`: pushing to the branch alone does not yet auto-deploy — the
+  `theconcierge-staff` Vercel project's **Production Branch** still needs to be set to
+  `staff-portal` in that project's dashboard (Settings → Git → Production Branch; it currently
+  defaults to `main` since that's the repo's default branch, and the Vercel CLI has no
+  non-interactive way to change it). Until that's flipped, deploy manually from a worktree:
+  `git worktree add ../staff-portal-worktree staff-portal && cd ../staff-portal-worktree && npx
+  vercel link --project theconcierge-staff --yes && npx vercel deploy --prod --yes` (do this from
+  a worktree, not the main checkout, so `.vercel/project.json` in the primary working directory
+  never gets repointed away from the `theconcierge` project).
