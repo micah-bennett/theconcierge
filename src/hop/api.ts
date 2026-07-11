@@ -43,19 +43,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function hopSignup(data: { email: string; password: string; firstName: string; lastName: string }) {
-  return request<{ user: HopUser }>('/auth/signup', { method: 'POST', body: JSON.stringify(data) })
+  return request<{ user: HopUser }>('/auth?action=signup', { method: 'POST', body: JSON.stringify(data) })
 }
 
 export function hopLogin(data: { email: string; password: string }) {
-  return request<{ user: HopUser }>('/auth/login', { method: 'POST', body: JSON.stringify(data) })
+  return request<{ user: HopUser }>('/auth?action=login', { method: 'POST', body: JSON.stringify(data) })
 }
 
 export function hopLogout() {
-  return request<{ ok: true }>('/auth/logout', { method: 'POST' })
+  return request<{ ok: true }>('/auth?action=logout', { method: 'POST' })
 }
 
 export function hopMe() {
-  return request<{ user: HopUser }>('/auth/me')
+  return request<{ user: HopUser }>('/auth?action=me')
 }
 
 export function hopListRequests() {
@@ -67,9 +67,9 @@ export function hopCreateRequest(data: { serviceType: string; details: string; r
 }
 
 export function hopUpdateRequestStatus(id: string, status: string) {
-  return request<{ request: HopServiceRequest }>(`/requests/${id}`, {
+  return request<{ request: HopServiceRequest }>('/requests', {
     method: 'PATCH',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ id, status }),
   })
 }
 
@@ -78,11 +78,11 @@ export function hopListIntegrations() {
 }
 
 export function hopDisconnectGoogleCalendar() {
-  return request<{ ok: true }>('/integrations/google/disconnect', { method: 'POST' })
+  return request<{ ok: true }>('/integrations/google?action=disconnect', { method: 'POST' })
 }
 
 export function hopGoogleCalendarEvents() {
-  return request<{ connected: boolean; events: HopCalendarEvent[] }>('/integrations/google/events')
+  return request<{ connected: boolean; events: HopCalendarEvent[] }>('/integrations/google?action=events')
 }
 
 export type HopAdminUser = {
@@ -101,7 +101,7 @@ export function hopAdminListUsers() {
 }
 
 export function hopAdminUpdateUserStatus(id: string, status: 'active' | 'disabled') {
-  return request<{ user: HopAdminUser }>(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })
+  return request<{ user: HopAdminUser }>('/admin/users', { method: 'PATCH', body: JSON.stringify({ id, status }) })
 }
 
 export type HopAdminRequest = HopServiceRequest & {

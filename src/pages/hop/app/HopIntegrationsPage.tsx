@@ -87,7 +87,7 @@ export function HopIntegrationsPage() {
                 ) : info?.live ? (
                   <>
                     <p className="hop-muted">See upcoming events right on your dashboard.</p>
-                    <a className="hop-btn-primary" href="/api/hop/integrations/google/start">
+                    <a className="hop-btn-primary" href="/api/hop/integrations/google?action=start">
                       Connect
                     </a>
                   </>

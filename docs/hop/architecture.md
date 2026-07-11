@@ -10,8 +10,15 @@ how it might look eventually — check `mvp-scope.md` for what's real vs. stubbe
   BEM-ish class names (e.g. `hop-page`, `hop-service-card__ico`).
 - **Backend**: Vercel Functions under `api/`, written as Web-standard handlers
   (`export async function POST(request: Request): Promise<Response>`), not Node
-  `req`/`res` handlers. File-system routing: `api/foo.ts` → `/api/foo`,
-  `api/foo/[id].ts` → `/api/foo/:id`.
+  `req`/`res` handlers. File-system routing: `api/foo.ts` → `/api/foo`.
+  **Avoid dynamic segments** (`api/foo/[id].ts`): `vercel.json`'s SPA catch-all rewrite
+  (`"/(.*)" -> "/index.html"`) wins over bracket routes in both `vercel dev` and real
+  production on this project, so a request to `/api/foo/123` silently returns the SPA's
+  `index.html` instead of hitting the function. Pass an `id`/`action` via a query string or
+  the request body on a flat file instead (see `api/hop/auth.ts`'s `?action=` dispatch and
+  `api/hop/requests.ts`'s body-based `PATCH`). This also matters for the Hobby-plan
+  12-Serverless-Function cap — flat, multi-action files keep the function count down
+  (currently 8 HOP functions + the original 2).
 - **Database**: Neon serverless Postgres via `@neondatabase/serverless`'s `neon()` tagged-template
   client. One schema file, `db/schema.sql`, written idempotently (`CREATE TABLE IF NOT EXISTS`,
   `ADD COLUMN IF NOT EXISTS`, etc.) and applied with `npm run db:migrate`.
@@ -65,9 +72,9 @@ loading the marketing site (including plain `/hop`) never triggers a session che
 
 - `hop_integrations` holds one row per (user, provider). `provider` is an open set today:
   `google_calendar`, `fitbit`, `oura`, `apple_health`, `garmin`.
-- Only `google_calendar` is real: OAuth handled in `api/hop/integrations/google/*` using plain
-  `fetch` against Google's OAuth2 + Calendar v3 REST endpoints (no `googleapis` SDK, to keep
-  Vercel function bundles small).
+- Only `google_calendar` is real: OAuth handled in `api/hop/integrations/google.ts` (one flat
+  file, `?action=start|callback|disconnect|events`) using plain `fetch` against Google's OAuth2 +
+  Calendar v3 REST endpoints (no `googleapis` SDK, to keep Vercel function bundles small).
 - The other providers exist only so the UI (`HopIntegrationsPage.tsx`) can render a consistent
   "connect this" card per provider; their connect buttons are disabled ("Coming soon") and hit
   no API. `hop_wearable_metrics` exists in the schema but nothing writes to it yet.

@@ -1,4 +1,4 @@
-import { dbUnavailable, getSql } from '../../_lib/hopDb.js'
+import { dbUnavailable, getSql } from '../_lib/hopDb.js'
 import {
   checkLoginLock,
   clearSessionCookie,
@@ -13,11 +13,10 @@ import {
   setSessionCookie,
   toPublicUser,
   verifyPassword,
-} from '../../_lib/hopAuth.js'
+} from '../_lib/hopAuth.js'
 
 function actionFromUrl(request: Request): string {
-  const segments = new URL(request.url).pathname.split('/').filter(Boolean)
-  return segments[segments.length - 1] || ''
+  return new URL(request.url).searchParams.get('action') || ''
 }
 
 type SignupPayload = { email: string; password: string; firstName: string; lastName: string }

@@ -1,9 +1,11 @@
 import { dbUnavailable, getSql } from '../_lib/hopDb.js'
-import { isResponse, json, requireUser } from '../_lib/hopAuth.js'
+import { isResponse, json, requireAdmin, requireUser } from '../_lib/hopAuth.js'
 
 const SERVICE_TYPES = ['ride', 'meal', 'errand', 'wellness', 'family_home', 'other'] as const
+const STATUSES = ['submitted', 'in_progress', 'completed', 'cancelled'] as const
 
 type ServiceType = (typeof SERVICE_TYPES)[number]
+type Status = (typeof STATUSES)[number]
 
 function validate(value: unknown): { serviceType: ServiceType; details: string; requestedFor: string | null } {
   if (!value || typeof value !== 'object') throw new Error('Invalid request body')
@@ -67,5 +69,37 @@ export async function POST(request: Request): Promise<Response> {
     const status = /Choose|too long|valid/i.test(message) ? 400 : 500
     if (status === 500) console.error('HOP request submission failed', error)
     return json({ error: status === 400 ? message : 'Could not submit the request' }, status)
+  }
+}
+
+export async function PATCH(request: Request): Promise<Response> {
+  const sql = getSql()
+  if (!sql) return dbUnavailable()
+
+  const admin = await requireAdmin(sql, request)
+  if (isResponse(admin)) return admin
+
+  try {
+    const body = (await request.json()) as { id?: unknown; status?: unknown }
+    const id = body.id
+    const status = body.status
+    if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid request id')
+    if (typeof status !== 'string' || !STATUSES.includes(status as Status)) {
+      throw new Error('Choose a valid status')
+    }
+
+    const rows = await sql`
+      UPDATE hop_service_requests
+      SET status = ${status}, handled_by = ${admin.id}, updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING id, service_type, status, details, requested_for, created_at, updated_at
+    `
+    if (rows.length === 0) return json({ error: 'Request not found' }, 404)
+    return json({ request: rows[0] })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not update the request'
+    const status = /Choose a valid|Invalid request id/i.test(message) ? 400 : 500
+    if (status === 500) console.error('HOP request update failed', error)
+    return json({ error: status === 400 ? message : 'Could not update the request' }, status)
   }
 }

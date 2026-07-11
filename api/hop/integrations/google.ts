@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { dbUnavailable, getSql } from '../../../_lib/hopDb.js'
+import { dbUnavailable, getSql } from '../../_lib/hopDb.js'
 import {
   clearOAuthStateCookie,
   getSessionUser,
@@ -8,18 +8,17 @@ import {
   readOAuthStateCookie,
   requireUser,
   setOAuthStateCookie,
-} from '../../../_lib/hopAuth.js'
+} from '../../_lib/hopAuth.js'
 import {
   buildGoogleAuthUrl,
   exchangeGoogleCode,
   getGoogleConfig,
   listUpcomingEvents,
   refreshGoogleAccessToken,
-} from '../../../_lib/googleCalendar.js'
+} from '../../_lib/googleCalendar.js'
 
 function actionFromUrl(request: Request): string {
-  const segments = new URL(request.url).pathname.split('/').filter(Boolean)
-  return segments[segments.length - 1] || ''
+  return new URL(request.url).searchParams.get('action') || ''
 }
 
 async function handleStart(request: Request): Promise<Response> {
