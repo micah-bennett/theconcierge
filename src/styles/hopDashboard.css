@@ -80,7 +80,7 @@
 .hop-dash-bar-chart { display: flex; flex-direction: column; gap: 0.9rem; }
 .hop-dash-bar-row { display: flex; flex-direction: column; gap: 4px; }
 .hop-dash-bar-lbl { font-size: 0.72rem; color: var(--hop-muted); }
-.hop-dash-bar-track { height: 9px; background: rgba(255, 255, 255, 0.06); border-radius: 10px; overflow: hidden; }
+.hop-dash-bar-track { height: 9px; background: var(--hop-overlay-strong); border-radius: 10px; overflow: hidden; }
 .hop-dash-bar-fill { height: 100%; border-radius: 10px; }
 .hop-dash-bar-val { font-size: 0.72rem; font-weight: 600; color: var(--hop-muted); }
 .hop-dash-bar-val--green { color: var(--hop-cyan); }
@@ -91,7 +91,7 @@
 .hop-dash-strip-card__lbl { font-size: 0.68rem; color: var(--hop-muted); line-height: 1.3; }
 
 .hop-dash-insight { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-.hop-dash-kpi-card { background: var(--hop-panel-2); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 1rem; }
+.hop-dash-kpi-card { background: var(--hop-panel-2); border: 1px solid var(--hop-overlay-strong); border-radius: 12px; padding: 1rem; }
 .hop-dash-kpi-card--highlight { background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.1)); }
 .hop-dash-kpi-num { font-family: var(--hop-font-display); font-size: 1.3rem; font-weight: 800; background: linear-gradient(90deg, var(--hop-indigo), var(--hop-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .hop-dash-kpi-card--highlight .hop-dash-kpi-num { font-size: 0.95rem; }
@@ -135,7 +135,7 @@
 
 /* ── Feature highlights ─────────────────────── */
 .hop-dash-feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-.hop-dash-feature-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 14px; padding: 1.25rem; }
+.hop-dash-feature-card { background: var(--hop-overlay); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 14px; padding: 1.25rem; }
 .hop-dash-feature-card__icon { font-size: 1.4rem; margin-bottom: 0.6rem; display: block; }
 .hop-dash-feature-card__title { font-size: 0.92rem; font-weight: 700; color: var(--hop-text); margin: 0 0 0.35rem; }
 .hop-dash-feature-card__desc { font-size: 0.8rem; color: var(--hop-muted); line-height: 1.5; margin: 0; }
@@ -162,6 +162,6 @@
 }
 .hop-dash-moment__icon { font-size: 1.3rem; flex-shrink: 0; }
 .hop-dash-moment p { font-size: 0.88rem; color: var(--hop-text); line-height: 1.6; margin: 0; }
-.hop-dash-moment strong { color: #a5b4fc; }
+.hop-dash-moment strong { color: var(--hop-link); }
 .hop-dash-badges { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.25rem; }
 .hop-dash-badge-item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--hop-muted); }

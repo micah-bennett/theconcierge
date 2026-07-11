@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useHopAuth } from './useHopAuth'
+import { useHopTheme } from './useHopTheme'
 
 const NAV_ITEMS = [
   { to: '/hop/admin', label: 'Overview', end: true },
@@ -10,6 +11,7 @@ const NAV_ITEMS = [
 
 export function HopAdminLayout() {
   const { user, logout } = useHopAuth()
+  const { theme, toggleTheme } = useHopTheme()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -37,6 +39,14 @@ export function HopAdminLayout() {
           <span className="hop-shell__user-name">
             {user?.firstName} {user?.lastName}
           </span>
+          <button
+            type="button"
+            className="hop-shell__theme-toggle"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode'}
+          </button>
           <button type="button" className="hop-shell__logout" onClick={handleLogout}>
             Log out
           </button>

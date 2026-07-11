@@ -6,6 +6,7 @@ import { ownerNotificationTemplate } from './emailTemplates/ownerNotification.js
 import { customerConfirmationTemplate } from './emailTemplates/customerConfirmation.js'
 import { reliefOwnerNotificationTemplate } from './emailTemplates/reliefOwnerNotification.js'
 import { hopWelcomeTemplate } from './emailTemplates/hopWelcome.js'
+import { hopPasswordResetTemplate } from './emailTemplates/hopPasswordReset.js'
 
 const FROM = 'The Concierge <requests@theconcierge.life>'
 const REPLY_TO = 'micah@hvconcierge.com'
@@ -84,4 +85,19 @@ export async function sendHopWelcomeEmail(email: string, firstName: string): Pro
     html: hopWelcomeTemplate(firstName),
   })
   if (error) throw new Error(`HOP welcome email failed: ${error.message}`)
+}
+
+export async function sendHopPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY?.trim()
+  if (!apiKey) throw new Error('RESEND_API_KEY is not configured')
+
+  const resend = new Resend(apiKey)
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: email,
+    replyTo: REPLY_TO,
+    subject: 'Reset your HOP password',
+    html: hopPasswordResetTemplate(resetUrl),
+  })
+  if (error) throw new Error(`HOP password reset email failed: ${error.message}`)
 }

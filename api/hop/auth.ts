@@ -1,9 +1,12 @@
 import { dbUnavailable, getSql } from '../_lib/hopDb.js'
-import { sendHopWelcomeEmail } from '../_lib/email.js'
+import { sendHopPasswordResetEmail, sendHopWelcomeEmail } from '../_lib/email.js'
 import {
   checkLoginLock,
   clearSessionCookie,
+  consumePasswordResetToken,
+  createPasswordResetToken,
   createSession,
+  destroyAllSessions,
   destroySession,
   getSessionUser,
   hashPassword,
@@ -137,6 +140,78 @@ async function handleLogin(request: Request): Promise<Response> {
   }
 }
 
+const GENERIC_RESET_MESSAGE = 'If an account exists for that email, we’ve sent a reset link.'
+
+function validateEmail(value: unknown): string {
+  const email = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address')
+  return email
+}
+
+async function handleForgotPassword(request: Request): Promise<Response> {
+  const sql = getSql()
+  if (!sql) return dbUnavailable()
+
+  try {
+    const body = (await request.json()) as { email?: unknown }
+    const email = validateEmail(body.email)
+
+    const rows = await sql`
+      SELECT id, first_name FROM hop_users WHERE LOWER(email) = ${email} AND status = 'active'
+    `
+    const row = rows[0] as { id: string; first_name: string } | undefined
+
+    if (row) {
+      const token = await createPasswordResetToken(sql, row.id)
+      const origin = new URL(request.url).origin
+      const resetUrl = `${origin}/hop/reset-password?token=${token}`
+      try {
+        await sendHopPasswordResetEmail(email, resetUrl)
+      } catch (error) {
+        console.error('HOP password reset email failed', {
+          userId: row.id,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
+    // Always the same response — don't leak whether the email matched an account.
+    return json({ message: GENERIC_RESET_MESSAGE })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not process that request'
+    const status = /Enter a valid email/i.test(message) ? 400 : 500
+    if (status === 500) console.error('HOP forgot-password failed', error)
+    return json({ error: status === 400 ? message : 'Could not process that request' }, status)
+  }
+}
+
+async function handleResetPassword(request: Request): Promise<Response> {
+  const sql = getSql()
+  if (!sql) return dbUnavailable()
+
+  try {
+    const body = (await request.json()) as { token?: unknown; password?: unknown }
+    const token = typeof body.token === 'string' ? body.token : ''
+    const password = typeof body.password === 'string' ? body.password : ''
+    if (!token) throw new Error('Missing reset token')
+    if (password.length < 10 || password.length > 200) throw new Error('Password must be at least 10 characters')
+
+    const userId = await consumePasswordResetToken(sql, token)
+    if (!userId) return json({ error: 'This reset link is invalid or has expired' }, 400)
+
+    const passwordHash = await hashPassword(password)
+    await sql`UPDATE hop_users SET password_hash = ${passwordHash}, updated_at = NOW() WHERE id = ${userId}`
+    await destroyAllSessions(sql, userId)
+
+    return json({ ok: true })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not reset your password'
+    const status = /Missing reset token|must be at least/i.test(message) ? 400 : 500
+    if (status === 500) console.error('HOP reset-password failed', error)
+    return json({ error: status === 400 ? message : 'Could not reset your password' }, status)
+  }
+}
+
 async function handleLogout(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
@@ -162,6 +237,10 @@ export async function POST(request: Request): Promise<Response> {
       return handleLogin(request)
     case 'logout':
       return handleLogout(request)
+    case 'forgot-password':
+      return handleForgotPassword(request)
+    case 'reset-password':
+      return handleResetPassword(request)
     default:
       return json({ error: 'Not found' }, 404)
   }

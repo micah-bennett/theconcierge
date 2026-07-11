@@ -16,6 +16,7 @@ const SESSION_COOKIE = 'hop_session'
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 const MAX_FAILED_ATTEMPTS = 8
 const LOCKOUT_MS = 15 * 60 * 1000 // 15 minutes
+const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000 // 30 minutes
 
 type Sql = NeonQueryFunction<false, false>
 
@@ -119,6 +120,32 @@ export async function destroySession(sql: Sql, request: Request): Promise<void> 
   const token = readSessionToken(request)
   if (!token) return
   await sql`DELETE FROM hop_sessions WHERE token_hash = ${hashToken(token)}`
+}
+
+export async function destroyAllSessions(sql: Sql, userId: string): Promise<void> {
+  await sql`DELETE FROM hop_sessions WHERE user_id = ${userId}`
+}
+
+export async function createPasswordResetToken(sql: Sql, userId: string): Promise<string> {
+  const token = randomBytes(32).toString('hex')
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS).toISOString()
+  await sql`
+    INSERT INTO hop_password_resets (user_id, token_hash, expires_at)
+    VALUES (${userId}, ${hashToken(token)}, ${expiresAt})
+  `
+  return token
+}
+
+export async function consumePasswordResetToken(sql: Sql, rawToken: string): Promise<string | null> {
+  const rows = await sql`
+    SELECT id, user_id FROM hop_password_resets
+    WHERE token_hash = ${hashToken(rawToken)} AND expires_at > NOW() AND used_at IS NULL
+  `
+  const row = rows[0] as { id: string; user_id: string } | undefined
+  if (!row) return null
+
+  await sql`UPDATE hop_password_resets SET used_at = NOW() WHERE id = ${row.id}`
+  return row.user_id
 }
 
 export async function getSessionUser(sql: Sql, request: Request): Promise<HopUser | null> {

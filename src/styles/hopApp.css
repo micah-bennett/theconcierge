@@ -6,15 +6,35 @@
   --hop-panel: #161a2c;
   --hop-panel-2: #1a1a2e;
   --hop-border: rgba(255, 255, 255, 0.1);
+  --hop-border-hover: rgba(255, 255, 255, 0.25);
+  --hop-overlay: rgba(255, 255, 255, 0.04);
+  --hop-overlay-strong: rgba(255, 255, 255, 0.08);
   --hop-indigo: #6366f1;
   --hop-violet: #8b5cf6;
   --hop-cyan: #06b6d4;
   --hop-text: rgba(255, 255, 255, 0.92);
   --hop-muted: rgba(255, 255, 255, 0.58);
+  --hop-hint: rgba(255, 255, 255, 0.4);
+  --hop-link: #a5b4fc;
   --hop-radius-lg: 20px;
   --hop-font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--hop-text);
+}
+
+[data-hop-theme='light'] .hop-shell,
+[data-hop-theme='light'] .hop-auth-page {
+  --hop-bg: #f4f5fb;
+  --hop-panel: #ffffff;
+  --hop-panel-2: #eef0fa;
+  --hop-border: rgba(15, 23, 42, 0.1);
+  --hop-border-hover: rgba(15, 23, 42, 0.25);
+  --hop-overlay: rgba(15, 23, 42, 0.03);
+  --hop-overlay-strong: rgba(15, 23, 42, 0.06);
+  --hop-text: rgba(15, 23, 42, 0.92);
+  --hop-muted: rgba(15, 23, 42, 0.58);
+  --hop-hint: rgba(15, 23, 42, 0.4);
+  --hop-link: #4f46e5;
 }
 
 .hop-app-loading {
@@ -22,8 +42,8 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  color: rgba(255, 255, 255, 0.6);
-  background: #0d0f1a;
+  color: var(--hop-muted, rgba(255, 255, 255, 0.6));
+  background: var(--hop-bg, #0d0f1a);
 }
 
 /* ── Auth pages ─────────────────────────────── */
@@ -59,6 +79,7 @@
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
+  color: var(--hop-text);
 }
 
 .hop-auth-card__sub {
@@ -83,7 +104,7 @@
 }
 
 .hop-auth-card__footer a {
-  color: #a5b4fc;
+  color: var(--hop-link);
 }
 
 .hop-auth-card__footer--muted {
@@ -111,7 +132,7 @@
   font-family: inherit;
   font-size: 0.95rem;
   color: var(--hop-text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hop-overlay);
   border: 1px solid var(--hop-border);
   border-radius: 8px;
   padding: 0.65rem 0.8rem;
@@ -126,7 +147,7 @@
 
 .hop-field__hint {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--hop-hint);
 }
 
 /* ── App shell ──────────────────────────────── */
@@ -170,7 +191,7 @@
 }
 
 .hop-shell__nav-link:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--hop-overlay);
   color: var(--hop-text);
 }
 
@@ -196,11 +217,26 @@
   align-self: flex-start;
   background: none;
   border: none;
-  color: #a5b4fc;
+  color: var(--hop-link);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
+}
+
+.hop-shell__theme-toggle {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--hop-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.hop-shell__theme-toggle:hover {
+  color: var(--hop-text);
 }
 
 .hop-shell__content {
@@ -221,6 +257,7 @@
   margin: 0;
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 800;
+  color: var(--hop-text);
 }
 
 .hop-page-sub {
@@ -242,6 +279,7 @@
 .hop-card h2 {
   margin: 0;
   font-size: 1.05rem;
+  color: var(--hop-text);
 }
 
 .hop-card__header {
@@ -252,7 +290,7 @@
 }
 
 .hop-card__header a {
-  color: #a5b4fc;
+  color: var(--hop-link);
   font-size: 0.85rem;
   text-decoration: none;
 }
@@ -288,7 +326,7 @@
 
 .hop-quick-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--hop-border-hover);
 }
 
 .hop-quick-card__icon {
@@ -345,7 +383,7 @@
 }
 
 .hop-table select {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hop-overlay);
   color: var(--hop-text);
   border: 1px solid var(--hop-border);
   border-radius: 6px;
@@ -359,7 +397,7 @@
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: capitalize;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hop-overlay-strong);
 }
 
 .hop-status--active,

@@ -71,6 +71,9 @@ export function HopLoginPage() {
           New to HOP? <Link to="/hop/signup">Create an account</Link>
         </p>
         <p className="hop-auth-card__footer hop-auth-card__footer--muted">
+          <Link to="/hop/forgot-password">Forgot password?</Link>
+        </p>
+        <p className="hop-auth-card__footer hop-auth-card__footer--muted">
           <Link to="/hop/admin/login">Admin sign in</Link>
         </p>
       </form>

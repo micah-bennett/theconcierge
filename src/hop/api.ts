@@ -58,6 +58,20 @@ export function hopMe() {
   return request<{ user: HopUser }>('/auth?action=me')
 }
 
+export function hopForgotPassword(email: string) {
+  return request<{ message: string }>('/auth?action=forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export function hopResetPassword(token: string, password: string) {
+  return request<{ ok: true }>('/auth?action=reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
+  })
+}
+
 export function hopListRequests() {
   return request<{ requests: HopServiceRequest[] }>('/requests')
 }

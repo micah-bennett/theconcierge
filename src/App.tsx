@@ -18,6 +18,8 @@ import { PlansPage } from './pages/PlansPage'
 import { HopLoginPage } from './pages/hop/HopLoginPage'
 import { HopSignupPage } from './pages/hop/HopSignupPage'
 import { HopAdminLoginPage } from './pages/hop/HopAdminLoginPage'
+import { HopForgotPasswordPage } from './pages/hop/HopForgotPasswordPage'
+import { HopResetPasswordPage } from './pages/hop/HopResetPasswordPage'
 import { HopDashboardPage } from './pages/hop/app/HopDashboardPage'
 import { HopRequestsPage } from './pages/hop/app/HopRequestsPage'
 import { HopIntegrationsPage } from './pages/hop/app/HopIntegrationsPage'
@@ -27,6 +29,7 @@ import { HopAdminUsersPage } from './pages/hop/admin/HopAdminUsersPage'
 import { HopAdminRequestsPage } from './pages/hop/admin/HopAdminRequestsPage'
 import { HopAdminIntegrationsPage } from './pages/hop/admin/HopAdminIntegrationsPage'
 import { HopAuthProvider } from './hop/AuthContext'
+import { HopThemeProvider } from './hop/ThemeContext'
 import { RequireAdmin, RequireAuth } from './hop/RequireAuth'
 import { HopAppLayout } from './hop/HopAppLayout'
 import { HopAdminLayout } from './hop/HopAdminLayout'
@@ -92,35 +95,41 @@ function AppRoutes() {
     location.pathname.startsWith('/hop/login') ||
     location.pathname.startsWith('/hop/signup') ||
     location.pathname.startsWith('/hop/admin') ||
-    location.pathname.startsWith('/hop/app')
+    location.pathname.startsWith('/hop/app') ||
+    location.pathname.startsWith('/hop/forgot-password') ||
+    location.pathname.startsWith('/hop/reset-password')
 
   if (isHopAppRoute) {
     return (
-      <HopAuthProvider>
-        <ScrollToTop />
-        <Routes>
-          <Route path="/hop/login" element={<HopLoginPage />} />
-          <Route path="/hop/signup" element={<HopSignupPage />} />
-          <Route path="/hop/admin/login" element={<HopAdminLoginPage />} />
-          <Route element={<RequireAuth />}>
-            <Route path="/hop/app" element={<HopAppLayout />}>
-              <Route index element={<HopDashboardPage />} />
-              <Route path="requests" element={<HopRequestsPage />} />
-              <Route path="integrations" element={<HopIntegrationsPage />} />
-              <Route path="profile" element={<HopProfilePage />} />
+      <HopThemeProvider>
+        <HopAuthProvider>
+          <ScrollToTop />
+          <Routes>
+            <Route path="/hop/login" element={<HopLoginPage />} />
+            <Route path="/hop/signup" element={<HopSignupPage />} />
+            <Route path="/hop/admin/login" element={<HopAdminLoginPage />} />
+            <Route path="/hop/forgot-password" element={<HopForgotPasswordPage />} />
+            <Route path="/hop/reset-password" element={<HopResetPasswordPage />} />
+            <Route element={<RequireAuth />}>
+              <Route path="/hop/app" element={<HopAppLayout />}>
+                <Route index element={<HopDashboardPage />} />
+                <Route path="requests" element={<HopRequestsPage />} />
+                <Route path="integrations" element={<HopIntegrationsPage />} />
+                <Route path="profile" element={<HopProfilePage />} />
+              </Route>
             </Route>
-          </Route>
-          <Route element={<RequireAdmin />}>
-            <Route path="/hop/admin" element={<HopAdminLayout />}>
-              <Route index element={<HopAdminDashboardPage />} />
-              <Route path="users" element={<HopAdminUsersPage />} />
-              <Route path="requests" element={<HopAdminRequestsPage />} />
-              <Route path="integrations" element={<HopAdminIntegrationsPage />} />
+            <Route element={<RequireAdmin />}>
+              <Route path="/hop/admin" element={<HopAdminLayout />}>
+                <Route index element={<HopAdminDashboardPage />} />
+                <Route path="users" element={<HopAdminUsersPage />} />
+                <Route path="requests" element={<HopAdminRequestsPage />} />
+                <Route path="integrations" element={<HopAdminIntegrationsPage />} />
+              </Route>
             </Route>
-          </Route>
-          <Route path="*" element={<Navigate to="/hop/app" replace />} />
-        </Routes>
-      </HopAuthProvider>
+            <Route path="*" element={<Navigate to="/hop/app" replace />} />
+          </Routes>
+        </HopAuthProvider>
+      </HopThemeProvider>
     )
   }
 

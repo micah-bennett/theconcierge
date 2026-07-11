@@ -65,6 +65,9 @@ export function HopAdminLoginPage() {
         </button>
 
         <p className="hop-auth-card__footer hop-auth-card__footer--muted">
+          <Link to="/hop/forgot-password">Forgot password?</Link>
+        </p>
+        <p className="hop-auth-card__footer hop-auth-card__footer--muted">
           <Link to="/hop/login">User sign in</Link>
         </p>
       </form>
