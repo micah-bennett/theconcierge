@@ -147,12 +147,25 @@ decoupled from the consumer-facing product, as the seed of a future standalone E
   manually — the branches are not auto-synced. `src/App.tsx` is the one file that's *expected* to
   permanently diverge between the two branches (full routes vs. trimmed admin-only routes); don't
   try to reconcile it.
-- Deploying `staff-portal`: pushing to the branch alone does not yet auto-deploy — the
-  `theconcierge-staff` Vercel project's **Production Branch** still needs to be set to
-  `staff-portal` in that project's dashboard (Settings → Git → Production Branch; it currently
-  defaults to `main` since that's the repo's default branch, and the Vercel CLI has no
-  non-interactive way to change it). Until that's flipped, deploy manually from a worktree:
-  `git worktree add ../staff-portal-worktree staff-portal && cd ../staff-portal-worktree && npx
-  vercel link --project theconcierge-staff --yes && npx vercel deploy --prod --yes` (do this from
-  a worktree, not the main checkout, so `.vercel/project.json` in the primary working directory
-  never gets repointed away from the `theconcierge` project).
+- **No git auto-deploy (deliberate, for now)**: `theconcierge-staff`'s Production Branch setting
+  defaulted to `main` (the repo's default branch) when the project was first connected to GitHub,
+  and neither the `vercel` CLI nor the public `PATCH /v9/projects/:id` API expose a way to change
+  that non-interactively (several field/endpoint shapes were tried, all rejected). Left connected,
+  **every push to `main` would silently redeploy `theconcierge-staff` with the full marketing
+  site** — this actually happened once during setup. Rather than leave that landmine, the GitHub
+  connection was disconnected (`vercel git disconnect`) for this project, so pushing to *either*
+  branch no longer auto-deploys `theconcierge-staff`. Deploy it deliberately instead, from a
+  worktree linked to the project:
+  ```
+  git worktree add ../staff-portal-worktree staff-portal
+  cd ../staff-portal-worktree && git pull
+  npx vercel link --project theconcierge-staff --yes
+  npx vercel deploy --prod --yes
+  ```
+  (`vercel deploy --prod` was observed hanging/getting `BLOCKED` for several minutes when a stale
+  build was mid-flight — if that happens, find the `READY` deployment for the right commit via
+  `GET /v6/deployments?projectId=<id>&teamId=<id>` and run `npx vercel promote <deployment-id>
+  --yes` instead of re-triggering a fresh build.)
+  If someone with dashboard access later sets Settings → Git → Production Branch to `staff-portal`
+  for the `theconcierge-staff` project, the GitHub connection can be safely re-added
+  (`vercel git connect`) and this manual step won't be needed.
