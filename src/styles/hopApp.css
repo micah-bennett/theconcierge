@@ -70,7 +70,7 @@
 
 .hop-auth-card__brand {
   font-weight: 800;
-  color: #fff;
+  color: var(--hop-text);
   text-decoration: none;
   letter-spacing: 0.02em;
 }
