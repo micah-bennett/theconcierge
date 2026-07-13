@@ -24,12 +24,19 @@ doesn't assume more exists than does. Update this file whenever scope changes.
 - Admins can see all users + all requests, disable/enable users, update request status.
 - Google Calendar: connect via real OAuth, see upcoming events on the user dashboard,
   disconnect.
+- Password reset: "Forgot password?" on both login pages sends a single-use, 30-minute reset
+  link by email (Resend). Resetting destroys all of that user's existing sessions, so they're
+  signed out everywhere and have to log in again with the new password.
+- Settings page (`/hop/app/profile`, sidebar label "Settings"): users can edit their first and
+  last name, which updates immediately everywhere the name is shown (e.g. the sidebar). Email is
+  read-only — there is no self-serve email-change flow. There is no in-page "change password"
+  form; the Security section links out to the forgot-password flow instead, since that's the
+  only password-change path that exists.
 
 ## What's stubbed / not built yet
 
 - Fitbit, Oura, Apple Health, Garmin integrations: UI cards exist and are disabled
   ("Coming soon"), no OAuth, no data. `hop_wearable_metrics` table exists but is unpopulated.
-- Password reset / forgot-password flow.
 - IP-based login rate limiting (only per-account lockout after repeated failures exists).
 - Any real fulfillment/dispatch logic behind a service request — requests are just recorded
   and status-tracked, not routed to an actual provider network.

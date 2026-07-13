@@ -72,6 +72,13 @@ export function hopResetPassword(token: string, password: string) {
   })
 }
 
+export function hopUpdateProfile(data: { firstName: string; lastName: string }) {
+  return request<{ user: HopUser }>('/auth?action=update-profile', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
 export function hopListRequests() {
   return request<{ requests: HopServiceRequest[] }>('/requests')
 }

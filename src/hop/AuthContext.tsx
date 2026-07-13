@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AuthContext } from './authContextCore'
-import { hopLogin, hopLogout, hopMe, hopSignup, type HopUser } from './api'
+import { hopLogin, hopLogout, hopMe, hopSignup, hopUpdateProfile, type HopUser } from './api'
 
 export function HopAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<HopUser | null>(null)
@@ -48,9 +48,15 @@ export function HopAuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
+  const updateProfile = useCallback(async (data: { firstName: string; lastName: string }) => {
+    const { user: updated } = await hopUpdateProfile(data)
+    setUser(updated)
+    return updated
+  }, [])
+
   const value = useMemo(
-    () => ({ user, loading, login, signup, logout, refresh }),
-    [user, loading, login, signup, logout, refresh],
+    () => ({ user, loading, login, signup, logout, refresh, updateProfile }),
+    [user, loading, login, signup, logout, refresh, updateProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
