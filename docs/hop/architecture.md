@@ -57,16 +57,26 @@ Auth state lives in `src/hop/AuthContext.tsx`, scoped to a layout route that wra
 `/hop/app/*`, `/hop/admin/*` subtree — so loading the marketing site (including plain `/hop`)
 never triggers a session check.
 
-## Dashboard "sell" content (`src/hop/dashboard/`)
+`HopDashboardPage.tsx` (`/hop/app`) is functional-only: greeting, quick-request tiles, and the
+Google Calendar preview. It previously also rendered a componentized "why HOP" marketing section
+below that (`src/hop/dashboard/`, `src/styles/hopDashboard.css`) — removed 2026-07-13 as repetitive
+noise once a user is already logged in; see `mvp-scope.md` for that history. Don't re-add
+marketing/sell content to the authenticated dashboard — if leadership wants HOP's pitch shown
+somewhere, that belongs on the public `/hop` marketing page (`src/pages/HopPage.tsx`), not here.
 
-`HopDashboardPage.tsx` (`/hop/app`) has two parts: the functional top section (quick-request
-tiles, calendar preview — unchanged since the original build) and, below it, a set of
-componentized informational/"why HOP" sections: `HopWhyBanner`, `HopBurnoutStats`,
-`HopHowItWorks`, `HopServicesOverview`, `HopFeatureHighlights`, `HopAboutStory`. These are ported
-from a reverted public-homepage redesign (see `mvp-scope.md`) — reuse or extend them for any
-"tell the user why HOP matters" content; don't rebuild similar content from scratch. Styled by
-`src/styles/hopDashboard.css` (a `hop-dash-*` prefix, deliberately distinct from the core app's
-`.hop-card`/`.hop-stat*` classes in `hopApp.css` to avoid collisions on the same page).
+## Family Care (`/hop/app/family-care`)
+
+A dedicated entry point for the `family_home` service type, for users who want more specific
+framing than the generic request form. `HopFamilyCarePage.tsx` shows six choice cards (childcare,
+eldercare, school/activity logistics, pet care, household emergency, other) that each link to
+`/hop/app/requests?type=family_home&category=<slug>` — **there is no `family_care` or per-category
+value in the `hop_service_requests.service_type` CHECK constraint**; every choice submits as the
+existing `family_home` type. `HopRequestsPage.tsx` reads the optional `category` param purely to
+pre-fill the free-text `details` field with a human-readable label (e.g. "Eldercare support — ")
+so the concierge still sees which category was picked, without a schema change or a duplicate
+service type. If per-category structured data (not just a details prefix) is needed later, that
+requires a real schema change — check with the user before assuming free-text is sufficient long
+term.
 
 ## Auth model
 

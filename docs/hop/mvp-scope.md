@@ -32,6 +32,10 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   read-only — there is no self-serve email-change flow. There is no in-page "change password"
   form; the Security section links out to the forgot-password flow instead, since that's the
   only password-change path that exists.
+- Family Care (`/hop/app/family-care`, sidebar item after Requests): six choice cards (childcare,
+  eldercare, school/activity logistics, pet care, household emergency, other) that all submit
+  through the existing request flow as the existing `family_home` service type — see "Family
+  Care" in `architecture.md` for exactly how the category is captured without a schema change.
 
 ## What's stubbed / not built yet
 
@@ -61,9 +65,13 @@ too). Result:
 - **Reverted**: the public homepage, nav, footer, fonts/colors, `/hop` marketing page, and
   `/request` modal are all back to their original (pre-redesign) versions. The public site today
   is exactly as described elsewhere in these docs — nothing healthcare-specific on `/`.
-- **Kept, moved into HOP**: the redesign's sections were componentized (not copy-pasted) into
-  `src/hop/dashboard/` and appended below the functional content on `/hop/app` — see
-  "Dashboard 'sell' content" in `architecture.md`.
+- **Kept, moved into HOP, then removed (2026-07-13)**: the redesign's sections were componentized
+  (not copy-pasted) into `src/hop/dashboard/` and appended below the functional content on
+  `/hop/app`. That lasted until 2026-07-13, when it was removed entirely as repetitive — a user
+  doesn't need HOP's own sales pitch every time they log in to *use* HOP. `src/hop/dashboard/` and
+  `src/styles/hopDashboard.css` no longer exist. If HOP's pitch needs to live somewhere again,
+  that's the public `/hop` marketing page's job (`src/pages/HopPage.tsx`), not the authenticated
+  dashboard — see "Where HOP's app lives in routing" in `architecture.md`.
 - **Orphaned (backend kept, no frontend)**: the "Book a Relief Call" facility-lead-capture feature
   (`api/relief.ts`, `relief_call_requests` table, `sendReliefEmail`) has no page linking to it
   anymore — its sidebar was part of the reverted homepage. It still works end-to-end if called

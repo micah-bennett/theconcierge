@@ -19,12 +19,27 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
 }
 
+// Family Care sends a category here (see HopFamilyCarePage) — family_home has no separate DB
+// column for it, so it's folded into the free-text details the concierge already reads.
+const FAMILY_CARE_CATEGORY_LABEL: Record<string, string> = {
+  childcare: 'Childcare support',
+  eldercare: 'Eldercare support',
+  school_activity: 'School and activity logistics',
+  pet_care: 'Pet care',
+  household_emergency: 'Household emergency',
+  other: 'Other family need',
+}
+
 export function HopRequestsPage() {
   const [searchParams] = useSearchParams()
   const [requests, setRequests] = useState<HopServiceRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [serviceType, setServiceType] = useState(searchParams.get('type') || 'ride')
-  const [details, setDetails] = useState('')
+  const [details, setDetails] = useState(() => {
+    const category = searchParams.get('category')
+    const label = category ? FAMILY_CARE_CATEGORY_LABEL[category] : undefined
+    return label ? `${label} — ` : ''
+  })
   const [requestedFor, setRequestedFor] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)

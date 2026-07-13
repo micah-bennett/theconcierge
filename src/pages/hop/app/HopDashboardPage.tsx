@@ -2,20 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useHopAuth } from '../../../hop/useHopAuth'
 import { hopGoogleCalendarEvents, type HopCalendarEvent } from '../../../hop/api'
-import { HopWhyBanner } from '../../../hop/dashboard/HopWhyBanner'
-import { HopBurnoutStats } from '../../../hop/dashboard/HopBurnoutStats'
-import { HopHowItWorks } from '../../../hop/dashboard/HopHowItWorks'
-import { HopServicesOverview } from '../../../hop/dashboard/HopServicesOverview'
-import { HopFeatureHighlights } from '../../../hop/dashboard/HopFeatureHighlights'
-import { HopAboutStory } from '../../../hop/dashboard/HopAboutStory'
 
 const QUICK_REQUESTS = [
-  { type: 'ride', icon: '🚗', label: 'Ride' },
-  { type: 'meal', icon: '🍴', label: 'Meal' },
-  { type: 'errand', icon: '📦', label: 'Errand' },
-  { type: 'wellness', icon: '❤️', label: 'Wellness' },
-  { type: 'family_home', icon: '🏠', label: 'Family & home' },
-  { type: 'other', icon: '🤖', label: 'Something else' },
+  { to: '/hop/app/requests?type=ride', icon: '🚗', label: 'Ride' },
+  { to: '/hop/app/requests?type=meal', icon: '🍴', label: 'Meal' },
+  { to: '/hop/app/requests?type=errand', icon: '📦', label: 'Errand' },
+  { to: '/hop/app/requests?type=wellness', icon: '❤️', label: 'Wellness' },
+  { to: '/hop/app/family-care', icon: '🏠', label: 'Family Care' },
+  { to: '/hop/app/requests?type=other', icon: '🤖', label: 'Something else' },
 ] as const
 
 export function HopDashboardPage() {
@@ -23,6 +17,7 @@ export function HopDashboardPage() {
   const [events, setEvents] = useState<HopCalendarEvent[] | null>(null)
   const [connected, setConnected] = useState(false)
   const [loadingEvents, setLoadingEvents] = useState(true)
+  const [eventsError, setEventsError] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -33,7 +28,10 @@ export function HopDashboardPage() {
         setEvents(result.events)
       })
       .catch(() => {
-        if (!cancelled) setEvents([])
+        if (!cancelled) {
+          setEvents([])
+          setEventsError(true)
+        }
       })
       .finally(() => {
         if (!cancelled) setLoadingEvents(false)
@@ -50,7 +48,7 @@ export function HopDashboardPage() {
 
       <div className="hop-quick-grid">
         {QUICK_REQUESTS.map((item) => (
-          <Link key={item.type} to={`/hop/app/requests?type=${item.type}`} className="hop-quick-card">
+          <Link key={item.to} to={item.to} className="hop-quick-card">
             <span className="hop-quick-card__icon">{item.icon}</span>
             <span>{item.label}</span>
           </Link>
@@ -60,16 +58,21 @@ export function HopDashboardPage() {
       <section className="hop-card">
         <div className="hop-card__header">
           <h2>Upcoming on your calendar</h2>
-          {!connected && <Link to="/hop/app/integrations">Connect Google Calendar →</Link>}
+          {!connected && !eventsError && <Link to="/hop/app/integrations">Connect Google Calendar →</Link>}
         </div>
         {loadingEvents && <p className="hop-muted">Loading…</p>}
-        {!loadingEvents && !connected && (
+        {!loadingEvents && eventsError && (
+          <p className="hop-muted">
+            Could not load your calendar. <Link to="/hop/app/integrations">Reconnect Google Calendar</Link>.
+          </p>
+        )}
+        {!loadingEvents && !eventsError && !connected && (
           <p className="hop-muted">Connect your calendar to see upcoming events here.</p>
         )}
-        {!loadingEvents && connected && events && events.length === 0 && (
+        {!loadingEvents && !eventsError && connected && events && events.length === 0 && (
           <p className="hop-muted">Nothing on your calendar right now.</p>
         )}
-        {!loadingEvents && connected && events && events.length > 0 && (
+        {!loadingEvents && !eventsError && connected && events && events.length > 0 && (
           <ul className="hop-event-list">
             {events.map((event) => (
               <li key={event.id}>
@@ -79,28 +82,6 @@ export function HopDashboardPage() {
             ))}
           </ul>
         )}
-      </section>
-
-      <HopWhyBanner />
-
-      <section className="hop-dash-section">
-        <HopBurnoutStats />
-      </section>
-
-      <section className="hop-dash-section">
-        <HopHowItWorks />
-      </section>
-
-      <section className="hop-dash-section">
-        <HopServicesOverview />
-      </section>
-
-      <section className="hop-dash-section">
-        <HopFeatureHighlights />
-      </section>
-
-      <section className="hop-dash-section">
-        <HopAboutStory />
       </section>
     </div>
   )

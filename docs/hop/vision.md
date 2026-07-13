@@ -43,17 +43,15 @@ page links out to an external Perplexity-built pilot (`hop-pilot-hvcs.pplx.app`)
 real product. Building a real login + app framework (this workstream) is the first step toward
 replacing that external pilot with an owned product.
 
-## Where the pitch lives (updated 2026-07-11)
+## Where the pitch lives (updated 2026-07-13)
 
 The full stats-and-story pitch (burnout data, 4-step how-it-works, service categories, the
-patient/dog origin story) also exists in **componentized form** inside the authenticated HOP
-dashboard (`/hop/app`, see `src/hop/dashboard/`) — shown to users *after* they log in, to
-reinforce HOP's value every time they open the app. This was originally built as a redesign of
-the public marketing homepage, then moved into HOP post-login when leadership decided it was
-healthcare-specific content that didn't belong on the general-audience public site. See
-`mvp-scope.md` for the full history and what's componentized where. `HopPage.tsx` (the public
-`/hop` marketing page) is unaffected by this and still carries its own, separate version of the
-pitch.
+patient/dog origin story) lives only on the public `/hop` marketing page (`src/pages/HopPage.tsx`)
+today. It briefly also existed in componentized form inside the authenticated HOP dashboard
+(`/hop/app`) — shown to users after they logged in — but that was removed on 2026-07-13 as
+repetitive: a logged-in user is already using HOP, they don't need HOP's own sales pitch on every
+visit. See `mvp-scope.md` for the full history. The authenticated dashboard is functional-only
+now (greeting, quick requests, calendar); don't re-add pitch/marketing content there.
 
 ## Longer-term product surface (beyond this first build)
 

@@ -22,6 +22,7 @@ import { HopForgotPasswordPage } from './pages/hop/HopForgotPasswordPage'
 import { HopResetPasswordPage } from './pages/hop/HopResetPasswordPage'
 import { HopDashboardPage } from './pages/hop/app/HopDashboardPage'
 import { HopRequestsPage } from './pages/hop/app/HopRequestsPage'
+import { HopFamilyCarePage } from './pages/hop/app/HopFamilyCarePage'
 import { HopIntegrationsPage } from './pages/hop/app/HopIntegrationsPage'
 import { HopProfilePage } from './pages/hop/app/HopProfilePage'
 import { HopAdminDashboardPage } from './pages/hop/admin/HopAdminDashboardPage'
@@ -36,7 +37,6 @@ import { HopAdminLayout } from './hop/HopAdminLayout'
 import { useSiteMotion } from './hooks/useSiteMotion'
 import './App.css'
 import './styles/hopApp.css'
-import './styles/hopDashboard.css'
 
 const LOGO_IMAGE = '/logo-mark-white.png?v=1'
 
@@ -114,6 +114,7 @@ function AppRoutes() {
               <Route path="/hop/app" element={<HopAppLayout />}>
                 <Route index element={<HopDashboardPage />} />
                 <Route path="requests" element={<HopRequestsPage />} />
+                <Route path="family-care" element={<HopFamilyCarePage />} />
                 <Route path="integrations" element={<HopIntegrationsPage />} />
                 <Route path="profile" element={<HopProfilePage />} />
               </Route>
