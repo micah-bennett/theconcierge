@@ -35,7 +35,7 @@ export function HopProfilePage() {
 
       <section className="hop-card">
         <h2>Account</h2>
-        <form className="hop-settings-form" onSubmit={handleSubmit}>
+        <form className="hop-form-stack" onSubmit={handleSubmit}>
           {error && (
             <div className="hop-auth-card__error" role="alert">
               {error}

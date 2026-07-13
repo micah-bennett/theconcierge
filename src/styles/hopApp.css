@@ -489,12 +489,14 @@
   border-color: var(--hop-border-hover);
 }
 
-/* ── Profile / settings ─────────────────────── */
-.hop-settings-form {
+/* ── Forms not already scoped by .hop-auth-card's own flex/gap ──── */
+.hop-form-stack {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
+
+/* ── Profile / settings ─────────────────────── */
 
 .hop-profile-list {
   margin: 0;
