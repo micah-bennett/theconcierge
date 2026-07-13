@@ -363,6 +363,12 @@
   padding-bottom: 0;
 }
 
+.hop-event-list__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .hop-event-list__time {
   color: var(--hop-muted);
   white-space: nowrap;
@@ -487,6 +493,11 @@
 .hop-btn-secondary:hover {
   background: var(--hop-overlay-strong);
   border-color: var(--hop-border-hover);
+}
+
+.hop-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ── Forms not already scoped by .hop-auth-card's own flex/gap ──── */

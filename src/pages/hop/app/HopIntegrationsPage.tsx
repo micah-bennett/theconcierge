@@ -10,6 +10,14 @@ const PROVIDER_INFO: Record<string, { label: string; icon: string; live: boolean
   garmin: { label: 'Garmin', icon: '⌚', live: false },
 }
 
+const ERROR_MESSAGES: Record<string, string> = {
+  not_configured: "Google Calendar isn't set up yet. Contact your administrator.",
+  state_mismatch: 'Your connection attempt could not be verified. Please try connecting again.',
+  connect_failed: 'Could not connect Google Calendar. Please try again.',
+  db: 'Something went wrong. Please try again in a moment.',
+}
+const DEFAULT_ERROR_MESSAGE = 'Could not connect Google Calendar. Please try again.'
+
 export function HopIntegrationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [integrations, setIntegrations] = useState<HopIntegration[]>([])
@@ -37,7 +45,7 @@ export function HopIntegrationsPage() {
   }, [])
 
   const connectedMessage = searchParams.get('connected')
-  const errorMessage = searchParams.get('error')
+  const errorCode = searchParams.get('error')
 
   async function handleDisconnect() {
     setDisconnecting(true)
@@ -55,7 +63,9 @@ export function HopIntegrationsPage() {
       <p className="hop-page-sub">Connect your calendar and wearables so HOP can look out for you.</p>
 
       {connectedMessage && <div className="hop-banner hop-banner--success">Google Calendar connected.</div>}
-      {errorMessage && <div className="hop-banner hop-banner--error">Could not connect Google Calendar. Try again.</div>}
+      {errorCode && (
+        <div className="hop-banner hop-banner--error">{ERROR_MESSAGES[errorCode] || DEFAULT_ERROR_MESSAGE}</div>
+      )}
 
       {loading ? (
         <p className="hop-muted">Loading…</p>
@@ -64,6 +74,7 @@ export function HopIntegrationsPage() {
           {integrations.map((integration) => {
             const info = PROVIDER_INFO[integration.provider]
             const connected = integration.status === 'connected'
+            const needsReconnect = integration.status === 'error'
             return (
               <div key={integration.provider} className="hop-card hop-integration-card">
                 <div className="hop-integration-card__header">
@@ -77,12 +88,19 @@ export function HopIntegrationsPage() {
                     </p>
                     <button
                       type="button"
-                      className="hop-btn-ghost"
+                      className="hop-btn-secondary"
                       onClick={handleDisconnect}
                       disabled={disconnecting}
                     >
-                      Disconnect
+                      {disconnecting ? 'Disconnecting…' : 'Disconnect'}
                     </button>
+                  </>
+                ) : needsReconnect ? (
+                  <>
+                    <p className="hop-muted">Your connection needs to be renewed.</p>
+                    <a className="hop-btn-primary" href="/api/hop/integrations/google?action=start">
+                      Reconnect
+                    </a>
                   </>
                 ) : info?.live ? (
                   <>
@@ -94,7 +112,7 @@ export function HopIntegrationsPage() {
                 ) : (
                   <>
                     <p className="hop-muted">Coming soon.</p>
-                    <button type="button" className="hop-btn-ghost" disabled>
+                    <button type="button" className="hop-btn-secondary" disabled>
                       Connect
                     </button>
                   </>
