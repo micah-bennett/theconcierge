@@ -18,7 +18,7 @@ how it might look eventually — check `mvp-scope.md` for what's real vs. stubbe
   the request body on a flat file instead (see `api/hop/auth.ts`'s `?action=` dispatch and
   `api/hop/requests.ts`'s body-based `PATCH`). This also matters for the Hobby-plan
   12-Serverless-Function cap — flat, multi-action files keep the function count down
-  (currently 9 total: `chat.ts`, `requests.ts`, `relief.ts`, and 6 under `api/hop/**`).
+  (currently 10 total, of 12: `chat.ts`, `requests.ts`, `relief.ts`, and 7 under `api/hop/**`).
 - **Database**: Neon serverless Postgres via `@neondatabase/serverless`'s `neon()` tagged-template
   client. One schema file, `db/schema.sql`, written idempotently (`CREATE TABLE IF NOT EXISTS`,
   `ADD COLUMN IF NOT EXISTS`, etc.) and applied with `npm run db:migrate`.
@@ -77,6 +77,34 @@ so the concierge still sees which category was picked, without a schema change o
 service type. If per-category structured data (not just a details prefix) is needed later, that
 requires a real schema change — check with the user before assuming free-text is sufficient long
 term.
+
+## Wellness check-ins (`/hop/app/wellness`, `/hop/admin/wellness`)
+
+A voluntary, append-only self-report log — not a clinical tool, not a performance record. Deciding
+what to build here, and what *not* to build, matters: don't add scoring, risk alerts, diagnostic
+language, individual reporting to hospital administrators, or anything that reads as an employee
+monitoring feature. If a future task asks for aggregate/de-identified trend reporting, that's a
+new admin analytics view built on top of this table — it is explicitly not built yet.
+
+- **Schema**: `hop_wellness_checkins` (`db/schema.sql`) — `user_id`, `feeling` (`doing_well` |
+  `stretched_thin` | `low_energy` | `overwhelmed`), `desired_support` (`meal` | `ride` | `errands`
+  | `wellness_appt` | `time_back_home` | `talk_to_concierge`), `note` (free text, 500 char cap
+  enforced in `api/hop/wellness.ts`), `shift_protection` (nullable: `yes` | `no` |
+  `not_applicable`), `created_at`. No `status`/`handled_by`/`updated_at` — check-ins aren't a
+  ticket workflow, they're a log a concierge reads for triage.
+- **API**: `api/hop/wellness.ts` (one flat file, no new function beyond the one it is — 10 total
+  now). `GET` is role-branched like `api/hop/requests.ts`: a `user` gets their own last 20
+  check-ins, an `admin` gets everyone's, joined with name/email, for triage. `POST` creates a
+  check-in for the caller. No `PATCH` — there's nothing to update/triage-status on a check-in.
+- **Frontend**: `HopWellnessPage.tsx` (user) has the check-in form, a privacy statement, an
+  emergency-services notice, and the user's own recent check-ins. `HopAdminWellnessPage.tsx`
+  (admin) is a plain read-only table, same shape as `HopAdminRequestsPage.tsx` — deliberately not
+  an analytics/aggregate view.
+- **"Request support now"**: after submitting, the confirmation offers a request pre-filled from
+  `desired_support` → the closest existing `hop_service_requests.service_type` (`meal`→`meal`,
+  `ride`→`ride`, `errands`→`errand`, `wellness_appt`→`wellness`, `time_back_home`→`family_home`,
+  `talk_to_concierge`→`other`). Same `category` query-param + details-prefix mechanism as Family
+  Care — see `CATEGORY_LABEL` in `HopRequestsPage.tsx`. No new service_type was added.
 
 ## Auth model
 

@@ -136,6 +136,39 @@ export function hopAdminListRequests() {
   return request<{ requests: HopAdminRequest[] }>('/requests')
 }
 
+export type HopWellnessCheckIn = {
+  id: string
+  feeling: string
+  desired_support: string
+  note: string
+  shift_protection: string | null
+  created_at: string
+}
+
+export function hopCreateWellnessCheckIn(data: {
+  feeling: string
+  desiredSupport: string
+  note: string
+  shiftProtection: string | null
+}) {
+  return request<{ checkIn: HopWellnessCheckIn }>('/wellness', { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function hopListWellnessCheckIns() {
+  return request<{ checkIns: HopWellnessCheckIn[] }>('/wellness')
+}
+
+export type HopAdminWellnessCheckIn = HopWellnessCheckIn & {
+  user_id: string
+  first_name: string
+  last_name: string
+  email: string
+}
+
+export function hopAdminListWellnessCheckIns() {
+  return request<{ checkIns: HopAdminWellnessCheckIn[] }>('/wellness')
+}
+
 export type HopAdminIntegration = {
   provider: string
   status: string

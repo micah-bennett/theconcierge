@@ -23,11 +23,13 @@ import { HopResetPasswordPage } from './pages/hop/HopResetPasswordPage'
 import { HopDashboardPage } from './pages/hop/app/HopDashboardPage'
 import { HopRequestsPage } from './pages/hop/app/HopRequestsPage'
 import { HopFamilyCarePage } from './pages/hop/app/HopFamilyCarePage'
+import { HopWellnessPage } from './pages/hop/app/HopWellnessPage'
 import { HopIntegrationsPage } from './pages/hop/app/HopIntegrationsPage'
 import { HopProfilePage } from './pages/hop/app/HopProfilePage'
 import { HopAdminDashboardPage } from './pages/hop/admin/HopAdminDashboardPage'
 import { HopAdminUsersPage } from './pages/hop/admin/HopAdminUsersPage'
 import { HopAdminRequestsPage } from './pages/hop/admin/HopAdminRequestsPage'
+import { HopAdminWellnessPage } from './pages/hop/admin/HopAdminWellnessPage'
 import { HopAdminIntegrationsPage } from './pages/hop/admin/HopAdminIntegrationsPage'
 import { HopAuthProvider } from './hop/AuthContext'
 import { HopThemeProvider } from './hop/ThemeContext'
@@ -115,6 +117,7 @@ function AppRoutes() {
                 <Route index element={<HopDashboardPage />} />
                 <Route path="requests" element={<HopRequestsPage />} />
                 <Route path="family-care" element={<HopFamilyCarePage />} />
+                <Route path="wellness" element={<HopWellnessPage />} />
                 <Route path="integrations" element={<HopIntegrationsPage />} />
                 <Route path="profile" element={<HopProfilePage />} />
               </Route>
@@ -124,6 +127,7 @@ function AppRoutes() {
                 <Route index element={<HopAdminDashboardPage />} />
                 <Route path="users" element={<HopAdminUsersPage />} />
                 <Route path="requests" element={<HopAdminRequestsPage />} />
+                <Route path="wellness" element={<HopAdminWellnessPage />} />
                 <Route path="integrations" element={<HopAdminIntegrationsPage />} />
               </Route>
             </Route>

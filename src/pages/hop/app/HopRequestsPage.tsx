@@ -19,15 +19,24 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
 }
 
-// Family Care sends a category here (see HopFamilyCarePage) — family_home has no separate DB
-// column for it, so it's folded into the free-text details the concierge already reads.
-const FAMILY_CARE_CATEGORY_LABEL: Record<string, string> = {
+// Family Care and Wellness send an optional category here — several service types have no
+// separate DB column for the specific reason, so it's folded into the free-text details the
+// concierge already reads instead of adding a schema change or a duplicate service type.
+const CATEGORY_LABEL: Record<string, string> = {
+  // Family Care (HopFamilyCarePage) — all submit as service_type=family_home.
   childcare: 'Childcare support',
   eldercare: 'Eldercare support',
   school_activity: 'School and activity logistics',
   pet_care: 'Pet care',
   household_emergency: 'Household emergency',
   other: 'Other family need',
+  // Wellness (HopWellnessPage) "Request support now" — each maps to its closest service_type.
+  wellness_meal: 'Wellness check-in — meal support',
+  wellness_ride: 'Wellness check-in — ride or commute support',
+  wellness_errands: 'Wellness check-in — errands',
+  wellness_appt: 'Wellness check-in — wellness appointment',
+  wellness_time_back_home: 'Wellness check-in — time back at home',
+  wellness_talk: 'Wellness check-in — talk to a concierge',
 }
 
 export function HopRequestsPage() {
@@ -37,7 +46,7 @@ export function HopRequestsPage() {
   const [serviceType, setServiceType] = useState(searchParams.get('type') || 'ride')
   const [details, setDetails] = useState(() => {
     const category = searchParams.get('category')
-    const label = category ? FAMILY_CARE_CATEGORY_LABEL[category] : undefined
+    const label = category ? CATEGORY_LABEL[category] : undefined
     return label ? `${label} — ` : ''
   })
   const [requestedFor, setRequestedFor] = useState('')

@@ -9,6 +9,7 @@ const QUICK_REQUESTS = [
   { to: '/hop/app/requests?type=errand', icon: '📦', label: 'Errand' },
   { to: '/hop/app/requests?type=wellness', icon: '❤️', label: 'Wellness' },
   { to: '/hop/app/family-care', icon: '🏠', label: 'Family Care' },
+  { to: '/hop/app/wellness', icon: '🌿', label: 'How are you doing today?' },
   { to: '/hop/app/requests?type=other', icon: '🤖', label: 'Something else' },
 ] as const
 

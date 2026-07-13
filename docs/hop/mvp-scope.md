@@ -36,6 +36,13 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   eldercare, school/activity logistics, pet care, household emergency, other) that all submit
   through the existing request flow as the existing `family_home` service type — see "Family
   Care" in `architecture.md` for exactly how the category is captured without a schema change.
+- Wellness check-ins (`/hop/app/wellness`, sidebar item after Family Care): a voluntary, private
+  self-report check-in (feeling + what would help + optional note + optional shift-protection
+  question), with a "Request support now" action into the existing request flow and the member's
+  own recent check-ins. Admins have a read-only triage list at `/hop/admin/wellness` — no scoring,
+  no risk alerts, no per-employee reporting to hospital administrators. See "Wellness check-ins"
+  in `architecture.md` for the full shape and what's deliberately not built yet (aggregate
+  reporting).
 
 ## What's stubbed / not built yet
 

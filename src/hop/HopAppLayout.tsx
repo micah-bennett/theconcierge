@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: '/hop/app', label: 'Dashboard', end: true },
   { to: '/hop/app/requests', label: 'Requests', end: false },
   { to: '/hop/app/family-care', label: 'Family Care', end: false },
+  { to: '/hop/app/wellness', label: 'Wellness', end: false },
   { to: '/hop/app/integrations', label: 'Integrations', end: false },
   { to: '/hop/app/profile', label: 'Settings', end: false },
 ] as const

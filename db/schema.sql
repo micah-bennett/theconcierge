@@ -156,3 +156,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS hop_password_resets_token_hash_idx
 
 CREATE INDEX IF NOT EXISTS hop_password_resets_user_id_idx
   ON hop_password_resets (user_id);
+
+-- ── HOP: voluntary wellness check-ins ───────────────────────────────────
+-- Append-only self-report log, not a clinical/performance record — see
+-- docs/hop/architecture.md ("Wellness check-ins") before adding scoring, risk
+-- alerts, or per-user analytics on top of this table.
+CREATE TABLE IF NOT EXISTS hop_wellness_checkins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  feeling TEXT NOT NULL
+    CHECK (feeling IN ('doing_well', 'stretched_thin', 'low_energy', 'overwhelmed')),
+  desired_support TEXT NOT NULL
+    CHECK (desired_support IN ('meal', 'ride', 'errands', 'wellness_appt', 'time_back_home', 'talk_to_concierge')),
+  note TEXT NOT NULL DEFAULT '',
+  shift_protection TEXT
+    CHECK (shift_protection IS NULL OR shift_protection IN ('yes', 'no', 'not_applicable')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hop_wellness_checkins_user_id_idx
+  ON hop_wellness_checkins (user_id);
+
+CREATE INDEX IF NOT EXISTS hop_wellness_checkins_created_at_idx
+  ON hop_wellness_checkins (created_at DESC);
