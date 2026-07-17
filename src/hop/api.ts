@@ -7,12 +7,23 @@ export type HopUser = {
   status: 'active' | 'disabled'
 }
 
+export type HopRequestHistoryEntry = {
+  status: string
+  created_at: string
+  // Only present for admins — members get the status/timestamp only (see api/hop/requests.ts).
+  note?: string
+  staff_name?: string | null
+}
+
 export type HopServiceRequest = {
   id: string
   service_type: string
   status: string
   details: string
   requested_for: string | null
+  handled_by: string | null
+  assignee_name: string | null
+  history: HopRequestHistoryEntry[]
   created_at: string
   updated_at: string
 }
@@ -87,10 +98,10 @@ export function hopCreateRequest(data: { serviceType: string; details: string; r
   return request<{ request: HopServiceRequest }>('/requests', { method: 'POST', body: JSON.stringify(data) })
 }
 
-export function hopUpdateRequestStatus(id: string, status: string) {
-  return request<{ request: HopServiceRequest }>('/requests', {
+export function hopAdminUpdateRequest(data: { id: string; status?: string; assignedTo?: string | null; note?: string }) {
+  return request<{ request: HopServiceRequest; validNextStatuses: string[] }>('/requests', {
     method: 'PATCH',
-    body: JSON.stringify({ id, status }),
+    body: JSON.stringify(data),
   })
 }
 
@@ -130,10 +141,37 @@ export type HopAdminRequest = HopServiceRequest & {
   first_name: string
   last_name: string
   email: string
+  valid_next_statuses: string[]
 }
 
 export function hopAdminListRequests() {
   return request<{ requests: HopAdminRequest[] }>('/requests')
+}
+
+export type HopStaffMember = { id: string; first_name: string; last_name: string; email: string }
+
+export function hopAdminListStaff() {
+  return request<{ staff: HopStaffMember[] }>('/admin/users?scope=staff')
+}
+
+export type HopRideLocation = { latitude: number; longitude: number; updatedAt: string }
+
+export function hopGetRideLocation(requestId: string) {
+  return request<{ location: HopRideLocation | null }>(`/ride-location?requestId=${encodeURIComponent(requestId)}`)
+}
+
+export function hopUpdateRideLocation(requestId: string, latitude: number, longitude: number) {
+  return request<{ ok: true }>('/ride-location?action=update', {
+    method: 'POST',
+    body: JSON.stringify({ requestId, latitude, longitude }),
+  })
+}
+
+export function hopStopRideLocationSharing(requestId: string) {
+  return request<{ ok: true }>('/ride-location?action=stop', {
+    method: 'POST',
+    body: JSON.stringify({ requestId }),
+  })
 }
 
 export type HopWellnessCheckIn = {

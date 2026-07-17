@@ -117,7 +117,9 @@ export function HopWellnessPage() {
             {requestLink && (
               <Link
                 className="hop-btn-primary"
-                to={`/hop/app/requests?type=${requestLink.type}&category=${requestLink.category}`}
+                to={`/hop/app/requests?type=${requestLink.type}&category=${requestLink.category}${
+                  submitted?.shift_protection ? `&shift=${submitted.shift_protection}` : ''
+                }`}
               >
                 Request support now
               </Link>

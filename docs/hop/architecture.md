@@ -18,7 +18,8 @@ how it might look eventually — check `mvp-scope.md` for what's real vs. stubbe
   the request body on a flat file instead (see `api/hop/auth.ts`'s `?action=` dispatch and
   `api/hop/requests.ts`'s body-based `PATCH`). This also matters for the Hobby-plan
   12-Serverless-Function cap — flat, multi-action files keep the function count down
-  (currently 10 total, of 12: `chat.ts`, `requests.ts`, `relief.ts`, and 7 under `api/hop/**`).
+  (currently 11 total, of 12: `chat.ts`, `requests.ts`, `relief.ts`, and 8 under `api/hop/**`).
+  One function of headroom remains — think carefully before adding a 12th.
 - **Database**: Neon serverless Postgres via `@neondatabase/serverless`'s `neon()` tagged-template
   client. One schema file, `db/schema.sql`, written idempotently (`CREATE TABLE IF NOT EXISTS`,
   `ADD COLUMN IF NOT EXISTS`, etc.) and applied with `npm run db:migrate`.
@@ -104,7 +105,105 @@ new admin analytics view built on top of this table — it is explicitly not bui
   `desired_support` → the closest existing `hop_service_requests.service_type` (`meal`→`meal`,
   `ride`→`ride`, `errands`→`errand`, `wellness_appt`→`wellness`, `time_back_home`→`family_home`,
   `talk_to_concierge`→`other`). Same `category` query-param + details-prefix mechanism as Family
-  Care — see `CATEGORY_LABEL` in `HopRequestsPage.tsx`. No new service_type was added.
+  Care — see `CATEGORY_LABEL` in `HopRequestsPage.tsx`. No new service_type was added. The
+  check-in's `shift_protection` answer, if any, is also folded into the pre-filled details text
+  (`&shift=` query param) so it's visible to dispatch — there's no direct DB link between a
+  check-in row and the request it produces.
+
+## Dispatch workflow (2026-07-14)
+
+Staff-controlled request lifecycle, assignment, and a status-change audit trail.
+
+- **Status lifecycle** (`api/_lib/hopRequestWorkflow.ts`): `submitted → received → assigned →
+  in_progress → completed`, with `en_route`/`arrived` inserted between `in_progress` and
+  `completed` **only** for `service_type = 'ride'`. `cancelled` is reachable from any non-terminal
+  status. `completed` and `cancelled` are terminal — no further transitions out of either.
+  `isValidStatusTransition()` enforces "exactly one step forward, or cancel" server-side in
+  `api/hop/requests.ts`'s `PATCH`; it is the single source of truth `nextValidStatuses()` also
+  feeds to the admin UI so the status `<select>` never even offers an invalid option. Only
+  `requireAdmin` callers can reach `PATCH` — members can never set their own status.
+- **Assignment reuses `handled_by`**: `hop_service_requests.handled_by` already existed (it used
+  to mean "whichever admin last touched status"); it's now the deliberate "assigned staff member"
+  field, set via its own `assignedTo` field on the same `PATCH` body, independent of a status
+  change. It was **not** renamed — a column rename isn't safely idempotent to rerun on a table
+  with existing rows, and the meaning is now documented here instead. Assignment only accepts a
+  `role = 'admin' AND status = 'active'` user id (or `null` to unassign) — `api/hop/admin/users.ts`
+  gained a `?scope=staff` mode for the assignment dropdown; it never returns `role = 'user'`
+  accounts, so members can never be assigned a request.
+- **Audit trail**: `hop_service_request_status_history` — one row per `PATCH` call that actually
+  changes status, assignment, and/or adds a note (a note-only call with no status/assignment
+  change still logs a row). Append-only, never edited or deleted except by cascade when the
+  parent request is deleted. Admin's `GET` returns the full entry (`status`, `note`, `staff_name`,
+  `created_at`); a member's `GET` returns only `status` + `created_at` for their own requests —
+  raw staff notes are **never** sent to members (see "member-safe" below).
+- **Member-safe status language**: members never see raw dispatch notes. `HopRequestsPage.tsx`
+  renders a static per-status message (`MEMBER_STATUS_MESSAGE`) instead — e.g. `en_route` →
+  "Your ride is on the way." This is a deliberate design choice, not a missing feature: dispatch
+  notes can contain internal operational detail ("driver stuck on 87, ETA slipping") that isn't
+  appropriate to forward verbatim, and there's no reliable way to auto-sanitize free text.
+- **Admin dispatch UI** (`HopAdminRequestsPage.tsx`): request cards (not a table — the old
+  table-based UI didn't have room for assign/status/note controls per row) with five filter tabs
+  computed client-side from the already-fetched list (`bucketFor()`): **New/unassigned**
+  (`handled_by IS NULL`, non-terminal), **Assigned** (`handled_by` set, not yet
+  `in_progress`/`en_route`/`arrived`), **Active** (`in_progress`/`en_route`/`arrived`),
+  **Completed**, **Cancelled**. No new list endpoints per tab — one `GET /api/hop/requests` call,
+  filtered in the browser.
+- **Member tracking** (`HopRequestsPage.tsx`): status badge, assigned concierge name (once
+  assigned), the member-safe status message, and — only when history exists — a timeline of
+  status changes (status + timestamp only, no notes/staff names). Members have no status-changing
+  UI at all; the only requests API call available to a `role='user'` caller is `GET`/`POST`, never
+  `PATCH` (enforced by `requireAdmin` on the server, not just hidden in the UI).
+
+## Live ride location (2026-07-14)
+
+Privacy-first, active-browser-only location sharing — **not** background tracking. This only
+exists for `service_type = 'ride'` while `status = 'en_route'`; it is unreachable for every other
+service type or status, enforced server-side in `api/hop/ride-location.ts`, not just hidden client-
+side.
+
+- **Schema**: `hop_ride_locations` — `request_id` is the **primary key** (one row per request,
+  always upserted via `ON CONFLICT (request_id) DO UPDATE`), `shared_by`, `latitude`, `longitude`,
+  `updated_at`. Deliberately no history table — only the latest known point is ever stored, and
+  the row is deleted (not archived) the moment sharing should stop. This is why the member-facing
+  `GET` can never expose a location *history*, only ever the current/last point.
+- **API** (`api/hop/ride-location.ts`, one new flat file — 11 of 12 functions now):
+  - `GET ?requestId=` — the request's owner or any admin; returns `{ location: null }` for every
+    other case (wrong caller, wrong service_type, wrong status, no row yet) rather than an error,
+    so this endpoint can't be used to probe a request's existence or status.
+  - `POST ?action=update` — **only** the staff member the request is assigned to
+    (`handled_by === caller.id`); rejects (409) if the request isn't `ride` + `en_route` at the
+    moment of the call, even if the client's timer is still running from before a status change.
+  - `POST ?action=stop` — any admin (a supervisor can force-stop, not just the original assignee).
+  - **Automatic stop**: `api/hop/requests.ts`'s `PATCH` deletes the `hop_ride_locations` row
+    whenever a status change lands on `arrived`, `completed`, or `cancelled` — this is the
+    authoritative stop, independent of whether the staff member's browser tab is even still open.
+- **Staff flow** (`RideLocationSharing` in `HopAdminRequestsPage.tsx`): only rendered when
+  `service_type='ride' && status='en_route' && handled_by === current admin's id`. "Start location
+  sharing" explains what sharing does *before* the browser's native permission prompt fires (two
+  layers of consent: the in-app explanation, then the OS/browser dialog). Once granted,
+  `navigator.geolocation.getCurrentPosition` fires immediately and then every 20 seconds via
+  `setInterval` (not `watchPosition`, to keep the update cadence predictable and bounded) until
+  the staff member clicks "Stop sharing" or navigates away (the interval is cleared on unmount,
+  but the *authoritative* stop is still the server-side one above).
+- **Member flow** (`RideTracker` in `HopRequestsPage.tsx`): only rendered when
+  `service_type='ride' && status='en_route'`. Polls `GET` every 15 seconds and shows a plain
+  `https://www.google.com/maps?q=lat,lng` link plus a relative "Last updated" time — deliberately
+  a link, not an embedded interactive map widget, so **no maps API key is required at all** (see
+  "No maps API key needed" below). No location history is ever shown to the member — only the
+  current/last-known point while the ride is actively en route.
+- **No maps API key needed today**: the member's tracking link is a plain URL, not an embedded map
+  SDK, so there is nothing to configure and no key of any kind is exposed to the frontend. If an
+  embedded interactive map is wanted later, that requires a real maps provider (Google Maps
+  JavaScript API, Mapbox GL JS, etc.) and a provider API key — note that JS-embedded map keys are
+  *inherently* client-visible by design (that's how they're loaded into the browser); the standard
+  mitigation is restricting the key by HTTP referrer/domain in the provider's console, not hiding
+  it. That's a real, separate decision to make later, not something to add silently now.
+- **Known limitation, stated plainly**: this is active-browser sharing, not background tracking.
+  It only works while the assigned staff member has HOP open in a browser tab (typically on their
+  phone) and has granted location permission for that tab/session. If they close the tab, lock
+  their phone in a way that suspends the browser, or never grant permission, no location updates
+  happen — the member's tracker will just show "hasn't started sharing their location yet" or a
+  stale "Last updated" time. This is an honest constraint of browser geolocation APIs, not a bug.
 
 ## Auth model
 

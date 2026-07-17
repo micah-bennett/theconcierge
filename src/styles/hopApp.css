@@ -427,10 +427,42 @@
 }
 
 .hop-status--submitted,
+.hop-status--received,
+.hop-status--assigned,
 .hop-status--in_progress,
+.hop-status--en_route,
+.hop-status--arrived,
 .hop-status--disconnected {
   background: rgba(251, 191, 36, 0.18);
   color: #fde68a;
+}
+
+/* The pastel text above reads fine on the dark panel it was designed for, but the same light
+   text on the same low-opacity tint has poor contrast on a white/near-white light-mode panel —
+   darker, more saturated variants for light mode. */
+[data-hop-theme='light'] .hop-status--active,
+[data-hop-theme='light'] .hop-status--completed,
+[data-hop-theme='light'] .hop-status--connected {
+  background: rgba(22, 163, 74, 0.14);
+  color: #15803d;
+}
+
+[data-hop-theme='light'] .hop-status--disabled,
+[data-hop-theme='light'] .hop-status--cancelled,
+[data-hop-theme='light'] .hop-status--error {
+  background: rgba(220, 38, 38, 0.14);
+  color: #b91c1c;
+}
+
+[data-hop-theme='light'] .hop-status--submitted,
+[data-hop-theme='light'] .hop-status--received,
+[data-hop-theme='light'] .hop-status--assigned,
+[data-hop-theme='light'] .hop-status--in_progress,
+[data-hop-theme='light'] .hop-status--en_route,
+[data-hop-theme='light'] .hop-status--arrived,
+[data-hop-theme='light'] .hop-status--disconnected {
+  background: rgba(217, 119, 6, 0.14);
+  color: #b45309;
 }
 
 /* ── Integrations ───────────────────────────── */
@@ -547,6 +579,132 @@
 .hop-stat-card__label {
   color: var(--hop-muted);
   font-size: 0.85rem;
+}
+
+/* ── Dispatch tabs (admin request filters) ──── */
+.hop-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hop-tab {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--hop-border);
+  background: var(--hop-overlay);
+  color: var(--hop-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hop-tab:hover {
+  background: var(--hop-overlay-strong);
+  color: var(--hop-text);
+}
+
+.hop-tab--active {
+  background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* ── Dispatch cards (admin requests) ────────── */
+.hop-dispatch-card {
+  gap: 0.85rem;
+}
+
+.hop-dispatch-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.hop-dispatch-card__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.6rem 1.5rem;
+  font-size: 0.85rem;
+}
+
+.hop-dispatch-card__meta dt {
+  color: var(--hop-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hop-dispatch-card__meta dd {
+  margin: 0.15rem 0 0;
+}
+
+.hop-dispatch-card__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+/* ── Status timeline ─────────────────────────── */
+.hop-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hop-timeline li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--hop-border);
+  padding-bottom: 0.5rem;
+}
+
+.hop-timeline li:last-child {
+  padding-bottom: 0;
+}
+
+.hop-timeline__top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.hop-timeline__time {
+  font-size: 0.75rem;
+  color: var(--hop-muted);
+}
+
+.hop-timeline__note {
+  font-size: 0.85rem;
+  color: var(--hop-muted);
+}
+
+/* ── Active request tracker (dashboard) ──────── */
+.hop-tracker-card {
+  border: 1px solid color-mix(in srgb, var(--hop-indigo) 35%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--hop-indigo) 10%, transparent),
+    color-mix(in srgb, var(--hop-cyan) 5%, transparent)
+  );
+}
+
+/* ── Ride location sharing ───────────────────── */
+.hop-ride-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--hop-link);
+  font-weight: 600;
 }
 
 @media (max-width: 720px) {

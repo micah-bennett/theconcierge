@@ -21,7 +21,9 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   `scripts/create-hop-admin.mjs`, no self-serve admin signup).
 - Users can submit and view their own service requests (`ride`, `meal`, `errand`, `wellness`,
   `family_home`, `other`).
-- Admins can see all users + all requests, disable/enable users, update request status.
+- Admins can see all users + all requests, disable/enable users, assign a request to any active
+  staff/admin account, move a request through the full staff-controlled status lifecycle, and log
+  dispatch notes — see "Dispatch workflow" below and in `architecture.md`.
 - Google Calendar: connect via real OAuth, see upcoming events on the user dashboard,
   disconnect.
 - Password reset: "Forgot password?" on both login pages sends a single-use, 30-minute reset
@@ -43,6 +45,33 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   no risk alerts, no per-employee reporting to hospital administrators. See "Wellness check-ins"
   in `architecture.md` for the full shape and what's deliberately not built yet (aggregate
   reporting).
+- Dispatch and live request tracking (2026-07-14): staff-controlled status lifecycle
+  (`submitted → received → assigned → in_progress → [en_route → arrived, rides only] →
+  completed`, `cancelled` from any non-terminal status), assignment to any active staff/admin
+  account, a full status-change audit trail, and member-facing read-only tracking (status badge,
+  assigned concierge, member-safe status language, timeline). Members can never change status —
+  every status-changing endpoint requires `requireAdmin`. See "Dispatch workflow" in
+  `architecture.md`.
+- Live ride location (2026-07-14): while a ride request is `en_route`, the assigned staff member
+  can start/stop sharing their live location (explicit in-app consent copy, then the browser's own
+  permission prompt); the member sees a "last known location" map link and a "last updated" time,
+  never a location history. Sharing stops automatically the moment status leaves `en_route`. This
+  is active-browser sharing, not background tracking — see "Live ride location" in
+  `architecture.md` for exactly what that means and its real limitations.
+
+## 2026-07-14: dashboard trimmed to exactly 6 quick-request cards
+
+The dashboard's quick-request grid is now exactly Ride, Meals, Errands, Wellness, Family Care,
+Other — matching the 6 service categories 1:1. The "How are you doing today?" wellness-*check-in*
+quick tile (added 2026-07-13) was removed from this grid to match that explicit 6-card list; the
+check-in feature itself is unaffected and still fully reachable via the sidebar's "Wellness" nav
+item. If a future task wants a 7th "check-in" tile back on the dashboard, that's a deliberate
+choice to make explicitly — don't assume it should just be re-added.
+
+No "Smart Moments" route/placeholder was added — nothing by that name existed in this codebase
+before, and inventing a placeholder for a feature that was never built would itself be exactly the
+kind of fabricated feature these docs tell you not to add. If "Smart Moments" refers to something
+specific from a design reference, it needs its own explicit spec first.
 
 ## What's stubbed / not built yet
 

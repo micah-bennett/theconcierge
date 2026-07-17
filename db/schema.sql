@@ -110,6 +110,41 @@ CREATE INDEX IF NOT EXISTS hop_service_requests_user_id_idx
 CREATE INDEX IF NOT EXISTS hop_service_requests_created_at_idx
   ON hop_service_requests (created_at DESC);
 
+-- Dispatch workflow (2026-07-14): expands the status lifecycle beyond the original
+-- submitted/in_progress/completed/cancelled. `handled_by` is reused as the *assigned* staff
+-- member (not just "whoever last touched status") — see docs/hop/architecture.md ("Dispatch
+-- workflow") before changing what this column means; it was not renamed to avoid a risky
+-- non-idempotent column rename on a table with existing rows.
+ALTER TABLE hop_service_requests DROP CONSTRAINT IF EXISTS hop_service_requests_status_check;
+ALTER TABLE hop_service_requests ADD CONSTRAINT hop_service_requests_status_check
+  CHECK (status IN ('submitted', 'received', 'assigned', 'in_progress', 'en_route', 'arrived', 'completed', 'cancelled'));
+
+-- Status-change audit trail. Append-only; every staff-initiated status change, assignment
+-- change, or standalone dispatch note becomes one row here (see api/hop/requests.ts).
+CREATE TABLE IF NOT EXISTS hop_service_request_status_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_id UUID NOT NULL REFERENCES hop_service_requests (id) ON DELETE CASCADE,
+  status TEXT NOT NULL,
+  changed_by UUID REFERENCES hop_users (id) ON DELETE SET NULL,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hop_service_request_status_history_request_id_idx
+  ON hop_service_request_status_history (request_id, created_at);
+
+-- Live ride location (2026-07-14). One row per request, upserted — deliberately no history:
+-- only the latest known location while a ride is en_route. Deleted (not just marked inactive)
+-- the moment status leaves en_route, sharing is stopped, or the request reaches a terminal
+-- status — see docs/hop/architecture.md ("Live ride location") for the full privacy behavior.
+CREATE TABLE IF NOT EXISTS hop_ride_locations (
+  request_id UUID PRIMARY KEY REFERENCES hop_service_requests (id) ON DELETE CASCADE,
+  shared_by UUID REFERENCES hop_users (id) ON DELETE SET NULL,
+  latitude DOUBLE PRECISION NOT NULL,
+  longitude DOUBLE PRECISION NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS hop_integrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,

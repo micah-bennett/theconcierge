@@ -1,17 +1,51 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useHopAuth } from '../../../hop/useHopAuth'
-import { hopGoogleCalendarEvents, type HopCalendarEvent } from '../../../hop/api'
+import { hopGoogleCalendarEvents, hopListRequests, type HopCalendarEvent, type HopServiceRequest } from '../../../hop/api'
 
 const QUICK_REQUESTS = [
   { to: '/hop/app/requests?type=ride', icon: '🚗', label: 'Ride' },
-  { to: '/hop/app/requests?type=meal', icon: '🍴', label: 'Meal' },
-  { to: '/hop/app/requests?type=errand', icon: '📦', label: 'Errand' },
+  { to: '/hop/app/requests?type=meal', icon: '🍴', label: 'Meals' },
+  { to: '/hop/app/requests?type=errand', icon: '📦', label: 'Errands' },
   { to: '/hop/app/requests?type=wellness', icon: '❤️', label: 'Wellness' },
   { to: '/hop/app/family-care', icon: '🏠', label: 'Family Care' },
-  { to: '/hop/app/wellness', icon: '🌿', label: 'How are you doing today?' },
-  { to: '/hop/app/requests?type=other', icon: '🤖', label: 'Something else' },
+  { to: '/hop/app/requests?type=other', icon: '🤖', label: 'Other' },
 ] as const
+
+const SERVICE_TYPE_LABEL: Record<string, string> = {
+  ride: 'Ride',
+  meal: 'Meal',
+  errand: 'Errand',
+  wellness: 'Wellness',
+  family_home: 'Family & home',
+  other: 'Something else',
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  submitted: 'Submitted',
+  received: 'Received',
+  assigned: 'Assigned',
+  in_progress: 'In progress',
+  en_route: 'En route',
+  arrived: 'Arrived',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+}
+
+function ActiveRequestTracker({ request }: { request: HopServiceRequest }) {
+  return (
+    <section className="hop-card hop-tracker-card">
+      <div className="hop-card__header">
+        <h2>Active request — {SERVICE_TYPE_LABEL[request.service_type] || request.service_type}</h2>
+        <span className={`hop-status hop-status--${request.status}`}>
+          {STATUS_LABEL[request.status] || request.status}
+        </span>
+      </div>
+      {request.assignee_name && <p className="hop-muted">Concierge: {request.assignee_name}</p>}
+      <Link to="/hop/app/requests">View request details →</Link>
+    </section>
+  )
+}
 
 export function HopDashboardPage() {
   const { user } = useHopAuth()
@@ -19,6 +53,7 @@ export function HopDashboardPage() {
   const [connected, setConnected] = useState(false)
   const [loadingEvents, setLoadingEvents] = useState(true)
   const [eventsError, setEventsError] = useState(false)
+  const [activeRequest, setActiveRequest] = useState<HopServiceRequest | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -42,10 +77,28 @@ export function HopDashboardPage() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    hopListRequests()
+      .then((result) => {
+        if (cancelled) return
+        const active = result.requests.find((req) => req.status !== 'completed' && req.status !== 'cancelled')
+        setActiveRequest(active || null)
+      })
+      .catch(() => {
+        if (!cancelled) setActiveRequest(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <div className="hop-page-body">
-      <h1 className="hop-page-title">Welcome back, {user?.firstName}.</h1>
-      <p className="hop-page-sub">One request handles the rest. What do you need?</p>
+      <h1 className="hop-page-title">Today</h1>
+      <p className="hop-page-sub">Welcome back, {user?.firstName}. What do you need?</p>
+
+      {activeRequest && <ActiveRequestTracker request={activeRequest} />}
 
       <div className="hop-quick-grid">
         {QUICK_REQUESTS.map((item) => (
