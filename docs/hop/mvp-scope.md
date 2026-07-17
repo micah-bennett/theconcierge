@@ -59,6 +59,38 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   is active-browser sharing, not background tracking — see "Live ride location" in
   `architecture.md` for exactly what that means and its real limitations.
 
+## 2026-07-16: HOP ConciergeHub, Phase 1 (Foundation)
+
+Turned the admin-only dispatch tooling into a two-sided staff product on the ConciergeHub
+deployment (`staff-portal` branch / `theconcierge-staff` project) — see "ConciergeHub" in
+`architecture.md` for the full technical shape. What's real as of this pass:
+
+- A third role, `concierge`, distinct from `admin`. Concierge accounts are created in-app by an
+  admin (`/hop/admin/concierges`), not self-serve, not via CLI.
+- Concierges can see and update requests assigned to them (`/hop/concierge/requests`), including
+  status changes and dispatch notes, but cannot reassign requests or see anyone else's.
+- A concierge showcase profile (headline, bio, specialties, years of experience) at
+  `/hop/concierge/profile`. **Photo is a pasted URL only — there is no file upload/blob storage
+  in this repo.** Don't assume real photo upload exists without checking here first.
+- An agenda-style calendar (`/hop/concierge/calendar`) built client-side from the concierge's own
+  assigned requests that have a needed-by time. **Not** a full calendar UI and **not** a personal
+  Google Calendar sync — that would extend the existing `hop_integrations` OAuth flow and hasn't
+  been built.
+- An async, polling-based message thread per request (`hop_request_messages`), visible to the
+  requester, the assigned concierge/admin, and any admin — reachable from the HOP user's own
+  requests page once a concierge is assigned, from the concierge's request card, and read-only
+  from the admin dispatch view. No read receipts / unread badges yet.
+- Ride location sharing (previously admin-only) and request status/assignment updates now accept
+  concierge callers too, gated to their own assigned requests.
+
+**Smart Suggestions / Moments (AI-driven traffic alerts, lunch reminders, wearable recovery
+tips)** — this was the third priority feature named alongside wellness and family care, and is
+**explicitly deferred, not built in this pass**. Wearable integrations (Fitbit/Oura/Apple
+Health/Garmin) are still UI-only stubs with no real data (see "What's stubbed" below), so there's
+no real signal to build "smart" suggestions from yet beyond calendar events and request history.
+Don't build a placeholder route for this without an explicit spec, per the "Smart Moments" note
+below.
+
 ## 2026-07-14: dashboard trimmed to exactly 6 quick-request cards
 
 The dashboard's quick-request grid is now exactly Ride, Meals, Errands, Wellness, Family Care,

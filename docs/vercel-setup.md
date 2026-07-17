@@ -6,7 +6,11 @@ Configure these in the Vercel dashboard for Production, Preview, and Development
 
 - `DATABASE_URL`: pooled Neon connection string.
 - `RESEND_API_KEY`: Resend API key for transactional email delivery (concierge-request
-  notifications, HOP account-creation email, HOP password-reset email).
+  notifications, HOP account-creation email, HOP password-reset email, HOP concierge-invite
+  email). **Required on the ConciergeHub (`theconcierge-staff`) project specifically** — the
+  in-app "Add Concierge" flow's clean path depends on it to email a set-password link; without
+  it, the admin instead gets a temporary password back in the response to hand over directly
+  (still works, just a manual fallback). See "ConciergeHub" in `docs/hop/architecture.md`.
 - `SESSION_HASH_SECRET`: random secret used to hash HOP session tokens and password-reset tokens
   before storing them (`api/_lib/hopAuth.ts`). Generate with `openssl rand -hex 32`. Rotating this
   logs every HOP user out immediately.
@@ -45,9 +49,9 @@ Google Cloud Console:
    - Local dev (`vercel dev`, default port 3000):
      `http://localhost:3000/api/hop/integrations/google?action=callback`
    - Production: `https://theconcierge.life/api/hop/integrations/google?action=callback`
-   - The staff-portal deployment (`theconcierge-staff.vercel.app`) does **not** need an entry —
-     that build is trimmed to admin/staff routes only and never renders
-     `/hop/app/integrations` or calls this integration (see "Deployments" in
+   - The ConciergeHub deployment (`theconcierge-staff.vercel.app`, `staff-portal` branch) does
+     **not** need an entry — that build is trimmed to admin/concierge routes only and never
+     renders `/hop/app/integrations` or calls this integration (see "Deployments" in
      `docs/hop/architecture.md`).
 6. Copy the generated Client ID and Client Secret into `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
 

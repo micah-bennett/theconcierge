@@ -17,9 +17,12 @@ how it might look eventually — check `mvp-scope.md` for what's real vs. stubbe
   `index.html` instead of hitting the function. Pass an `id`/`action` via a query string or
   the request body on a flat file instead (see `api/hop/auth.ts`'s `?action=` dispatch and
   `api/hop/requests.ts`'s body-based `PATCH`). This also matters for the Hobby-plan
-  12-Serverless-Function cap — flat, multi-action files keep the function count down
-  (currently 11 total, of 12: `chat.ts`, `requests.ts`, `relief.ts`, and 8 under `api/hop/**`).
-  One function of headroom remains — think carefully before adding a 12th.
+  12-Serverless-Function cap, tracked **per Vercel project** — see "Deployments" below for how
+  `main` and the ConciergeHub deployment now carry different `api/` trees and different counts.
+  `main` (`theconcierge`) is at **12 of 12, no headroom left**: `chat.ts`, `requests.ts`,
+  `relief.ts`, and 9 under `api/hop/**` (including `request-messages.ts`, added 2026-07-16). Any
+  future `main` feature needing a new function must fold into an existing `?action=` file or free
+  a slot first (`api/relief.ts` is the current best candidate — see `mvp-scope.md`).
 - **Database**: Neon serverless Postgres via `@neondatabase/serverless`'s `neon()` tagged-template
   client. One schema file, `db/schema.sql`, written idempotently (`CREATE TABLE IF NOT EXISTS`,
   `ADD COLUMN IF NOT EXISTS`, etc.) and applied with `npm run db:migrate`.
@@ -212,8 +215,13 @@ side.
   httpOnly/Secure/SameSite=Lax cookie; only its SHA-256 hash (peppered with
   `SESSION_HASH_SECRET`) is stored in `hop_sessions`. This makes sessions individually
   revocable (needed for admin "disable user").
-- Two roles, `user` and `admin`, on the same `hop_users` table — not separate tables. There is
-  no self-serve admin signup; admin accounts are created with `scripts/create-hop-admin.mjs`.
+- Three roles, `user`, `admin`, and `concierge` (added 2026-07-16), on the same `hop_users`
+  table — not separate tables. `admin` and `concierge` are the two ConciergeHub roles: an admin
+  manages concierge accounts and can do anything a concierge can; a concierge can only see and
+  update requests assigned to them (`handled_by`) and can't reassign. See "ConciergeHub" below.
+  There is no self-serve signup for either staff role — admins are created with
+  `scripts/create-hop-admin.mjs`; concierges are created in-app by an admin
+  (`api/hop/admin/concierges.ts`, ConciergeHub only).
 - Basic brute-force protection: after 8 failed logins, an account locks for 15 minutes
   (`hop_users.failed_login_attempts` / `locked_until`). No IP-based rate limiting yet.
 - Password reset: `hop_password_resets` (id, user_id, token_hash, expires_at, used_at). Same
@@ -258,6 +266,51 @@ side.
   "connect this" card per provider; their connect buttons are disabled ("Coming soon") and hit
   no API. `hop_wearable_metrics` exists in the schema but nothing writes to it yet.
 
+## ConciergeHub (2026-07-16)
+
+The staff/admin side of HOP, branded "HOP ConciergeHub," lives on the `staff-portal` branch /
+`theconcierge-staff` deployment (see "Deployments" below) — not on `main`. It turns the existing
+admin-only dispatch tooling into a two-sided staff product:
+
+- **Admin** creates and manages concierge accounts (`/hop/admin/concierges`,
+  `api/hop/admin/concierges.ts`), assigns them to requests (existing `handled_by` /
+  `api/hop/requests.ts` PATCH, now `requireStaff`-gated with ownership checks for concierge
+  callers), and can view everything a concierge can.
+- **Concierge** sees only requests assigned to them (`/hop/concierge/requests`,
+  `api/hop/concierge.ts?action=my-requests`), can move status forward and add dispatch notes on
+  those requests (not reassign), has an agenda-style calendar of their scheduled requests
+  (client-side only, built from the same request list — no separate calendar backend or personal
+  Google Calendar sync yet), and can build a showcase profile
+  (`hop_concierge_profiles`: headline/bio/specialties/years/photo URL —
+  `/hop/concierge/profile`, `api/hop/concierge.ts?action=profile`). Photo is a pasted URL only;
+  there's no file upload/blob storage in this repo yet.
+- **Request messaging**: `hop_request_messages` is an async, polling-based (15s, same pattern as
+  `RideTracker`/`RideLocationSharing`) message thread per request, visible to the requester,
+  whoever it's assigned to, and any admin (`api/hop/request-messages.ts`,
+  `src/hop/requestMessages/RequestMessageThread.tsx`). Deliberately **separate** from
+  `hop_service_request_status_history` — that table stays admin/staff-only and its dispatch notes
+  are never shown to members raw (see "Dispatch workflow" above); the message thread is always
+  user-visible by design. This is the one ConciergeHub piece that also ships on `main`, since the
+  HOP user's side of the conversation lives in the consumer app (`HopRequestsPage.tsx`) — it's
+  what pushed `main` to its 12-function cap.
+- **Concierge account creation** is admin-driven and in-app (not the CLI script used for admins):
+  `POST /api/hop/admin/concierges?action=create` generates a random temp password, creates the
+  account as `active` immediately, and tries to email a password-reset link
+  (`hopConciergeInviteTemplate`) via the same `hop_password_resets` mechanism as forgot-password.
+  If `RESEND_API_KEY` isn't configured (or sending fails), the temp password is returned in the
+  API response so the admin can hand it over directly — the ConciergeHub deployment needs
+  `RESEND_API_KEY` set for the clean path; see `docs/vercel-setup.md`.
+- **Function budget**: `api/hop/admin/concierges.ts` and `api/hop/concierge.ts` exist **only** on
+  the ConciergeHub deployment's `api/` tree — `main` is already at 12/12 and can't take them.
+  ConciergeHub itself drops three files unrelated to HOP (`chat.ts`, `requests.ts`, `relief.ts` —
+  they belong to the separate concierge-request/relief-call product on the same site) to make
+  room, landing at 11/12. See "Deployments" for the exact list per project.
+- **Divergence beyond `App.tsx`**: `src/hop/HopAdminLayout.tsx`'s `NAV_ITEMS` now also
+  legitimately diverges between branches (ConciergeHub's admin nav has a "Concierges" link that
+  main's admin portal can't support, since it has no backing endpoint there). When merging future
+  `main` changes into `staff-portal`, keep ConciergeHub's extra nav item rather than blindly
+  taking `main`'s version of that one constant.
+
 ## Deployments
 
 There are **two** Vercel projects sharing this one GitHub repo and this one Neon database. Don't
@@ -266,24 +319,35 @@ decoupled from the consumer-facing product, as the seed of a future standalone E
 
 - **`theconcierge`** (`ay-projects3/theconcierge`, production domain `theconcierge.life`) — tracks
   the `main` branch. Full app: public marketing site + consumer HOP signup/login (`/hop/app/*`) +
-  admin portal (`/hop/admin/*`).
-- **`theconcierge-staff`** (`ay-projects3/theconcierge-staff`, `theconcierge-staff.vercel.app` for
-  now — no custom domain attached yet) — tracks the `staff-portal` branch. `src/App.tsx` on this
-  branch is trimmed down to admin/staff only: `/hop/admin/login`, the `RequireAdmin` → `/hop/admin/*`
-  tree, and the shared `/hop/forgot-password` + `/hop/reset-password` routes. Every other path
-  (`/`, `/hop`, `/hop/login`, `/hop/signup`, `/hop/app/*`, marketing pages) redirects to
-  `/hop/admin/login`. `api/**` is untouched and identical on both branches/deployments — same
-  Vercel Functions, same `DATABASE_URL`, so admin accounts, sessions, and data are consistent
-  across both domains. Env vars (`DATABASE_URL`, `SESSION_HASH_SECRET`) were copied over from the
-  main project; `RESEND_API_KEY` still needs to be added to `theconcierge-staff` in the Vercel
-  dashboard for password-reset emails to actually send there (the token still gets created
-  without it — see the password-reset note above — it just won't be emailed).
-- Keeping `staff-portal` in sync: it's based on `main` as of the branch-creation commit. Any
-  future `api/**`, `hop/AuthContext.tsx`/`RequireAuth.tsx`/theme/CSS change made on `main` that
-  should also apply to staff/admin needs to be merged or cherry-picked into `staff-portal`
-  manually — the branches are not auto-synced. `src/App.tsx` is the one file that's *expected* to
-  permanently diverge between the two branches (full routes vs. trimmed admin-only routes); don't
-  try to reconcile it.
+  a legacy admin portal (`/hop/admin/*`, frozen — see below). 12 of 12 functions used:
+  `chat.ts`, `requests.ts`, `relief.ts`, and 9 under `api/hop/**` (`admin/integrations.ts`,
+  `admin/users.ts`, `auth.ts`, `integrations.ts`, `integrations/google.ts`, `request-messages.ts`,
+  `requests.ts`, `ride-location.ts`, `wellness.ts`).
+- **`theconcierge-staff`**, branded **HOP ConciergeHub** (`ay-projects3/theconcierge-staff`,
+  `theconcierge-staff.vercel.app` for now — no custom domain attached yet) — tracks the
+  `staff-portal` branch. This is where all *new* staff/admin functionality grows going forward;
+  `main`'s admin portal stays as a frozen fallback (it can't take new ConciergeHub-only
+  endpoints — see "ConciergeHub" above). `src/App.tsx` on this branch is trimmed to
+  `/hop/admin/login`, the `RequireAdmin` → `/hop/admin/*` tree (now including `/concierges`), the
+  `RequireConcierge` → `/hop/concierge/*` tree, and the shared `/hop/forgot-password` +
+  `/hop/reset-password` routes. Every other path redirects to `/hop/admin/login`. 11 of 12
+  functions used: `admin/concierges.ts`, `admin/integrations.ts`, `admin/users.ts`, `auth.ts`,
+  `concierge.ts`, `integrations.ts`, `integrations/google.ts`, `request-messages.ts`, `requests.ts`,
+  `ride-location.ts`, `wellness.ts` — one slot of headroom. Same `DATABASE_URL` as `main`, so
+  accounts, sessions, and data are consistent across both domains. Env vars (`DATABASE_URL`,
+  `SESSION_HASH_SECRET`) were copied over from the main project; **`RESEND_API_KEY` is a hard
+  requirement here now** (not just for password resets — the concierge-invite flow's clean path
+  depends on it too; see `docs/vercel-setup.md`). `GOOGLE_CLIENT_ID`/`SECRET`/`REDIRECT_URI` are
+  not needed here (no `/hop/app/integrations` page is ever served on this deployment).
+- **`api/**` is no longer identical between the two deployments** (it was until 2026-07-16).
+  `admin/concierges.ts` and `concierge.ts` exist only on `staff-portal`; `chat.ts`, `requests.ts`,
+  and `relief.ts` (the unrelated concierge-request/relief-call product) exist only on `main`.
+  Everything else stays shared/synced. Keeping `staff-portal` in sync: any future shared-file
+  change on `main` (`api/hop/**` besides the ConciergeHub-only files, `hop/AuthContext.tsx`,
+  `hop/RequireAuth.tsx`, theme/CSS) should be merged or cherry-picked into `staff-portal`
+  manually — the branches are not auto-synced. `src/App.tsx` and
+  `src/hop/HopAdminLayout.tsx`'s `NAV_ITEMS` are *expected* to permanently diverge; don't try to
+  reconcile them.
 - **No git auto-deploy (deliberate, for now)**: `theconcierge-staff`'s Production Branch setting
   defaulted to `main` (the repo's default branch) when the project was first connected to GitHub,
   and neither the `vercel` CLI nor the public `PATCH /v9/projects/:id` API expose a way to change
