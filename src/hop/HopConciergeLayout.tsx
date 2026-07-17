@@ -3,15 +3,13 @@ import { useHopAuth } from './useHopAuth'
 import { useHopTheme } from './useHopTheme'
 
 const NAV_ITEMS = [
-  { to: '/hop/admin', label: 'Overview', end: true },
-  { to: '/hop/admin/concierges', label: 'Concierges', end: false },
-  { to: '/hop/admin/users', label: 'Users', end: false },
-  { to: '/hop/admin/requests', label: 'Requests', end: false },
-  { to: '/hop/admin/wellness', label: 'Wellness', end: false },
-  { to: '/hop/admin/integrations', label: 'Integrations', end: false },
+  { to: '/hop/concierge', label: 'Overview', end: true },
+  { to: '/hop/concierge/requests', label: 'My requests', end: false },
+  { to: '/hop/concierge/calendar', label: 'Calendar', end: false },
+  { to: '/hop/concierge/profile', label: 'Profile', end: false },
 ] as const
 
-export function HopAdminLayout() {
+export function HopConciergeLayout() {
   const { user, logout } = useHopAuth()
   const { theme, toggleTheme } = useHopTheme()
   const navigate = useNavigate()
@@ -22,9 +20,9 @@ export function HopAdminLayout() {
   }
 
   return (
-    <div className="hop-shell hop-shell--admin">
+    <div className="hop-shell hop-shell--concierge">
       <aside className="hop-shell__sidebar">
-        <div className="hop-shell__brand">HOP admin</div>
+        <div className="hop-shell__brand">HOP ConciergeHub</div>
         <nav className="hop-shell__nav">
           {NAV_ITEMS.map((item) => (
             <NavLink
