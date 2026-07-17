@@ -21,15 +21,62 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   `scripts/create-hop-admin.mjs`, no self-serve admin signup).
 - Users can submit and view their own service requests (`ride`, `meal`, `errand`, `wellness`,
   `family_home`, `other`).
-- Admins can see all users + all requests, disable/enable users, update request status.
+- Admins can see all users + all requests, disable/enable users, assign a request to any active
+  staff/admin account, move a request through the full staff-controlled status lifecycle, and log
+  dispatch notes — see "Dispatch workflow" below and in `architecture.md`.
 - Google Calendar: connect via real OAuth, see upcoming events on the user dashboard,
   disconnect.
+- Password reset: "Forgot password?" on both login pages sends a single-use, 30-minute reset
+  link by email (Resend). Resetting destroys all of that user's existing sessions, so they're
+  signed out everywhere and have to log in again with the new password.
+- Settings page (`/hop/app/profile`, sidebar label "Settings"): users can edit their first and
+  last name, which updates immediately everywhere the name is shown (e.g. the sidebar). Email is
+  read-only — there is no self-serve email-change flow. There is no in-page "change password"
+  form; the Security section links out to the forgot-password flow instead, since that's the
+  only password-change path that exists.
+- Family Care (`/hop/app/family-care`, sidebar item after Requests): six choice cards (childcare,
+  eldercare, school/activity logistics, pet care, household emergency, other) that all submit
+  through the existing request flow as the existing `family_home` service type — see "Family
+  Care" in `architecture.md` for exactly how the category is captured without a schema change.
+- Wellness check-ins (`/hop/app/wellness`, sidebar item after Family Care): a voluntary, private
+  self-report check-in (feeling + what would help + optional note + optional shift-protection
+  question), with a "Request support now" action into the existing request flow and the member's
+  own recent check-ins. Admins have a read-only triage list at `/hop/admin/wellness` — no scoring,
+  no risk alerts, no per-employee reporting to hospital administrators. See "Wellness check-ins"
+  in `architecture.md` for the full shape and what's deliberately not built yet (aggregate
+  reporting).
+- Dispatch and live request tracking (2026-07-14): staff-controlled status lifecycle
+  (`submitted → received → assigned → in_progress → [en_route → arrived, rides only] →
+  completed`, `cancelled` from any non-terminal status), assignment to any active staff/admin
+  account, a full status-change audit trail, and member-facing read-only tracking (status badge,
+  assigned concierge, member-safe status language, timeline). Members can never change status —
+  every status-changing endpoint requires `requireAdmin`. See "Dispatch workflow" in
+  `architecture.md`.
+- Live ride location (2026-07-14): while a ride request is `en_route`, the assigned staff member
+  can start/stop sharing their live location (explicit in-app consent copy, then the browser's own
+  permission prompt); the member sees a "last known location" map link and a "last updated" time,
+  never a location history. Sharing stops automatically the moment status leaves `en_route`. This
+  is active-browser sharing, not background tracking — see "Live ride location" in
+  `architecture.md` for exactly what that means and its real limitations.
+
+## 2026-07-14: dashboard trimmed to exactly 6 quick-request cards
+
+The dashboard's quick-request grid is now exactly Ride, Meals, Errands, Wellness, Family Care,
+Other — matching the 6 service categories 1:1. The "How are you doing today?" wellness-*check-in*
+quick tile (added 2026-07-13) was removed from this grid to match that explicit 6-card list; the
+check-in feature itself is unaffected and still fully reachable via the sidebar's "Wellness" nav
+item. If a future task wants a 7th "check-in" tile back on the dashboard, that's a deliberate
+choice to make explicitly — don't assume it should just be re-added.
+
+No "Smart Moments" route/placeholder was added — nothing by that name existed in this codebase
+before, and inventing a placeholder for a feature that was never built would itself be exactly the
+kind of fabricated feature these docs tell you not to add. If "Smart Moments" refers to something
+specific from a design reference, it needs its own explicit spec first.
 
 ## What's stubbed / not built yet
 
 - Fitbit, Oura, Apple Health, Garmin integrations: UI cards exist and are disabled
   ("Coming soon"), no OAuth, no data. `hop_wearable_metrics` table exists but is unpopulated.
-- Password reset / forgot-password flow.
 - IP-based login rate limiting (only per-account lockout after repeated failures exists).
 - Any real fulfillment/dispatch logic behind a service request — requests are just recorded
   and status-tracked, not routed to an actual provider network.
@@ -54,9 +101,13 @@ too). Result:
 - **Reverted**: the public homepage, nav, footer, fonts/colors, `/hop` marketing page, and
   `/request` modal are all back to their original (pre-redesign) versions. The public site today
   is exactly as described elsewhere in these docs — nothing healthcare-specific on `/`.
-- **Kept, moved into HOP**: the redesign's sections were componentized (not copy-pasted) into
-  `src/hop/dashboard/` and appended below the functional content on `/hop/app` — see
-  "Dashboard 'sell' content" in `architecture.md`.
+- **Kept, moved into HOP, then removed (2026-07-13)**: the redesign's sections were componentized
+  (not copy-pasted) into `src/hop/dashboard/` and appended below the functional content on
+  `/hop/app`. That lasted until 2026-07-13, when it was removed entirely as repetitive — a user
+  doesn't need HOP's own sales pitch every time they log in to *use* HOP. `src/hop/dashboard/` and
+  `src/styles/hopDashboard.css` no longer exist. If HOP's pitch needs to live somewhere again,
+  that's the public `/hop` marketing page's job (`src/pages/HopPage.tsx`), not the authenticated
+  dashboard — see "Where HOP's app lives in routing" in `architecture.md`.
 - **Orphaned (backend kept, no frontend)**: the "Book a Relief Call" facility-lead-capture feature
   (`api/relief.ts`, `relief_call_requests` table, `sendReliefEmail`) has no page linking to it
   anymore — its sidebar was part of the reverted homepage. It still works end-to-end if called

@@ -10,9 +10,11 @@ import {
   destroySession,
   getSessionUser,
   hashPassword,
+  isResponse,
   json,
   jsonWithCookie,
   recordFailedLogin,
+  requireUser,
   resetFailedLogins,
   setSessionCookie,
   toPublicUser,
@@ -212,6 +214,46 @@ async function handleResetPassword(request: Request): Promise<Response> {
   }
 }
 
+type UpdateProfilePayload = { firstName: string; lastName: string }
+
+function validateUpdateProfile(value: unknown): UpdateProfilePayload {
+  if (!value || typeof value !== 'object') throw new Error('Invalid request body')
+  const source = value as Record<string, unknown>
+  const firstName = typeof source.firstName === 'string' ? source.firstName.trim() : ''
+  const lastName = typeof source.lastName === 'string' ? source.lastName.trim() : ''
+
+  if (!firstName || firstName.length > 80) throw new Error('Enter a first name')
+  if (!lastName || lastName.length > 80) throw new Error('Enter a last name')
+
+  return { firstName, lastName }
+}
+
+async function handleUpdateProfile(request: Request): Promise<Response> {
+  const sql = getSql()
+  if (!sql) return dbUnavailable()
+
+  const user = await requireUser(sql, request)
+  if (isResponse(user)) return user
+
+  try {
+    const data = validateUpdateProfile(await request.json())
+
+    const rows = await sql`
+      UPDATE hop_users
+      SET first_name = ${data.firstName}, last_name = ${data.lastName}, updated_at = NOW()
+      WHERE id = ${user.id}
+      RETURNING id, email, first_name, last_name, role
+    `
+    const row = rows[0] as { id: string; email: string; first_name: string; last_name: string; role: string }
+    return json({ user: toPublicUser(row) })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not update profile'
+    const status = /Enter a/i.test(message) ? 400 : 500
+    if (status === 500) console.error('HOP profile update failed', error)
+    return json({ error: status === 400 ? message : 'Could not update profile' }, status)
+  }
+}
+
 async function handleLogout(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
@@ -249,4 +291,13 @@ export async function POST(request: Request): Promise<Response> {
 export async function GET(request: Request): Promise<Response> {
   if (actionFromUrl(request) === 'me') return handleMe(request)
   return json({ error: 'Method not allowed' }, 405)
+}
+
+export async function PATCH(request: Request): Promise<Response> {
+  switch (actionFromUrl(request)) {
+    case 'update-profile':
+      return handleUpdateProfile(request)
+    default:
+      return json({ error: 'Not found' }, 404)
+  }
 }

@@ -3,8 +3,16 @@ export type HopUser = {
   email: string
   firstName: string
   lastName: string
-  role: 'user' | 'admin'
+  role: 'user' | 'admin' | 'concierge'
   status: 'active' | 'disabled'
+}
+
+export type HopRequestHistoryEntry = {
+  status: string
+  created_at: string
+  // Only present for admins — members get the status/timestamp only (see api/hop/requests.ts).
+  note?: string
+  staff_name?: string | null
 }
 
 export type HopServiceRequest = {
@@ -13,6 +21,9 @@ export type HopServiceRequest = {
   status: string
   details: string
   requested_for: string | null
+  handled_by: string | null
+  assignee_name: string | null
+  history: HopRequestHistoryEntry[]
   created_at: string
   updated_at: string
 }
@@ -72,6 +83,13 @@ export function hopResetPassword(token: string, password: string) {
   })
 }
 
+export function hopUpdateProfile(data: { firstName: string; lastName: string }) {
+  return request<{ user: HopUser }>('/auth?action=update-profile', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
 export function hopListRequests() {
   return request<{ requests: HopServiceRequest[] }>('/requests')
 }
@@ -80,10 +98,10 @@ export function hopCreateRequest(data: { serviceType: string; details: string; r
   return request<{ request: HopServiceRequest }>('/requests', { method: 'POST', body: JSON.stringify(data) })
 }
 
-export function hopUpdateRequestStatus(id: string, status: string) {
-  return request<{ request: HopServiceRequest }>('/requests', {
+export function hopAdminUpdateRequest(data: { id: string; status?: string; assignedTo?: string | null; note?: string }) {
+  return request<{ request: HopServiceRequest; validNextStatuses: string[] }>('/requests', {
     method: 'PATCH',
-    body: JSON.stringify({ id, status }),
+    body: JSON.stringify(data),
   })
 }
 
@@ -123,10 +141,76 @@ export type HopAdminRequest = HopServiceRequest & {
   first_name: string
   last_name: string
   email: string
+  valid_next_statuses: string[]
 }
 
 export function hopAdminListRequests() {
   return request<{ requests: HopAdminRequest[] }>('/requests')
+}
+
+export type HopStaffMember = {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  role: 'admin' | 'concierge'
+}
+
+export function hopAdminListStaff() {
+  return request<{ staff: HopStaffMember[] }>('/admin/users?scope=staff')
+}
+
+export type HopRideLocation = { latitude: number; longitude: number; updatedAt: string }
+
+export function hopGetRideLocation(requestId: string) {
+  return request<{ location: HopRideLocation | null }>(`/ride-location?requestId=${encodeURIComponent(requestId)}`)
+}
+
+export function hopUpdateRideLocation(requestId: string, latitude: number, longitude: number) {
+  return request<{ ok: true }>('/ride-location?action=update', {
+    method: 'POST',
+    body: JSON.stringify({ requestId, latitude, longitude }),
+  })
+}
+
+export function hopStopRideLocationSharing(requestId: string) {
+  return request<{ ok: true }>('/ride-location?action=stop', {
+    method: 'POST',
+    body: JSON.stringify({ requestId }),
+  })
+}
+
+export type HopWellnessCheckIn = {
+  id: string
+  feeling: string
+  desired_support: string
+  note: string
+  shift_protection: string | null
+  created_at: string
+}
+
+export function hopCreateWellnessCheckIn(data: {
+  feeling: string
+  desiredSupport: string
+  note: string
+  shiftProtection: string | null
+}) {
+  return request<{ checkIn: HopWellnessCheckIn }>('/wellness', { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function hopListWellnessCheckIns() {
+  return request<{ checkIns: HopWellnessCheckIn[] }>('/wellness')
+}
+
+export type HopAdminWellnessCheckIn = HopWellnessCheckIn & {
+  user_id: string
+  first_name: string
+  last_name: string
+  email: string
+}
+
+export function hopAdminListWellnessCheckIns() {
+  return request<{ checkIns: HopAdminWellnessCheckIn[] }>('/wellness')
 }
 
 export type HopAdminIntegration = {
@@ -142,4 +226,84 @@ export type HopAdminIntegration = {
 
 export function hopAdminListIntegrations() {
   return request<{ integrations: HopAdminIntegration[] }>('/admin/integrations')
+}
+
+export type HopRequestMessage = {
+  id: string
+  sender_id: string
+  sender_name: string
+  sender_role: 'user' | 'admin' | 'concierge'
+  body: string
+  created_at: string
+}
+
+export function hopListRequestMessages(requestId: string) {
+  return request<{ messages: HopRequestMessage[] }>(
+    `/request-messages?requestId=${encodeURIComponent(requestId)}`,
+  )
+}
+
+export function hopSendRequestMessage(requestId: string, body: string) {
+  return request<{ message: HopRequestMessage }>('/request-messages', {
+    method: 'POST',
+    body: JSON.stringify({ requestId, body }),
+  })
+}
+
+// ── HOP ConciergeHub client functions ──────────────────────────────────────
+// These call endpoints that only exist on the ConciergeHub deployment (api/hop/concierge.ts,
+// api/hop/admin/concierges.ts) — not on the main consumer app, which stays at its Vercel
+// Hobby function-count cap. Safe to keep here since this file is synced across both
+// deployments and unused exports cost nothing.
+
+export type HopConciergeProfile = {
+  headline: string
+  bio: string
+  specialties: string[]
+  years_experience: number | null
+  photo_url: string | null
+}
+
+export function hopConciergeGetProfile() {
+  return request<{ profile: HopConciergeProfile }>('/concierge?action=profile')
+}
+
+export function hopConciergeUpdateProfile(data: HopConciergeProfile) {
+  return request<{ profile: HopConciergeProfile }>('/concierge?action=profile', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function hopConciergeMyRequests() {
+  return request<{ requests: HopAdminRequest[] }>('/concierge?action=my-requests')
+}
+
+export type HopConcierge = {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  status: 'active' | 'disabled'
+  created_at: string
+  headline: string | null
+  open_assigned: number
+}
+
+export function hopAdminListConcierges() {
+  return request<{ concierges: HopConcierge[] }>('/admin/concierges')
+}
+
+export function hopAdminCreateConcierge(data: { email: string; firstName: string; lastName: string }) {
+  return request<{ concierge: HopConcierge; temporaryPassword: string | null; emailSent: boolean }>(
+    '/admin/concierges?action=create',
+    { method: 'POST', body: JSON.stringify(data) },
+  )
+}
+
+export function hopAdminUpdateConciergeStatus(id: string, status: 'active' | 'disabled') {
+  return request<{ concierge: HopConcierge }>('/admin/concierges', {
+    method: 'PATCH',
+    body: JSON.stringify({ id, status }),
+  })
 }

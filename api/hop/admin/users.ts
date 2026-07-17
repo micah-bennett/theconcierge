@@ -8,6 +8,19 @@ export async function GET(request: Request): Promise<Response> {
   const admin = await requireAdmin(sql, request)
   if (isResponse(admin)) return admin
 
+  // ?scope=staff is a short, read-only list of eligible assignees for the dispatch UI
+  // (HopAdminRequestsPage.tsx) — deliberately never includes role='user' accounts. Includes
+  // 'concierge' alongside 'admin' now that concierges can be assigned to requests too.
+  if (new URL(request.url).searchParams.get('scope') === 'staff') {
+    const staff = await sql`
+      SELECT id, first_name, last_name, email, role
+      FROM hop_users
+      WHERE role IN ('admin', 'concierge') AND status = 'active'
+      ORDER BY first_name, last_name
+    `
+    return json({ staff })
+  }
+
   const rows = await sql`
     SELECT
       u.id, u.email, u.first_name, u.last_name, u.role, u.status, u.created_at,

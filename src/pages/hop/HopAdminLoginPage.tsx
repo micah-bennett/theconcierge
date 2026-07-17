@@ -17,11 +17,13 @@ export function HopAdminLoginPage() {
     setSubmitting(true)
     try {
       const user = await login(email, password)
-      if (user.role !== 'admin') {
-        setError('This account is not an admin account.')
-        return
+      if (user.role === 'admin') {
+        navigate('/hop/admin', { replace: true })
+      } else if (user.role === 'concierge') {
+        navigate('/hop/concierge', { replace: true })
+      } else {
+        setError('This account is not a staff account.')
       }
-      navigate('/hop/admin', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not sign in')
     } finally {

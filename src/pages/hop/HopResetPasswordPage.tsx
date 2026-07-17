@@ -53,7 +53,7 @@ export function HopResetPasswordPage() {
             </p>
           </>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form className="hop-form-stack" onSubmit={handleSubmit}>
             <p className="hop-auth-card__sub">Choose a new password for your account.</p>
 
             {error && <div className="hop-auth-card__error">{error}</div>}

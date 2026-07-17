@@ -18,7 +18,8 @@ how it might look eventually — check `mvp-scope.md` for what's real vs. stubbe
   the request body on a flat file instead (see `api/hop/auth.ts`'s `?action=` dispatch and
   `api/hop/requests.ts`'s body-based `PATCH`). This also matters for the Hobby-plan
   12-Serverless-Function cap — flat, multi-action files keep the function count down
-  (currently 9 total: `chat.ts`, `requests.ts`, `relief.ts`, and 6 under `api/hop/**`).
+  (currently 11 total, of 12: `chat.ts`, `requests.ts`, `relief.ts`, and 8 under `api/hop/**`).
+  One function of headroom remains — think carefully before adding a 12th.
 - **Database**: Neon serverless Postgres via `@neondatabase/serverless`'s `neon()` tagged-template
   client. One schema file, `db/schema.sql`, written idempotently (`CREATE TABLE IF NOT EXISTS`,
   `ADD COLUMN IF NOT EXISTS`, etc.) and applied with `npm run db:migrate`.
@@ -47,24 +48,162 @@ working, unrelated code.
 
 - `/hop` — the existing marketing page (`src/pages/HopPage.tsx`), untouched except for a
   login/signup CTA in the hero.
-- `/hop/login`, `/hop/signup`, `/hop/admin/login` — auth pages, public.
+- `/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/forgot-password`, `/hop/reset-password`
+  — auth pages, public.
 - `/hop/app/*` — authenticated **user** portal (`src/pages/hop/app/`), behind `RequireAuth`.
 - `/hop/admin/*` — authenticated **admin** portal (`src/pages/hop/admin/`), behind `RequireAdmin`.
 
 Auth state lives in `src/hop/AuthContext.tsx`, scoped to a layout route that wraps only the
-`/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/app/*`, `/hop/admin/*` subtree — so
-loading the marketing site (including plain `/hop`) never triggers a session check.
+`/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/forgot-password`, `/hop/reset-password`,
+`/hop/app/*`, `/hop/admin/*` subtree — so loading the marketing site (including plain `/hop`)
+never triggers a session check.
 
-## Dashboard "sell" content (`src/hop/dashboard/`)
+`HopDashboardPage.tsx` (`/hop/app`) is functional-only: greeting, quick-request tiles, and the
+Google Calendar preview. It previously also rendered a componentized "why HOP" marketing section
+below that (`src/hop/dashboard/`, `src/styles/hopDashboard.css`) — removed 2026-07-13 as repetitive
+noise once a user is already logged in; see `mvp-scope.md` for that history. Don't re-add
+marketing/sell content to the authenticated dashboard — if leadership wants HOP's pitch shown
+somewhere, that belongs on the public `/hop` marketing page (`src/pages/HopPage.tsx`), not here.
 
-`HopDashboardPage.tsx` (`/hop/app`) has two parts: the functional top section (quick-request
-tiles, calendar preview — unchanged since the original build) and, below it, a set of
-componentized informational/"why HOP" sections: `HopWhyBanner`, `HopBurnoutStats`,
-`HopHowItWorks`, `HopServicesOverview`, `HopFeatureHighlights`, `HopAboutStory`. These are ported
-from a reverted public-homepage redesign (see `mvp-scope.md`) — reuse or extend them for any
-"tell the user why HOP matters" content; don't rebuild similar content from scratch. Styled by
-`src/styles/hopDashboard.css` (a `hop-dash-*` prefix, deliberately distinct from the core app's
-`.hop-card`/`.hop-stat*` classes in `hopApp.css` to avoid collisions on the same page).
+## Family Care (`/hop/app/family-care`)
+
+A dedicated entry point for the `family_home` service type, for users who want more specific
+framing than the generic request form. `HopFamilyCarePage.tsx` shows six choice cards (childcare,
+eldercare, school/activity logistics, pet care, household emergency, other) that each link to
+`/hop/app/requests?type=family_home&category=<slug>` — **there is no `family_care` or per-category
+value in the `hop_service_requests.service_type` CHECK constraint**; every choice submits as the
+existing `family_home` type. `HopRequestsPage.tsx` reads the optional `category` param purely to
+pre-fill the free-text `details` field with a human-readable label (e.g. "Eldercare support — ")
+so the concierge still sees which category was picked, without a schema change or a duplicate
+service type. If per-category structured data (not just a details prefix) is needed later, that
+requires a real schema change — check with the user before assuming free-text is sufficient long
+term.
+
+## Wellness check-ins (`/hop/app/wellness`, `/hop/admin/wellness`)
+
+A voluntary, append-only self-report log — not a clinical tool, not a performance record. Deciding
+what to build here, and what *not* to build, matters: don't add scoring, risk alerts, diagnostic
+language, individual reporting to hospital administrators, or anything that reads as an employee
+monitoring feature. If a future task asks for aggregate/de-identified trend reporting, that's a
+new admin analytics view built on top of this table — it is explicitly not built yet.
+
+- **Schema**: `hop_wellness_checkins` (`db/schema.sql`) — `user_id`, `feeling` (`doing_well` |
+  `stretched_thin` | `low_energy` | `overwhelmed`), `desired_support` (`meal` | `ride` | `errands`
+  | `wellness_appt` | `time_back_home` | `talk_to_concierge`), `note` (free text, 500 char cap
+  enforced in `api/hop/wellness.ts`), `shift_protection` (nullable: `yes` | `no` |
+  `not_applicable`), `created_at`. No `status`/`handled_by`/`updated_at` — check-ins aren't a
+  ticket workflow, they're a log a concierge reads for triage.
+- **API**: `api/hop/wellness.ts` (one flat file, no new function beyond the one it is — 10 total
+  now). `GET` is role-branched like `api/hop/requests.ts`: a `user` gets their own last 20
+  check-ins, an `admin` gets everyone's, joined with name/email, for triage. `POST` creates a
+  check-in for the caller. No `PATCH` — there's nothing to update/triage-status on a check-in.
+- **Frontend**: `HopWellnessPage.tsx` (user) has the check-in form, a privacy statement, an
+  emergency-services notice, and the user's own recent check-ins. `HopAdminWellnessPage.tsx`
+  (admin) is a plain read-only table, same shape as `HopAdminRequestsPage.tsx` — deliberately not
+  an analytics/aggregate view.
+- **"Request support now"**: after submitting, the confirmation offers a request pre-filled from
+  `desired_support` → the closest existing `hop_service_requests.service_type` (`meal`→`meal`,
+  `ride`→`ride`, `errands`→`errand`, `wellness_appt`→`wellness`, `time_back_home`→`family_home`,
+  `talk_to_concierge`→`other`). Same `category` query-param + details-prefix mechanism as Family
+  Care — see `CATEGORY_LABEL` in `HopRequestsPage.tsx`. No new service_type was added. The
+  check-in's `shift_protection` answer, if any, is also folded into the pre-filled details text
+  (`&shift=` query param) so it's visible to dispatch — there's no direct DB link between a
+  check-in row and the request it produces.
+
+## Dispatch workflow (2026-07-14)
+
+Staff-controlled request lifecycle, assignment, and a status-change audit trail.
+
+- **Status lifecycle** (`api/_lib/hopRequestWorkflow.ts`): `submitted → received → assigned →
+  in_progress → completed`, with `en_route`/`arrived` inserted between `in_progress` and
+  `completed` **only** for `service_type = 'ride'`. `cancelled` is reachable from any non-terminal
+  status. `completed` and `cancelled` are terminal — no further transitions out of either.
+  `isValidStatusTransition()` enforces "exactly one step forward, or cancel" server-side in
+  `api/hop/requests.ts`'s `PATCH`; it is the single source of truth `nextValidStatuses()` also
+  feeds to the admin UI so the status `<select>` never even offers an invalid option. Only
+  `requireAdmin` callers can reach `PATCH` — members can never set their own status.
+- **Assignment reuses `handled_by`**: `hop_service_requests.handled_by` already existed (it used
+  to mean "whichever admin last touched status"); it's now the deliberate "assigned staff member"
+  field, set via its own `assignedTo` field on the same `PATCH` body, independent of a status
+  change. It was **not** renamed — a column rename isn't safely idempotent to rerun on a table
+  with existing rows, and the meaning is now documented here instead. Assignment only accepts a
+  `role = 'admin' AND status = 'active'` user id (or `null` to unassign) — `api/hop/admin/users.ts`
+  gained a `?scope=staff` mode for the assignment dropdown; it never returns `role = 'user'`
+  accounts, so members can never be assigned a request.
+- **Audit trail**: `hop_service_request_status_history` — one row per `PATCH` call that actually
+  changes status, assignment, and/or adds a note (a note-only call with no status/assignment
+  change still logs a row). Append-only, never edited or deleted except by cascade when the
+  parent request is deleted. Admin's `GET` returns the full entry (`status`, `note`, `staff_name`,
+  `created_at`); a member's `GET` returns only `status` + `created_at` for their own requests —
+  raw staff notes are **never** sent to members (see "member-safe" below).
+- **Member-safe status language**: members never see raw dispatch notes. `HopRequestsPage.tsx`
+  renders a static per-status message (`MEMBER_STATUS_MESSAGE`) instead — e.g. `en_route` →
+  "Your ride is on the way." This is a deliberate design choice, not a missing feature: dispatch
+  notes can contain internal operational detail ("driver stuck on 87, ETA slipping") that isn't
+  appropriate to forward verbatim, and there's no reliable way to auto-sanitize free text.
+- **Admin dispatch UI** (`HopAdminRequestsPage.tsx`): request cards (not a table — the old
+  table-based UI didn't have room for assign/status/note controls per row) with five filter tabs
+  computed client-side from the already-fetched list (`bucketFor()`): **New/unassigned**
+  (`handled_by IS NULL`, non-terminal), **Assigned** (`handled_by` set, not yet
+  `in_progress`/`en_route`/`arrived`), **Active** (`in_progress`/`en_route`/`arrived`),
+  **Completed**, **Cancelled**. No new list endpoints per tab — one `GET /api/hop/requests` call,
+  filtered in the browser.
+- **Member tracking** (`HopRequestsPage.tsx`): status badge, assigned concierge name (once
+  assigned), the member-safe status message, and — only when history exists — a timeline of
+  status changes (status + timestamp only, no notes/staff names). Members have no status-changing
+  UI at all; the only requests API call available to a `role='user'` caller is `GET`/`POST`, never
+  `PATCH` (enforced by `requireAdmin` on the server, not just hidden in the UI).
+
+## Live ride location (2026-07-14)
+
+Privacy-first, active-browser-only location sharing — **not** background tracking. This only
+exists for `service_type = 'ride'` while `status = 'en_route'`; it is unreachable for every other
+service type or status, enforced server-side in `api/hop/ride-location.ts`, not just hidden client-
+side.
+
+- **Schema**: `hop_ride_locations` — `request_id` is the **primary key** (one row per request,
+  always upserted via `ON CONFLICT (request_id) DO UPDATE`), `shared_by`, `latitude`, `longitude`,
+  `updated_at`. Deliberately no history table — only the latest known point is ever stored, and
+  the row is deleted (not archived) the moment sharing should stop. This is why the member-facing
+  `GET` can never expose a location *history*, only ever the current/last point.
+- **API** (`api/hop/ride-location.ts`, one new flat file — 11 of 12 functions now):
+  - `GET ?requestId=` — the request's owner or any admin; returns `{ location: null }` for every
+    other case (wrong caller, wrong service_type, wrong status, no row yet) rather than an error,
+    so this endpoint can't be used to probe a request's existence or status.
+  - `POST ?action=update` — **only** the staff member the request is assigned to
+    (`handled_by === caller.id`); rejects (409) if the request isn't `ride` + `en_route` at the
+    moment of the call, even if the client's timer is still running from before a status change.
+  - `POST ?action=stop` — any admin (a supervisor can force-stop, not just the original assignee).
+  - **Automatic stop**: `api/hop/requests.ts`'s `PATCH` deletes the `hop_ride_locations` row
+    whenever a status change lands on `arrived`, `completed`, or `cancelled` — this is the
+    authoritative stop, independent of whether the staff member's browser tab is even still open.
+- **Staff flow** (`RideLocationSharing` in `HopAdminRequestsPage.tsx`): only rendered when
+  `service_type='ride' && status='en_route' && handled_by === current admin's id`. "Start location
+  sharing" explains what sharing does *before* the browser's native permission prompt fires (two
+  layers of consent: the in-app explanation, then the OS/browser dialog). Once granted,
+  `navigator.geolocation.getCurrentPosition` fires immediately and then every 20 seconds via
+  `setInterval` (not `watchPosition`, to keep the update cadence predictable and bounded) until
+  the staff member clicks "Stop sharing" or navigates away (the interval is cleared on unmount,
+  but the *authoritative* stop is still the server-side one above).
+- **Member flow** (`RideTracker` in `HopRequestsPage.tsx`): only rendered when
+  `service_type='ride' && status='en_route'`. Polls `GET` every 15 seconds and shows a plain
+  `https://www.google.com/maps?q=lat,lng` link plus a relative "Last updated" time — deliberately
+  a link, not an embedded interactive map widget, so **no maps API key is required at all** (see
+  "No maps API key needed" below). No location history is ever shown to the member — only the
+  current/last-known point while the ride is actively en route.
+- **No maps API key needed today**: the member's tracking link is a plain URL, not an embedded map
+  SDK, so there is nothing to configure and no key of any kind is exposed to the frontend. If an
+  embedded interactive map is wanted later, that requires a real maps provider (Google Maps
+  JavaScript API, Mapbox GL JS, etc.) and a provider API key — note that JS-embedded map keys are
+  *inherently* client-visible by design (that's how they're loaded into the browser); the standard
+  mitigation is restricting the key by HTTP referrer/domain in the provider's console, not hiding
+  it. That's a real, separate decision to make later, not something to add silently now.
+- **Known limitation, stated plainly**: this is active-browser sharing, not background tracking.
+  It only works while the assigned staff member has HOP open in a browser tab (typically on their
+  phone) and has granted location permission for that tab/session. If they close the tab, lock
+  their phone in a way that suspends the browser, or never grant permission, no location updates
+  happen — the member's tracker will just show "hasn't started sharing their location yet" or a
+  stale "Last updated" time. This is an honest constraint of browser geolocation APIs, not a bug.
 
 ## Auth model
 
@@ -76,8 +215,37 @@ from a reverted public-homepage redesign (see `mvp-scope.md`) — reuse or exten
 - Two roles, `user` and `admin`, on the same `hop_users` table — not separate tables. There is
   no self-serve admin signup; admin accounts are created with `scripts/create-hop-admin.mjs`.
 - Basic brute-force protection: after 8 failed logins, an account locks for 15 minutes
-  (`hop_users.failed_login_attempts` / `locked_until`). No IP-based rate limiting yet, and no
-  password-reset flow yet — both are reasonable follow-ups, not built in this pass.
+  (`hop_users.failed_login_attempts` / `locked_until`). No IP-based rate limiting yet.
+- Password reset: `hop_password_resets` (id, user_id, token_hash, expires_at, used_at). Same
+  "store the hash, not the raw token" pattern as sessions — `createPasswordResetToken` /
+  `consumePasswordResetToken` in `hopAuth.ts`, dispatched via `api/hop/auth.ts`'s
+  `?action=forgot-password|reset-password` (no new top-level function). Tokens expire after 30
+  minutes and are single-use (`used_at`). `forgot-password` always returns the same generic
+  message regardless of whether the email matched an account, to avoid leaking which emails have
+  HOP accounts. A successful reset destroys *all* of that user's existing sessions
+  (`destroyAllSessions`), forcing re-login everywhere. Requires `RESEND_API_KEY` to actually
+  deliver the email — without it, the token is still created but the email send fails silently
+  (logged, not thrown) so the generic response is unaffected.
+
+## Theme (dark/light)
+
+- `src/hop/ThemeContext.tsx` (`HopThemeProvider`) + `useHopTheme()` — `localStorage`-backed
+  (`hop-theme`), defaults to `dark`. Renders a `<div data-hop-theme="dark|light">` wrapper around
+  everything inside the HOP route tree (both the auth pages and the authenticated app/admin
+  shells sit inside it).
+- Scope is deliberately narrow: **HOP app + admin only**. The public marketing site keeps its
+  fixed dark "cinematic canvas" design — it has no theme toggle and isn't wrapped in
+  `HopThemeProvider`.
+- `src/styles/hopApp.css` defines the base (dark) values for the `--hop-*` custom properties on
+  `.hop-shell, .hop-auth-page`, plus a `[data-hop-theme='light'] .hop-shell, [data-hop-theme='light']
+  .hop-auth-page` block overriding them for light mode. Every HOP rule should read colors via
+  `var(--hop-*)` — never hardcode a hex/rgba color in HOP CSS — so the whole app (core pages +
+  the componentized dashboard sections) reskins for free. Watch out for bare `h1`/`h2` elements:
+  the marketing site's global `index.css` sets `h1, h2 { color: var(--text-h) }`, and `--text-h`
+  follows the *browser's* OS color-scheme preference, not HOP's own toggle — any HOP heading needs
+  its own explicit `color: var(--hop-text)` (see `.hop-auth-card__title`, `.hop-page-title`,
+  `.hop-card h2`) or it'll silently ignore the HOP theme.
+- Toggle buttons live in `HopAppLayout.tsx` and `HopAdminLayout.tsx`, next to "Log out".
 
 ## Integrations model
 
@@ -89,3 +257,52 @@ from a reverted public-homepage redesign (see `mvp-scope.md`) — reuse or exten
 - The other providers exist only so the UI (`HopIntegrationsPage.tsx`) can render a consistent
   "connect this" card per provider; their connect buttons are disabled ("Coming soon") and hit
   no API. `hop_wearable_metrics` exists in the schema but nothing writes to it yet.
+
+## Deployments
+
+There are **two** Vercel projects sharing this one GitHub repo and this one Neon database. Don't
+try to merge them back into one — the whole point is that staff/admin gets its own domain,
+decoupled from the consumer-facing product, as the seed of a future standalone ERP.
+
+- **`theconcierge`** (`ay-projects3/theconcierge`, production domain `theconcierge.life`) — tracks
+  the `main` branch. Full app: public marketing site + consumer HOP signup/login (`/hop/app/*`) +
+  admin portal (`/hop/admin/*`).
+- **`theconcierge-staff`** (`ay-projects3/theconcierge-staff`, `theconcierge-staff.vercel.app` for
+  now — no custom domain attached yet) — tracks the `staff-portal` branch. `src/App.tsx` on this
+  branch is trimmed down to admin/staff only: `/hop/admin/login`, the `RequireAdmin` → `/hop/admin/*`
+  tree, and the shared `/hop/forgot-password` + `/hop/reset-password` routes. Every other path
+  (`/`, `/hop`, `/hop/login`, `/hop/signup`, `/hop/app/*`, marketing pages) redirects to
+  `/hop/admin/login`. `api/**` is untouched and identical on both branches/deployments — same
+  Vercel Functions, same `DATABASE_URL`, so admin accounts, sessions, and data are consistent
+  across both domains. Env vars (`DATABASE_URL`, `SESSION_HASH_SECRET`) were copied over from the
+  main project; `RESEND_API_KEY` still needs to be added to `theconcierge-staff` in the Vercel
+  dashboard for password-reset emails to actually send there (the token still gets created
+  without it — see the password-reset note above — it just won't be emailed).
+- Keeping `staff-portal` in sync: it's based on `main` as of the branch-creation commit. Any
+  future `api/**`, `hop/AuthContext.tsx`/`RequireAuth.tsx`/theme/CSS change made on `main` that
+  should also apply to staff/admin needs to be merged or cherry-picked into `staff-portal`
+  manually — the branches are not auto-synced. `src/App.tsx` is the one file that's *expected* to
+  permanently diverge between the two branches (full routes vs. trimmed admin-only routes); don't
+  try to reconcile it.
+- **No git auto-deploy (deliberate, for now)**: `theconcierge-staff`'s Production Branch setting
+  defaulted to `main` (the repo's default branch) when the project was first connected to GitHub,
+  and neither the `vercel` CLI nor the public `PATCH /v9/projects/:id` API expose a way to change
+  that non-interactively (several field/endpoint shapes were tried, all rejected). Left connected,
+  **every push to `main` would silently redeploy `theconcierge-staff` with the full marketing
+  site** — this actually happened once during setup. Rather than leave that landmine, the GitHub
+  connection was disconnected (`vercel git disconnect`) for this project, so pushing to *either*
+  branch no longer auto-deploys `theconcierge-staff`. Deploy it deliberately instead, from a
+  worktree linked to the project:
+  ```
+  git worktree add ../staff-portal-worktree staff-portal
+  cd ../staff-portal-worktree && git pull
+  npx vercel link --project theconcierge-staff --yes
+  npx vercel deploy --prod --yes
+  ```
+  (`vercel deploy --prod` was observed hanging/getting `BLOCKED` for several minutes when a stale
+  build was mid-flight — if that happens, find the `READY` deployment for the right commit via
+  `GET /v6/deployments?projectId=<id>&teamId=<id>` and run `npx vercel promote <deployment-id>
+  --yes` instead of re-triggering a fresh build.)
+  If someone with dashboard access later sets Settings → Git → Production Branch to `staff-portal`
+  for the `theconcierge-staff` project, the GitHub connection can be safely re-added
+  (`vercel git connect`) and this manual step won't be needed.

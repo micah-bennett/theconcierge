@@ -21,3 +21,26 @@ export function RequireAdmin() {
 
   return <Outlet />
 }
+
+export function RequireConcierge() {
+  const { user, loading } = useHopAuth()
+  const location = useLocation()
+
+  if (loading) return <div className="hop-app-loading">Loading…</div>
+  if (!user) return <Navigate to="/hop/admin/login" replace state={{ from: location.pathname }} />
+  if (user.role !== 'concierge') return <Navigate to="/hop/admin" replace />
+
+  return <Outlet />
+}
+
+// Admin or concierge — for surfaces both ConciergeHub roles can see (e.g. request messaging).
+export function RequireStaff() {
+  const { user, loading } = useHopAuth()
+  const location = useLocation()
+
+  if (loading) return <div className="hop-app-loading">Loading…</div>
+  if (!user) return <Navigate to="/hop/admin/login" replace state={{ from: location.pathname }} />
+  if (user.role !== 'admin' && user.role !== 'concierge') return <Navigate to="/hop/login" replace />
+
+  return <Outlet />
+}
