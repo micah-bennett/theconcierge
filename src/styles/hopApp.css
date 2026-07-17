@@ -707,6 +707,97 @@
   font-weight: 600;
 }
 
+/* ── Request message thread ──────────────────── */
+.hop-message-thread {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--hop-border);
+}
+
+.hop-message-thread__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--hop-text);
+}
+
+.hop-message-thread__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.hop-message-thread__bubble {
+  align-self: flex-start;
+  max-width: 85%;
+  background: var(--hop-panel-2);
+  border: 1px solid var(--hop-border);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+}
+
+.hop-message-thread__bubble--own {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--hop-indigo) 18%, var(--hop-panel-2));
+  border-color: color-mix(in srgb, var(--hop-indigo) 35%, transparent);
+}
+
+.hop-message-thread__bubble p {
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
+  color: var(--hop-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.hop-message-thread__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.72rem;
+  color: var(--hop-muted);
+}
+
+.hop-message-thread__composer {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  align-items: flex-end;
+}
+
+.hop-message-thread__composer textarea {
+  flex: 1;
+  resize: vertical;
+  background: var(--hop-panel);
+  border: 1px solid var(--hop-border);
+  border-radius: 8px;
+  color: var(--hop-text);
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+}
+
+/* ── HOP ConciergeHub branding ───────────────────
+   Applied at the ConciergeHub deployment's root (staff-portal branch) alongside the shared
+   hop-shell — overrides a handful of accent tokens rather than forking the stylesheet, so
+   every other shared-pattern fix (a11y, layout, new components) stays made once. */
+.hop-shell--concierge-hub {
+  --hop-indigo: #7c5cff;
+  --hop-violet: #b45cff;
+  --hop-cyan: #5ce1e6;
+}
+
+.hop-shell--concierge-hub .hop-shell__brand::after {
+  content: 'ConciergeHub';
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hop-muted);
+  margin-top: 0.15rem;
+}
+
 @media (max-width: 720px) {
   .hop-shell {
     flex-direction: column;

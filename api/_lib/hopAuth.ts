@@ -8,7 +8,7 @@ export type HopUser = {
   email: string
   firstName: string
   lastName: string
-  role: 'user' | 'admin'
+  role: 'user' | 'admin' | 'concierge'
   status: 'active' | 'disabled'
 }
 
@@ -168,7 +168,7 @@ export async function getSessionUser(sql: Sql, request: Request): Promise<HopUse
     email: row.email,
     firstName: row.first_name,
     lastName: row.last_name,
-    role: row.role as 'user' | 'admin',
+    role: row.role as 'user' | 'admin' | 'concierge',
     status: row.status as 'active' | 'disabled',
   }
 }
@@ -202,6 +202,21 @@ export async function requireAdmin(sql: Sql, request: Request): Promise<HopUser 
   const user = await getSessionUser(sql, request)
   if (!user) return unauthorized()
   if (user.role !== 'admin') return forbidden()
+  return user
+}
+
+export async function requireConcierge(sql: Sql, request: Request): Promise<HopUser | Response> {
+  const user = await getSessionUser(sql, request)
+  if (!user) return unauthorized()
+  if (user.role !== 'concierge') return forbidden()
+  return user
+}
+
+// Admin or concierge — the ConciergeHub staff roles, as opposed to a regular HOP 'user'.
+export async function requireStaff(sql: Sql, request: Request): Promise<HopUser | Response> {
+  const user = await getSessionUser(sql, request)
+  if (!user) return unauthorized()
+  if (user.role !== 'admin' && user.role !== 'concierge') return forbidden()
   return user
 }
 
@@ -256,7 +271,7 @@ export function toPublicUser(row: {
     email: row.email,
     firstName: row.first_name,
     lastName: row.last_name,
-    role: row.role as 'user' | 'admin',
+    role: row.role as 'user' | 'admin' | 'concierge',
     status: 'active',
   }
 }

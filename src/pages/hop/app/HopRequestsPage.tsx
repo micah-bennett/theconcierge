@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { hopCreateRequest, hopGetRideLocation, hopListRequests, type HopServiceRequest } from '../../../hop/api'
+import { RequestMessageThread } from '../../../hop/requestMessages/RequestMessageThread'
 
 const SERVICE_TYPES = [
   { value: 'ride', label: 'Ride' },
@@ -238,6 +239,8 @@ export function HopRequestsPage() {
               )}
 
               {req.service_type === 'ride' && req.status === 'en_route' && <RideTracker requestId={req.id} />}
+
+              {req.handled_by && <RequestMessageThread requestId={req.id} />}
             </div>
           ))}
       </section>

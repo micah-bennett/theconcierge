@@ -1,6 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless'
 import { dbUnavailable, getSql } from '../_lib/hopDb.js'
-import { isResponse, json, requireAdmin, requireUser } from '../_lib/hopAuth.js'
+import { isResponse, json, requireStaff, requireUser } from '../_lib/hopAuth.js'
 import { isValidStatus, isValidStatusTransition, nextValidStatuses } from '../_lib/hopRequestWorkflow.js'
 import type { RequestStatus } from '../_lib/hopRequestWorkflow.js'
 
@@ -192,8 +192,8 @@ export async function PATCH(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
 
-  const admin = await requireAdmin(sql, request)
-  if (isResponse(admin)) return admin
+  const staff = await requireStaff(sql, request)
+  if (isResponse(staff)) return staff
 
   try {
     const body = (await request.json()) as { id?: unknown; status?: unknown; assignedTo?: unknown; note?: unknown }
@@ -210,6 +210,13 @@ export async function PATCH(request: Request): Promise<Response> {
       | { id: string; service_type: string; status: string; handled_by: string | null }
       | undefined
     if (!current) return json({ error: 'Request not found' }, 404)
+
+    // A concierge may only update requests assigned to them, and may never reassign — both
+    // are admin-only. This keeps `requireStaff` (admin OR concierge) safe to use here.
+    if (staff.role === 'concierge') {
+      if (current.handled_by !== staff.id) return json({ error: 'Not allowed' }, 403)
+      if ('assignedTo' in body) return json({ error: 'Only an admin can reassign a request' }, 403)
+    }
 
     let nextStatus = current.status as RequestStatus
     if (typeof body.status === 'string') {
@@ -230,7 +237,8 @@ export async function PATCH(request: Request): Promise<Response> {
         nextAssignee = null
       } else if (typeof assignedTo === 'string') {
         const staffRows = await sql`
-          SELECT id FROM hop_users WHERE id = ${assignedTo} AND role = 'admin' AND status = 'active'
+          SELECT id FROM hop_users
+          WHERE id = ${assignedTo} AND role IN ('admin', 'concierge') AND status = 'active'
         `
         if (staffRows.length === 0) throw new Error('Choose a valid staff member')
         nextAssignee = assignedTo
@@ -251,7 +259,7 @@ export async function PATCH(request: Request): Promise<Response> {
 
     await sql`
       INSERT INTO hop_service_request_status_history (request_id, status, changed_by, note)
-      VALUES (${id}, ${nextStatus}, ${admin.id}, ${note})
+      VALUES (${id}, ${nextStatus}, ${staff.id}, ${note})
     `
 
     if (LOCATION_CLEARING_STATUSES.includes(nextStatus)) {

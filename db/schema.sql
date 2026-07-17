@@ -214,3 +214,42 @@ CREATE INDEX IF NOT EXISTS hop_wellness_checkins_user_id_idx
 
 CREATE INDEX IF NOT EXISTS hop_wellness_checkins_created_at_idx
   ON hop_wellness_checkins (created_at DESC);
+
+-- ── HOP ConciergeHub (2026-07-16): a third role, 'concierge', alongside 'user'/'admin' ────
+-- Concierges fulfill requests they're assigned to (via the existing hop_service_requests
+-- .handled_by column); admins manage concierge accounts. Not a self-serve signup role — see
+-- docs/hop/architecture.md ("ConciergeHub") and api/hop/admin/concierges.ts.
+ALTER TABLE hop_users DROP CONSTRAINT IF EXISTS hop_users_role_check;
+ALTER TABLE hop_users ADD CONSTRAINT hop_users_role_check
+  CHECK (role IN ('user', 'admin', 'concierge'));
+
+-- Concierge profile — bio/showcase content a concierge builds about themselves. One row per
+-- concierge account, created lazily on first save (an admin-invited concierge with no profile
+-- yet still logs in fine — see api/hop/concierge.ts).
+CREATE TABLE IF NOT EXISTS hop_concierge_profiles (
+  user_id UUID PRIMARY KEY REFERENCES hop_users (id) ON DELETE CASCADE,
+  headline TEXT NOT NULL DEFAULT '',
+  bio TEXT NOT NULL DEFAULT '',
+  specialties TEXT[] NOT NULL DEFAULT '{}',
+  years_experience INT,
+  photo_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Async note/message thread on a request, visible to the HOP user who made it and the
+-- concierge assigned to it (plus any admin). Deliberately separate from
+-- hop_service_request_status_history, which stays admin/staff-only and is never shown to
+-- members raw (see "Dispatch workflow" above) — this table is always user-visible by design.
+-- Polling-based (no websockets), matching the existing ride-location tracker's setInterval
+-- pattern. Append-only; no read-receipt tracking in Phase 1.
+CREATE TABLE IF NOT EXISTS hop_request_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_id UUID NOT NULL REFERENCES hop_service_requests (id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hop_request_messages_request_id_idx
+  ON hop_request_messages (request_id, created_at);

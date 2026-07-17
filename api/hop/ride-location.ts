@@ -32,7 +32,9 @@ async function handleGet(request: Request): Promise<Response> {
 
   const target = await loadRequest(sql, requestId)
   if (!target) return json({ location: null })
-  if (user.role !== 'admin' && target.user_id !== user.id) return json({ location: null })
+  const isOwner = target.user_id === user.id
+  const isAssignedConcierge = user.role === 'concierge' && target.handled_by === user.id
+  if (user.role !== 'admin' && !isOwner && !isAssignedConcierge) return json({ location: null })
   if (target.service_type !== 'ride' || target.status !== 'en_route') return json({ location: null })
 
   const rows = await sql`
@@ -67,7 +69,7 @@ async function handleUpdate(request: Request): Promise<Response> {
 
   const user = await requireUser(sql, request)
   if (isResponse(user)) return user
-  if (user.role !== 'admin') return json({ error: 'Not allowed' }, 403)
+  if (user.role !== 'admin' && user.role !== 'concierge') return json({ error: 'Not allowed' }, 403)
 
   try {
     const body = (await request.json()) as { requestId?: unknown; latitude?: unknown; longitude?: unknown }
@@ -112,13 +114,17 @@ async function handleStop(request: Request): Promise<Response> {
 
   const user = await requireUser(sql, request)
   if (isResponse(user)) return user
-  if (user.role !== 'admin') return json({ error: 'Not allowed' }, 403)
+  if (user.role !== 'admin' && user.role !== 'concierge') return json({ error: 'Not allowed' }, 403)
 
   try {
     const body = (await request.json()) as { requestId?: unknown }
     const requestId = body.requestId
     if (typeof requestId !== 'string' || !/^[0-9a-f-]{36}$/i.test(requestId)) {
       throw new Error('Invalid request id')
+    }
+    if (user.role === 'concierge') {
+      const target = await loadRequest(sql, requestId)
+      if (!target || target.handled_by !== user.id) return json({ error: 'Not allowed' }, 403)
     }
     await sql`DELETE FROM hop_ride_locations WHERE request_id = ${requestId}`
     return json({ ok: true })

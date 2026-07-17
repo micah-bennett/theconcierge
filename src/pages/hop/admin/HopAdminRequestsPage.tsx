@@ -9,6 +9,7 @@ import {
   type HopStaffMember,
 } from '../../../hop/api'
 import { useHopAuth } from '../../../hop/useHopAuth'
+import { RequestMessageThread } from '../../../hop/requestMessages/RequestMessageThread'
 
 const LOCATION_PUSH_INTERVAL_MS = 20000
 
@@ -257,6 +258,7 @@ export function HopAdminRequestsPage() {
                   {staff.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.first_name} {member.last_name}
+                      {member.role === 'concierge' ? ' (Concierge)' : ' (Admin)'}
                     </option>
                   ))}
                 </select>
@@ -328,6 +330,8 @@ export function HopAdminRequestsPage() {
             {req.service_type === 'ride' && req.status === 'en_route' && req.handled_by === user?.id && (
               <RideLocationSharing requestId={req.id} />
             )}
+
+            {openHistoryId === req.id && req.handled_by && <RequestMessageThread requestId={req.id} />}
           </section>
         ))}
     </div>
