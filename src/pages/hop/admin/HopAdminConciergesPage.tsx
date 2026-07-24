@@ -62,7 +62,7 @@ export function HopAdminConciergesPage() {
       <p className="hop-page-sub">Create concierge accounts and manage who can be assigned to requests.</p>
 
       <section className="hop-card">
-        <h2>Add a concierge</h2>
+        <h2>➕ Add a concierge</h2>
         <form className="hop-form-stack" onSubmit={handleCreate}>
           {createError && (
             <div className="hop-auth-card__error" role="alert">

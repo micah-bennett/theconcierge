@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { hopCreateRequest, hopGetRideLocation, hopListRequests, type HopServiceRequest } from '../../../hop/api'
+import {
+  hopCreateRequest,
+  hopGetRideLocation,
+  hopListRequests,
+  hopRateRequest,
+  type HopServiceRequest,
+} from '../../../hop/api'
 import { RequestMessageThread } from '../../../hop/requestMessages/RequestMessageThread'
 
 const SERVICE_TYPES = [
@@ -102,7 +108,7 @@ function RideTracker({ requestId }: { requestId: string }) {
 
   return (
     <div className="hop-card" style={{ marginTop: '0.75rem' }}>
-      <h2>Ride tracking</h2>
+      <h2>🚗 Ride tracking</h2>
       <p className="hop-muted">Live location is shared only while your ride is on the way.</p>
       {location ? (
         <>
@@ -119,6 +125,104 @@ function RideTracker({ requestId }: { requestId: string }) {
       ) : (
         <p className="hop-muted">Your driver hasn't started sharing their location yet.</p>
       )}
+    </div>
+  )
+}
+
+// Shown once a concierge is assigned — a quick way to call/text/email them directly instead of
+// calling the office, plus their overall rating so the member can see who they're paired with.
+// See docs/hop/architecture.md ("Phase 1 quick wins").
+function AssigneeContactCard({ req }: { req: HopServiceRequest }) {
+  if (!req.assignee_name) return null
+  return (
+    <div className="hop-card" style={{ marginTop: '0.75rem' }}>
+      <h2>🧑‍💼 Your concierge</h2>
+      <p>
+        {req.assignee_name}
+        {req.assignee_rating && (
+          <span className="hop-muted">
+            {' '}
+            — {'★'.repeat(Math.round(req.assignee_rating.avg))} {req.assignee_rating.avg.toFixed(1)} (
+            {req.assignee_rating.count} rating{req.assignee_rating.count === 1 ? '' : 's'})
+          </span>
+        )}
+      </p>
+      {req.assignee_phone ? (
+        <div className="hop-btn-row">
+          <a className="hop-btn-secondary" href={`tel:${req.assignee_phone}`}>
+            Call
+          </a>
+          <a className="hop-btn-secondary" href={`sms:${req.assignee_phone}`}>
+            Text
+          </a>
+        </div>
+      ) : (
+        <p className="hop-muted">No phone on file for your concierge yet.</p>
+      )}
+    </div>
+  )
+}
+
+// Shown once a request is completed — one rating per request, ties into the concierge's overall
+// rating shown above and used for gratuity/quality visibility (see boss's ConciergeHub notes).
+function RatingWidget({ req, onRated }: { req: HopServiceRequest; onRated: () => void }) {
+  const [stars, setStars] = useState(5)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (req.status !== 'completed' || !req.handled_by) return null
+
+  if (req.my_rating) {
+    return (
+      <div className="hop-card" style={{ marginTop: '0.75rem' }}>
+        <h2>⭐ Your rating</h2>
+        <p>
+          {'★'.repeat(req.my_rating.stars)}
+          {'☆'.repeat(5 - req.my_rating.stars)}
+        </p>
+        {req.my_rating.comment && <p className="hop-muted">{req.my_rating.comment}</p>}
+      </div>
+    )
+  }
+
+  async function submitRating() {
+    setSubmitting(true)
+    setError(null)
+    try {
+      await hopRateRequest({ requestId: req.id, stars, comment })
+      onRated()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not submit your rating')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="hop-card" style={{ marginTop: '0.75rem' }}>
+      <h2>⭐ Rate your concierge</h2>
+      {error && <div className="hop-auth-card__error">{error}</div>}
+      <div className="hop-star-picker" role="radiogroup" aria-label="Star rating">
+        {[1, 2, 3, 4, 5].map((value) => (
+          <button
+            key={value}
+            type="button"
+            className="hop-star-picker__btn"
+            aria-pressed={value <= stars}
+            onClick={() => setStars(value)}
+          >
+            {value <= stars ? '★' : '☆'}
+          </button>
+        ))}
+      </div>
+      <label className="hop-field">
+        <span>Comment (optional)</span>
+        <textarea rows={2} maxLength={1000} value={comment} onChange={(e) => setComment(e.target.value)} />
+      </label>
+      <button type="button" className="hop-btn-primary" onClick={submitRating} disabled={submitting}>
+        {submitting ? 'Submitting…' : 'Submit rating'}
+      </button>
     </div>
   )
 }
@@ -176,7 +280,7 @@ export function HopRequestsPage() {
       <p className="hop-page-sub">One request handles it — a concierge takes it from submission to done.</p>
 
       <form className="hop-card" onSubmit={handleSubmit}>
-        <h2>New request</h2>
+        <h2>➕ New request</h2>
         {error && <div className="hop-auth-card__error">{error}</div>}
 
         <label className="hop-field">
@@ -206,7 +310,7 @@ export function HopRequestsPage() {
       </form>
 
       <section className="hop-card">
-        <h2>Your requests</h2>
+        <h2>📋 Your requests</h2>
         {loading && <p className="hop-muted">Loading…</p>}
         {!loading && requests.length === 0 && <p className="hop-muted">No requests yet.</p>}
         {!loading &&
@@ -220,7 +324,6 @@ export function HopRequestsPage() {
                 <span className={`hop-status hop-status--${req.status}`}>{STATUS_LABEL[req.status] || req.status}</span>
               </div>
 
-              {req.assignee_name && <p className="hop-muted">Concierge: {req.assignee_name}</p>}
               <p>{MEMBER_STATUS_MESSAGE[req.status] || 'Your request is being tracked.'}</p>
 
               {req.history.length > 0 && (
@@ -238,7 +341,11 @@ export function HopRequestsPage() {
                 </ul>
               )}
 
+              <AssigneeContactCard req={req} />
+
               {req.service_type === 'ride' && req.status === 'en_route' && <RideTracker requestId={req.id} />}
+
+              <RatingWidget req={req} onRated={loadRequests} />
 
               {req.handled_by && <RequestMessageThread requestId={req.id} />}
             </div>

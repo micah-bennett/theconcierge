@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { hopConciergeGetProfile, hopConciergeUpdateProfile } from '../../../hop/api'
+import { hopConciergeGetProfile, hopConciergeUpdateProfile, type HopRatingAggregate } from '../../../hop/api'
 import { useHopAuth } from '../../../hop/useHopAuth'
 
 export function HopConciergeProfilePage() {
@@ -11,6 +11,7 @@ export function HopConciergeProfilePage() {
   const [specialtiesText, setSpecialtiesText] = useState('')
   const [yearsExperience, setYearsExperience] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
+  const [rating, setRating] = useState<HopRatingAggregate | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,6 +24,7 @@ export function HopConciergeProfilePage() {
         setSpecialtiesText(result.profile.specialties.join(', '))
         setYearsExperience(result.profile.years_experience?.toString() ?? '')
         setPhotoUrl(result.profile.photo_url ?? '')
+        setRating(result.rating)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -58,6 +60,19 @@ export function HopConciergeProfilePage() {
     <div className="hop-page-body">
       <h1 className="hop-page-title">Your profile</h1>
       <p className="hop-page-sub">Showcase your work — this is what admins and members see about you.</p>
+
+      <section className="hop-card">
+        <h2>⭐ Your rating</h2>
+        {rating ? (
+          <p>
+            {'★'.repeat(Math.round(rating.avg))}
+            {'☆'.repeat(5 - Math.round(rating.avg))} {rating.avg.toFixed(1)} from {rating.count} rating
+            {rating.count === 1 ? '' : 's'}
+          </p>
+        ) : (
+          <p className="hop-muted">No ratings yet — they'll show up here once members rate a completed request.</p>
+        )}
+      </section>
 
       <section className="hop-card">
         <form className="hop-form-stack" onSubmit={handleSubmit}>
@@ -157,7 +172,7 @@ export function HopConciergeProfilePage() {
 
       {photoUrl && (
         <section className="hop-card">
-          <h2>Preview</h2>
+          <h2>👀 Preview</h2>
           <img
             src={photoUrl}
             alt=""

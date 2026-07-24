@@ -253,3 +253,63 @@ CREATE TABLE IF NOT EXISTS hop_request_messages (
 
 CREATE INDEX IF NOT EXISTS hop_request_messages_request_id_idx
   ON hop_request_messages (request_id, created_at);
+
+-- ── HOP Phase 1 (2026-07-23): click-to-call, acceptance, ratings, direct messaging,
+-- on-duty roster — see docs/hop/architecture.md ("Phase 1 quick wins") for the full shape.
+
+-- Click-to-call/text/email needs a real phone number; none existed before this pass.
+-- default_shift_end_time is the minimal viable "shift schedule" (see hop_duty_log below) —
+-- a per-user default, not a real per-day scheduling system.
+ALTER TABLE hop_users ADD COLUMN IF NOT EXISTS phone TEXT NOT NULL DEFAULT '';
+ALTER TABLE hop_users ADD COLUMN IF NOT EXISTS default_shift_end_time TIME;
+
+-- Acceptance/acknowledgment: kept as its own column, not a new status value, so
+-- isValidStatusTransition()/nextValidStatuses() in api/_lib/hopRequestWorkflow.ts don't need
+-- to change — a request can be 'assigned' with or without accepted_at set, and the workflow's
+-- own step-sequence logic is untouched. See requiresAcceptance() in hopRequestWorkflow.ts.
+ALTER TABLE hop_service_requests ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ;
+
+-- One rating per completed request, given by the member who made it, about the concierge/admin
+-- who fulfilled it. UNIQUE on request_id enforces "exactly one rating."
+CREATE TABLE IF NOT EXISTS hop_concierge_ratings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_id UUID NOT NULL UNIQUE REFERENCES hop_service_requests (id) ON DELETE CASCADE,
+  concierge_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  rated_by UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  stars INT NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  comment TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hop_concierge_ratings_concierge_id_idx
+  ON hop_concierge_ratings (concierge_id);
+
+-- Admin <-> member direct messaging, not tied to a service request — deliberately separate
+-- from hop_request_messages above. Threaded by the member's user id: any admin can read/post
+-- into a given member's single thread ("admin" is a role here, not one specific counterparty).
+CREATE TABLE IF NOT EXISTS hop_direct_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  thread_user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hop_direct_messages_thread_user_id_idx
+  ON hop_direct_messages (thread_user_id, created_at);
+
+-- Self-toggle on/off duty clock-in log — the "who's working today" signal for the admin
+-- roster widget, and the raw data the future Facility-portal overtime metric (Phase 2) will
+-- read from. "On duty today" = a row with clock_out_at IS NULL, or clock_in_at::date =
+-- CURRENT_DATE. Deliberately not GPS/biometric-verified — self-reported, like the rest of
+-- this table's neighbors (hop_wellness_checkins, hop_service_requests).
+CREATE TABLE IF NOT EXISTS hop_duty_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  clock_in_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  clock_out_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS hop_duty_log_user_id_idx
+  ON hop_duty_log (user_id, clock_in_at DESC);

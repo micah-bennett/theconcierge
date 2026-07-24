@@ -108,7 +108,7 @@ export function HopWellnessPage() {
 
       {submitted ? (
         <section className="hop-card">
-          <h2>Thanks for checking in</h2>
+          <h2>💚 Thanks for checking in</h2>
           <p className="hop-muted">
             That takes a moment of honesty, and it matters. A concierge reviews check-ins and
             follows up if there's a good way to help.
@@ -131,7 +131,7 @@ export function HopWellnessPage() {
         </section>
       ) : (
         <form className="hop-card" onSubmit={handleSubmit}>
-          <h2>Create a check-in</h2>
+          <h2>📝 Create a check-in</h2>
           {error && (
             <div className="hop-auth-card__error" role="alert">
               {error}
@@ -201,7 +201,7 @@ export function HopWellnessPage() {
       </section>
 
       <section className="hop-card">
-        <h2>Your recent check-ins</h2>
+        <h2>🕒 Your recent check-ins</h2>
         {loadingCheckIns && <p className="hop-muted">Loading…</p>}
         {!loadingCheckIns && checkIns.length === 0 && <p className="hop-muted">No check-ins yet.</p>}
         {!loadingCheckIns && checkIns.length > 0 && (

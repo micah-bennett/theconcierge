@@ -28,7 +28,14 @@ async function handleGetProfile(request: Request): Promise<Response> {
     SELECT headline, bio, specialties, years_experience, photo_url
     FROM hop_concierge_profiles WHERE user_id = ${concierge.id}
   `
-  return json({ profile: (rows[0] as ProfileRow | undefined) || EMPTY_PROFILE })
+  const ratingRows = await sql`
+    SELECT AVG(stars)::float AS avg_stars, COUNT(*)::int AS rating_count
+    FROM hop_concierge_ratings WHERE concierge_id = ${concierge.id}
+  `
+  const ratingRow = ratingRows[0] as { avg_stars: number | null; rating_count: number } | undefined
+  const rating = ratingRow?.avg_stars != null ? { avg: ratingRow.avg_stars, count: ratingRow.rating_count } : null
+
+  return json({ profile: (rows[0] as ProfileRow | undefined) || EMPTY_PROFILE, rating })
 }
 
 function validateProfile(value: unknown): ProfileRow {
@@ -104,8 +111,8 @@ async function handleMyRequests(request: Request): Promise<Response> {
 
   const rows = await sql`
     SELECT r.id, r.service_type, r.status, r.details, r.requested_for, r.created_at, r.updated_at,
-           r.handled_by,
-           u.id AS user_id, u.first_name, u.last_name, u.email
+           r.handled_by, r.accepted_at,
+           u.id AS user_id, u.first_name, u.last_name, u.email, u.phone AS user_phone
     FROM hop_service_requests r
     JOIN hop_users u ON u.id = r.user_id
     WHERE r.handled_by = ${concierge.id}
@@ -140,10 +147,12 @@ async function handleMyRequests(request: Request): Promise<Response> {
       created_at: string
       updated_at: string
       handled_by: string | null
+      accepted_at: string | null
       user_id: string
       first_name: string
       last_name: string
       email: string
+      user_phone: string
     }>
   ).map((row) => {
     const history = (byRequest.get(row.id) || []) as Array<{
@@ -169,12 +178,67 @@ async function handleMyRequests(request: Request): Promise<Response> {
   return json({ requests })
 }
 
+// On/off-duty self-toggle (2026-07-23) — the raw signal for the admin "working today" roster
+// and the future Facility-portal overtime metric. See hop_duty_log in db/schema.sql and
+// docs/hop/architecture.md ("Phase 1 quick wins"). Deliberately self-reported, not GPS-verified.
+async function handleGetDutyStatus(request: Request): Promise<Response> {
+  const sql = getSql()
+  if (!sql) return dbUnavailable()
+
+  const concierge = await requireConcierge(sql, request)
+  if (isResponse(concierge)) return concierge
+
+  const rows = await sql`
+    SELECT clock_in_at FROM hop_duty_log
+    WHERE user_id = ${concierge.id} AND clock_out_at IS NULL
+    ORDER BY clock_in_at DESC LIMIT 1
+  `
+  const row = rows[0] as { clock_in_at: string } | undefined
+  return json({ onDuty: Boolean(row), since: row?.clock_in_at || null })
+}
+
+async function handleSetDutyStatus(request: Request): Promise<Response> {
+  const sql = getSql()
+  if (!sql) return dbUnavailable()
+
+  const concierge = await requireConcierge(sql, request)
+  if (isResponse(concierge)) return concierge
+
+  try {
+    const body = (await request.json()) as { onDuty?: unknown }
+    if (typeof body.onDuty !== 'boolean') throw new Error('Choose on or off duty')
+
+    if (body.onDuty) {
+      const openRows = await sql`
+        SELECT id FROM hop_duty_log WHERE user_id = ${concierge.id} AND clock_out_at IS NULL
+      `
+      if (openRows.length === 0) {
+        await sql`INSERT INTO hop_duty_log (user_id) VALUES (${concierge.id})`
+      }
+    } else {
+      await sql`
+        UPDATE hop_duty_log SET clock_out_at = NOW()
+        WHERE user_id = ${concierge.id} AND clock_out_at IS NULL
+      `
+    }
+
+    return handleGetDutyStatus(request)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not update your duty status'
+    const status = /Choose on or off duty/i.test(message) ? 400 : 500
+    if (status === 500) console.error('HOP duty status update failed', error)
+    return json({ error: status === 400 ? message : 'Could not update your duty status' }, status)
+  }
+}
+
 export async function GET(request: Request): Promise<Response> {
   switch (actionFromUrl(request)) {
     case 'profile':
       return handleGetProfile(request)
     case 'my-requests':
       return handleMyRequests(request)
+    case 'duty-status':
+      return handleGetDutyStatus(request)
     default:
       return json({ error: 'Not found' }, 404)
   }
@@ -184,6 +248,15 @@ export async function PATCH(request: Request): Promise<Response> {
   switch (actionFromUrl(request)) {
     case 'profile':
       return handleUpdateProfile(request)
+    default:
+      return json({ error: 'Not found' }, 404)
+  }
+}
+
+export async function POST(request: Request): Promise<Response> {
+  switch (actionFromUrl(request)) {
+    case 'duty-status':
+      return handleSetDutyStatus(request)
     default:
       return json({ error: 'Not found' }, 404)
   }

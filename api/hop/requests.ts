@@ -1,7 +1,12 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless'
 import { dbUnavailable, getSql } from '../_lib/hopDb.js'
 import { isResponse, json, requireStaff, requireUser } from '../_lib/hopAuth.js'
-import { isValidStatus, isValidStatusTransition, nextValidStatuses } from '../_lib/hopRequestWorkflow.js'
+import {
+  isValidStatus,
+  isValidStatusTransition,
+  nextValidStatuses,
+  requiresAcceptance,
+} from '../_lib/hopRequestWorkflow.js'
 import type { RequestStatus } from '../_lib/hopRequestWorkflow.js'
 
 type Sql = NeonQueryFunction<false, false>
@@ -11,6 +16,37 @@ type ServiceType = (typeof SERVICE_TYPES)[number]
 
 // Sharing stops the moment a ride is no longer actively en route, whatever ends it.
 const LOCATION_CLEARING_STATUSES: readonly RequestStatus[] = ['arrived', 'completed', 'cancelled']
+
+function actionFromUrl(request: Request): string {
+  return new URL(request.url).searchParams.get('action') || ''
+}
+
+type RatingAggregate = { avg: number; count: number }
+
+// Merges each concierge/admin's overall rating (across all their completed requests) onto
+// whichever rows carry a `handled_by` — see hop_concierge_ratings in db/schema.sql. A separate
+// GROUP BY query, not a JOIN on the main SELECT, since it aggregates across *other* requests
+// too, not just the one row being returned.
+async function attachAssigneeRatings<T extends { handled_by: string | null }>(
+  sql: Sql,
+  rows: T[],
+): Promise<Array<T & { assignee_rating: RatingAggregate | null }>> {
+  const ids = [...new Set(rows.map((row) => row.handled_by).filter((id): id is string => Boolean(id)))]
+  const aggRows = ids.length
+    ? ((await sql`
+        SELECT concierge_id, AVG(stars)::float AS avg_stars, COUNT(*)::int AS rating_count
+        FROM hop_concierge_ratings
+        WHERE concierge_id = ANY(${ids})
+        GROUP BY concierge_id
+      `) as Array<{ concierge_id: string; avg_stars: number; rating_count: number }>)
+    : []
+  const byConcierge = new Map(aggRows.map((row) => [row.concierge_id, { avg: row.avg_stars, count: row.rating_count }]))
+
+  return rows.map((row) => ({
+    ...row,
+    assignee_rating: row.handled_by ? byConcierge.get(row.handled_by) || null : null,
+  }))
+}
 
 function validate(value: unknown): { serviceType: ServiceType; details: string; requestedFor: string | null } {
   if (!value || typeof value !== 'object') throw new Error('Invalid request body')
@@ -96,15 +132,15 @@ export async function GET(request: Request): Promise<Response> {
   if (user.role === 'admin') {
     const rows = await sql`
       SELECT r.id, r.service_type, r.status, r.details, r.requested_for, r.created_at, r.updated_at,
-             r.handled_by,
-             u.id AS user_id, u.first_name, u.last_name, u.email,
-             a.first_name AS assignee_first_name, a.last_name AS assignee_last_name
+             r.handled_by, r.accepted_at,
+             u.id AS user_id, u.first_name, u.last_name, u.email, u.phone AS user_phone,
+             a.first_name AS assignee_first_name, a.last_name AS assignee_last_name, a.phone AS assignee_phone
       FROM hop_service_requests r
       JOIN hop_users u ON u.id = r.user_id
       LEFT JOIN hop_users a ON a.id = r.handled_by
       ORDER BY r.created_at DESC
     `
-    const requests = await attachHistory(
+    const withHistory = await attachHistory(
       sql,
       rows as Array<{
         id: string
@@ -115,15 +151,19 @@ export async function GET(request: Request): Promise<Response> {
         created_at: string
         updated_at: string
         handled_by: string | null
+        accepted_at: string | null
         user_id: string
         first_name: string
         last_name: string
         email: string
+        user_phone: string
         assignee_first_name: string | null
         assignee_last_name: string | null
+        assignee_phone: string | null
       }>,
       true,
     )
+    const requests = await attachAssigneeRatings(sql, withHistory)
     return json({
       requests: requests.map((r) => ({
         ...r,
@@ -134,14 +174,16 @@ export async function GET(request: Request): Promise<Response> {
 
   const rows = await sql`
     SELECT r.id, r.service_type, r.status, r.details, r.requested_for, r.created_at, r.updated_at,
-           r.handled_by,
-           a.first_name AS assignee_first_name, a.last_name AS assignee_last_name
+           r.handled_by, r.accepted_at,
+           a.first_name AS assignee_first_name, a.last_name AS assignee_last_name, a.phone AS assignee_phone,
+           rt.stars AS my_rating_stars, rt.comment AS my_rating_comment
     FROM hop_service_requests r
     LEFT JOIN hop_users a ON a.id = r.handled_by
+    LEFT JOIN hop_concierge_ratings rt ON rt.request_id = r.id
     WHERE r.user_id = ${user.id}
     ORDER BY r.created_at DESC
   `
-  const requests = await attachHistory(
+  const withHistory = await attachHistory(
     sql,
     rows as Array<{
       id: string
@@ -152,20 +194,85 @@ export async function GET(request: Request): Promise<Response> {
       created_at: string
       updated_at: string
       handled_by: string | null
+      accepted_at: string | null
       assignee_first_name: string | null
       assignee_last_name: string | null
+      assignee_phone: string | null
+      my_rating_stars: number | null
+      my_rating_comment: string | null
     }>,
     false,
   )
+  const requests = await attachAssigneeRatings(sql, withHistory)
   return json({
     requests: requests.map((r) => ({
       ...r,
       assignee_name: r.assignee_first_name ? `${r.assignee_first_name} ${r.assignee_last_name}` : null,
+      my_rating: r.my_rating_stars != null ? { stars: r.my_rating_stars, comment: r.my_rating_comment || '' } : null,
     })),
   })
 }
 
-export async function POST(request: Request): Promise<Response> {
+function validateRating(value: unknown): { requestId: string; stars: number; comment: string } {
+  if (!value || typeof value !== 'object') throw new Error('Invalid request body')
+  const source = value as Record<string, unknown>
+  const requestId = typeof source.requestId === 'string' ? source.requestId : ''
+  const stars = source.stars
+  const comment = typeof source.comment === 'string' ? source.comment.trim() : ''
+
+  if (!/^[0-9a-f-]{36}$/i.test(requestId)) throw new Error('Invalid request id')
+  if (typeof stars !== 'number' || !Number.isInteger(stars) || stars < 1 || stars > 5) {
+    throw new Error('Choose a star rating from 1 to 5')
+  }
+  if (comment.length > 1000) throw new Error('Comment is too long')
+
+  return { requestId, stars, comment }
+}
+
+// Member rates the concierge/admin who fulfilled their own, now-completed request. One rating
+// per request — the hop_concierge_ratings.request_id UNIQUE constraint is the actual enforcement;
+// this also pre-checks ownership/status so we can return a clear error instead of a raw
+// constraint-violation message.
+async function handleRate(request: Request): Promise<Response> {
+  const sql = getSql()
+  if (!sql) return dbUnavailable()
+
+  const user = await requireUser(sql, request)
+  if (isResponse(user)) return user
+
+  try {
+    const data = validateRating(await request.json())
+
+    const targetRows = await sql`
+      SELECT id, user_id, status, handled_by FROM hop_service_requests WHERE id = ${data.requestId}
+    `
+    const target = targetRows[0] as
+      | { id: string; user_id: string; status: string; handled_by: string | null }
+      | undefined
+    if (!target) return json({ error: 'Request not found' }, 404)
+    if (target.user_id !== user.id) return json({ error: 'Not allowed' }, 403)
+    if (target.status !== 'completed' || !target.handled_by) {
+      throw new Error('You can only rate a request once it has been completed')
+    }
+
+    const rows = await sql`
+      INSERT INTO hop_concierge_ratings (request_id, concierge_id, rated_by, stars, comment)
+      VALUES (${data.requestId}, ${target.handled_by}, ${user.id}, ${data.stars}, ${data.comment})
+      RETURNING id, stars, comment, created_at
+    `
+    return json({ rating: rows[0] }, 201)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not submit your rating'
+    if (/duplicate key value/i.test(message)) {
+      return json({ error: "You've already rated this request" }, 409)
+    }
+    const status = /Choose|too long|Invalid|only rate/i.test(message) ? 400 : 500
+    if (status === 500) console.error('HOP request rating failed', error)
+    return json({ error: status === 400 ? message : 'Could not submit your rating' }, status)
+  }
+}
+
+async function handleCreate(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
 
@@ -188,6 +295,11 @@ export async function POST(request: Request): Promise<Response> {
   }
 }
 
+export async function POST(request: Request): Promise<Response> {
+  if (actionFromUrl(request) === 'rate') return handleRate(request)
+  return handleCreate(request)
+}
+
 export async function PATCH(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
@@ -196,7 +308,13 @@ export async function PATCH(request: Request): Promise<Response> {
   if (isResponse(staff)) return staff
 
   try {
-    const body = (await request.json()) as { id?: unknown; status?: unknown; assignedTo?: unknown; note?: unknown }
+    const body = (await request.json()) as {
+      id?: unknown
+      status?: unknown
+      assignedTo?: unknown
+      note?: unknown
+      accept?: unknown
+    }
     const id = body.id
     if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid request id')
 
@@ -204,10 +322,10 @@ export async function PATCH(request: Request): Promise<Response> {
     if (note.length > 1000) throw new Error('Note is too long')
 
     const currentRows = await sql`
-      SELECT id, service_type, status, handled_by FROM hop_service_requests WHERE id = ${id}
+      SELECT id, service_type, status, handled_by, accepted_at FROM hop_service_requests WHERE id = ${id}
     `
     const current = currentRows[0] as
-      | { id: string; service_type: string; status: string; handled_by: string | null }
+      | { id: string; service_type: string; status: string; handled_by: string | null; accepted_at: string | null }
       | undefined
     if (!current) return json({ error: 'Request not found' }, 404)
 
@@ -218,12 +336,39 @@ export async function PATCH(request: Request): Promise<Response> {
       if ('assignedTo' in body) return json({ error: 'Only an admin can reassign a request' }, 403)
     }
 
+    // Acceptance/acknowledgment (2026-07-23): its own small operation, not folded into the
+    // status/assignment update below, so the "Accept" button on the assigned staff member's
+    // request card is a single unambiguous action. See requiresAcceptance() in
+    // hopRequestWorkflow.ts and docs/hop/architecture.md ("Phase 1 quick wins").
+    if (body.accept === true) {
+      if (current.handled_by !== staff.id) return json({ error: 'Only the assigned staff member can accept' }, 403)
+      if (current.status !== 'assigned') throw new Error('Only a newly assigned request can be accepted')
+      if (current.accepted_at) throw new Error('This request has already been accepted')
+
+      const acceptedRows = await sql`
+        UPDATE hop_service_requests SET accepted_at = NOW(), updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING id, service_type, status, details, requested_for, handled_by, accepted_at, created_at, updated_at
+      `
+      await sql`
+        INSERT INTO hop_service_request_status_history (request_id, status, changed_by, note)
+        VALUES (${id}, ${current.status}, ${staff.id}, 'Accepted')
+      `
+      return json({
+        request: acceptedRows[0],
+        validNextStatuses: nextValidStatuses(current.service_type, current.status as RequestStatus),
+      })
+    }
+
     let nextStatus = current.status as RequestStatus
     if (typeof body.status === 'string') {
       if (!isValidStatus(body.status)) throw new Error('Choose a valid status')
       if (body.status !== current.status) {
         if (!isValidStatusTransition(current.service_type, current.status as RequestStatus, body.status)) {
           throw new Error('That status change is not allowed from the current status')
+        }
+        if (requiresAcceptance(current.status as RequestStatus) && !current.accepted_at) {
+          throw new Error('This request must be accepted before it can move forward')
         }
         nextStatus = body.status
       }
@@ -269,11 +414,12 @@ export async function PATCH(request: Request): Promise<Response> {
     return json({ request: updatedRows[0], validNextStatuses: nextValidStatuses(current.service_type, nextStatus) })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not update the request'
-    const status = /Choose a valid|Invalid request id|Invalid assignment|not allowed|too long|Nothing to update/i.test(
-      message,
-    )
-      ? 400
-      : 500
+    const status =
+      /Choose a valid|Invalid request id|Invalid assignment|not allowed|too long|Nothing to update|accept/i.test(
+        message,
+      )
+        ? 400
+        : 500
     if (status === 500) console.error('HOP request update failed', error)
     return json({ error: status === 400 ? message : 'Could not update the request' }, status)
   }

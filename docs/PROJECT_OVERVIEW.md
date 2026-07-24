@@ -42,8 +42,9 @@ exact idea was tried and reversed.
 - **Email**: Resend (`api/_lib/email.ts` + `api/_lib/emailTemplates/`).
 - **AI**: `api/chat.ts` calls the Anthropic API directly for the marketing site's chatbot widget.
 - **Mobile**: Capacitor iOS wraps the same `dist/` build (see "Two build modes" below).
-- **Hosting**: Vercel (Hobby plan — **12 Serverless Function cap**, currently at 9; see
-  `docs/hop/architecture.md` before adding a new top-level `api/*.ts` file).
+- **Hosting**: Vercel (Hobby plan — **12 Serverless Function cap per project**; see
+  `docs/hop/architecture.md` → "Deployments" for the current per-project count before adding a
+  new top-level `api/*.ts` file — don't trust a hardcoded number here, it goes stale fast).
 
 ## Two build modes (don't skip this)
 
@@ -67,9 +68,14 @@ deep-linking into nested routes on the web deployment" for why both exist.
 
 - **Working on HOP** (login, app, admin, integrations, the dashboard's "why HOP" content): read
   `docs/hop/vision.md`, `docs/hop/architecture.md`, `docs/hop/mvp-scope.md` in that order.
+- **Planning new HOP work**: `docs/hop/roadmap.md` has the phased technical design for what's
+  next (Facility portal, member social feed, rewards, family profiles) — check it before
+  designing a feature from scratch.
 - **Working on the public marketing site** (Home, Personal Services, Plans, Contact): read
   `docs/design-system.md` for the visual conventions; the pages are otherwise plain React
   components with no special architecture — read the component code directly.
 - **Fonts/colors/buttons, on any page**: `docs/design-system.md` is the single source of truth.
   Two independent design systems coexist (public site vs. HOP app) — don't cross-contaminate them.
 - **Deploying**: `docs/vercel-setup.md`.
+- **Non-engineer backend tasks** (env vars, migrations, creating accounts, deploying):
+  `docs/hop/backend-guide.md`.

@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
-import { hopAdminListIntegrations, hopAdminListRequests, hopAdminListUsers } from '../../../hop/api'
+import {
+  hopAdminListIntegrations,
+  hopAdminListOnDuty,
+  hopAdminListRequests,
+  hopAdminListUsers,
+  type HopOnDutyStaff,
+} from '../../../hop/api'
 
 export function HopAdminDashboardPage() {
   const [counts, setCounts] = useState<{ users: number; openRequests: number; connectedIntegrations: number } | null>(
     null,
   )
+  const [onDuty, setOnDuty] = useState<HopOnDutyStaff[] | null>(null)
 
   useEffect(() => {
     Promise.all([hopAdminListUsers(), hopAdminListRequests(), hopAdminListIntegrations()])
@@ -17,6 +24,10 @@ export function HopAdminDashboardPage() {
         })
       })
       .catch(() => setCounts({ users: 0, openRequests: 0, connectedIntegrations: 0 }))
+
+    hopAdminListOnDuty()
+      .then((result) => setOnDuty(result.onDuty))
+      .catch(() => setOnDuty([]))
   }, [])
 
   return (
@@ -26,17 +37,42 @@ export function HopAdminDashboardPage() {
       <div className="hop-stat-grid">
         <div className="hop-card hop-stat-card">
           <span className="hop-stat-card__value">{counts?.users ?? '—'}</span>
-          <span className="hop-stat-card__label">HOP users</span>
+          <span className="hop-stat-card__label">👥 HOP users</span>
         </div>
         <div className="hop-card hop-stat-card">
           <span className="hop-stat-card__value">{counts?.openRequests ?? '—'}</span>
-          <span className="hop-stat-card__label">Open requests</span>
+          <span className="hop-stat-card__label">📋 Open requests</span>
         </div>
         <div className="hop-card hop-stat-card">
           <span className="hop-stat-card__value">{counts?.connectedIntegrations ?? '—'}</span>
-          <span className="hop-stat-card__label">Connected integrations</span>
+          <span className="hop-stat-card__label">🔗 Connected integrations</span>
+        </div>
+        <div className="hop-card hop-stat-card">
+          <span className="hop-stat-card__value">{onDuty?.length ?? '—'}</span>
+          <span className="hop-stat-card__label">🟢 Working today</span>
         </div>
       </div>
+
+      <section className="hop-card">
+        <h2>🟢 Working today</h2>
+        {onDuty === null && <p className="hop-muted">Loading…</p>}
+        {onDuty && onDuty.length === 0 && <p className="hop-muted">No one has clocked in yet today.</p>}
+        {onDuty && onDuty.length > 0 && (
+          <ul className="hop-timeline">
+            {onDuty.map((staff) => (
+              <li key={staff.id}>
+                <div className="hop-timeline__top">
+                  <strong>
+                    {staff.first_name} {staff.last_name}
+                  </strong>
+                  <span className="hop-muted">{staff.role === 'concierge' ? 'Concierge' : 'Admin'}</span>
+                </div>
+                <span className="hop-muted">Since {new Date(staff.clock_in_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   )
 }

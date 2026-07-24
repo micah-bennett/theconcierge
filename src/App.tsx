@@ -5,6 +5,7 @@ import { HopResetPasswordPage } from './pages/hop/HopResetPasswordPage'
 import { HopAdminDashboardPage } from './pages/hop/admin/HopAdminDashboardPage'
 import { HopAdminUsersPage } from './pages/hop/admin/HopAdminUsersPage'
 import { HopAdminRequestsPage } from './pages/hop/admin/HopAdminRequestsPage'
+import { HopAdminMessagesPage } from './pages/hop/admin/HopAdminMessagesPage'
 import { HopAdminWellnessPage } from './pages/hop/admin/HopAdminWellnessPage'
 import { HopAdminIntegrationsPage } from './pages/hop/admin/HopAdminIntegrationsPage'
 import { HopAdminConciergesPage } from './pages/hop/admin/HopAdminConciergesPage'
@@ -37,6 +38,7 @@ function AppRoutes() {
                 <Route path="users" element={<HopAdminUsersPage />} />
                 <Route path="concierges" element={<HopAdminConciergesPage />} />
                 <Route path="requests" element={<HopAdminRequestsPage />} />
+                <Route path="messages" element={<HopAdminMessagesPage />} />
                 <Route path="wellness" element={<HopAdminWellnessPage />} />
                 <Route path="integrations" element={<HopAdminIntegrationsPage />} />
               </Route>

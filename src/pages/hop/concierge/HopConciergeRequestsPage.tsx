@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  hopAcceptRequest,
   hopAdminUpdateRequest,
   hopConciergeMyRequests,
   hopStopRideLocationSharing,
@@ -7,6 +8,9 @@ import {
   type HopAdminRequest,
 } from '../../../hop/api'
 import { RequestMessageThread } from '../../../hop/requestMessages/RequestMessageThread'
+import { ContactMenu } from '../../../hop/ContactMenu'
+
+const DISPATCH_PHONE = import.meta.env.VITE_HOP_DISPATCH_PHONE as string | undefined
 
 const LOCATION_PUSH_INTERVAL_MS = 20000
 
@@ -58,7 +62,7 @@ function RideLocationSharing({ requestId }: { requestId: string }) {
 
   return (
     <div className="hop-card" style={{ marginTop: '0.75rem' }}>
-      <h2>Location sharing</h2>
+      <h2>📍 Location sharing</h2>
       {!sharing ? (
         <>
           <p className="hop-muted">
@@ -127,6 +131,7 @@ export function HopConciergeRequestsPage() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
   const [openHistoryId, setOpenHistoryId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   function load() {
     setLoading(true)
@@ -138,6 +143,19 @@ export function HopConciergeRequestsPage() {
 
   useEffect(load, [])
 
+  async function handleAccept(id: string) {
+    setBusyId(id)
+    setError(null)
+    try {
+      await hopAcceptRequest(id)
+      load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not accept the request')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   const counts = useMemo(() => {
     const result: Record<Bucket, number> = { active: 0, completed: 0, cancelled: 0 }
     for (const req of requests) result[bucketFor(req)]++
@@ -148,9 +166,12 @@ export function HopConciergeRequestsPage() {
 
   async function handleStatusChange(id: string, status: string) {
     setBusyId(id)
+    setError(null)
     try {
       await hopAdminUpdateRequest({ id, status })
       load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update the status')
     } finally {
       setBusyId(null)
     }
@@ -173,6 +194,16 @@ export function HopConciergeRequestsPage() {
     <div className="hop-page-body">
       <h1 className="hop-page-title">My requests</h1>
       <p className="hop-page-sub">Everything assigned to you — update status, log notes, and message the member.</p>
+      {DISPATCH_PHONE && (
+        <a className="hop-btn-secondary" href={`tel:${DISPATCH_PHONE}`} style={{ marginBottom: '1rem', display: 'inline-block' }}>
+          Call the office
+        </a>
+      )}
+      {error && (
+        <div className="hop-auth-card__error" role="alert">
+          {error}
+        </div>
+      )}
 
       <div className="hop-tabs">
         {BUCKET_TABS.map((tab) => (
@@ -197,7 +228,11 @@ export function HopConciergeRequestsPage() {
               <div>
                 <strong>{SERVICE_TYPE_LABEL[req.service_type] || req.service_type}</strong>
                 <div className="hop-muted">
-                  {req.first_name} {req.last_name} — {req.email}
+                  <ContactMenu
+                    name={`${req.first_name} ${req.last_name}`}
+                    phone={req.user_phone}
+                    email={req.email}
+                  />
                 </div>
               </div>
               <span className={`hop-status hop-status--${req.status}`}>{STATUS_LABEL[req.status] || req.status}</span>
@@ -218,21 +253,35 @@ export function HopConciergeRequestsPage() {
               </div>
             </dl>
 
-            <label className="hop-field">
-              <span>Status</span>
-              <select
-                value={req.status}
-                disabled={busyId === req.id || req.valid_next_statuses.length === 0}
-                onChange={(e) => handleStatusChange(req.id, e.target.value)}
-              >
-                <option value={req.status}>{STATUS_LABEL[req.status] || req.status}</option>
-                {req.valid_next_statuses.map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABEL[status] || status}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {req.status === 'assigned' && !req.accepted_at ? (
+              <div className="hop-card" style={{ background: 'var(--hop-panel-2)' }}>
+                <p className="hop-muted">Accept this request to start working on it.</p>
+                <button
+                  type="button"
+                  className="hop-btn-primary"
+                  disabled={busyId === req.id}
+                  onClick={() => handleAccept(req.id)}
+                >
+                  {busyId === req.id ? 'Accepting…' : 'Accept request'}
+                </button>
+              </div>
+            ) : (
+              <label className="hop-field">
+                <span>Status</span>
+                <select
+                  value={req.status}
+                  disabled={busyId === req.id || req.valid_next_statuses.length === 0}
+                  onChange={(e) => handleStatusChange(req.id, e.target.value)}
+                >
+                  <option value={req.status}>{STATUS_LABEL[req.status] || req.status}</option>
+                  {req.valid_next_statuses.map((status) => (
+                    <option key={status} value={status}>
+                      {STATUS_LABEL[status] || status}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <label className="hop-field">
               <span>Add a dispatch note</span>

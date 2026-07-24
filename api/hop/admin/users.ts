@@ -21,9 +21,39 @@ export async function GET(request: Request): Promise<Response> {
     return json({ staff })
   }
 
+  // ?scope=on-duty — concierges/admins currently on duty (an open hop_duty_log row), for the
+  // admin dashboard's "working today" roster. Staff-portal only: the self-toggle that writes
+  // to hop_duty_log lives on api/hop/concierge.ts, which only exists on this deployment. See
+  // docs/hop/architecture.md ("Phase 1 quick wins").
+  if (new URL(request.url).searchParams.get('scope') === 'on-duty') {
+    const onDuty = await sql`
+      SELECT DISTINCT ON (u.id) u.id, u.first_name, u.last_name, u.role, d.clock_in_at
+      FROM hop_duty_log d
+      JOIN hop_users u ON u.id = d.user_id
+      WHERE d.clock_out_at IS NULL
+      ORDER BY u.id, d.clock_in_at DESC
+    `
+    return json({ onDuty })
+  }
+
+  // ?scope=integrations — folded in from the former api/hop/admin/integrations.ts (2026-07-23,
+  // function-budget consolidation, see docs/hop/architecture.md). Every user's connection
+  // status across every provider, for the admin integrations triage table.
+  if (new URL(request.url).searchParams.get('scope') === 'integrations') {
+    const integrations = await sql`
+      SELECT
+        i.provider, i.status, i.connected_at, i.last_synced_at,
+        u.id AS user_id, u.first_name, u.last_name, u.email
+      FROM hop_integrations i
+      JOIN hop_users u ON u.id = i.user_id
+      ORDER BY i.connected_at DESC NULLS LAST
+    `
+    return json({ integrations })
+  }
+
   const rows = await sql`
     SELECT
-      u.id, u.email, u.first_name, u.last_name, u.role, u.status, u.created_at,
+      u.id, u.email, u.first_name, u.last_name, u.phone, u.role, u.status, u.created_at,
       COUNT(i.id) FILTER (WHERE i.status = 'connected') AS connected_integrations
     FROM hop_users u
     LEFT JOIN hop_integrations i ON i.user_id = u.id

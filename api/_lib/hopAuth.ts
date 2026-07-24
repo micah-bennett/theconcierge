@@ -8,6 +8,7 @@ export type HopUser = {
   email: string
   firstName: string
   lastName: string
+  phone: string
   role: 'user' | 'admin' | 'concierge'
   status: 'active' | 'disabled'
 }
@@ -153,13 +154,21 @@ export async function getSessionUser(sql: Sql, request: Request): Promise<HopUse
   if (!token) return null
 
   const rows = await sql`
-    SELECT u.id, u.email, u.first_name, u.last_name, u.role, u.status
+    SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.role, u.status
     FROM hop_sessions s
     JOIN hop_users u ON u.id = s.user_id
     WHERE s.token_hash = ${hashToken(token)} AND s.expires_at > NOW()
   `
   const row = rows[0] as
-    | { id: string; email: string; first_name: string; last_name: string; role: string; status: string }
+    | {
+        id: string
+        email: string
+        first_name: string
+        last_name: string
+        phone: string
+        role: string
+        status: string
+      }
     | undefined
   if (!row || row.status !== 'active') return null
 
@@ -168,6 +177,7 @@ export async function getSessionUser(sql: Sql, request: Request): Promise<HopUse
     email: row.email,
     firstName: row.first_name,
     lastName: row.last_name,
+    phone: row.phone,
     role: row.role as 'user' | 'admin' | 'concierge',
     status: row.status as 'active' | 'disabled',
   }
@@ -264,6 +274,7 @@ export function toPublicUser(row: {
   email: string
   first_name: string
   last_name: string
+  phone?: string | null
   role: string
 }): HopUser {
   return {
@@ -271,6 +282,7 @@ export function toPublicUser(row: {
     email: row.email,
     firstName: row.first_name,
     lastName: row.last_name,
+    phone: row.phone || '',
     role: row.role as 'user' | 'admin' | 'concierge',
     status: 'active',
   }

@@ -29,17 +29,26 @@ export function HopConciergeDashboardPage() {
       <div className="hop-stat-grid">
         <div className="hop-card hop-stat-card">
           <span className="hop-stat-card__value">{counts?.assigned ?? '—'}</span>
-          <span className="hop-stat-card__label">Assigned to you</span>
+          <span className="hop-stat-card__label">📋 Assigned to you</span>
         </div>
         <div className="hop-card hop-stat-card">
           <span className="hop-stat-card__value">{counts?.active ?? '—'}</span>
-          <span className="hop-stat-card__label">Active right now</span>
+          <span className="hop-stat-card__label">⚡ Active right now</span>
         </div>
         <div className="hop-card hop-stat-card">
           <span className="hop-stat-card__value">{counts?.completed ?? '—'}</span>
-          <span className="hop-stat-card__label">Completed</span>
+          <span className="hop-stat-card__label">✅ Completed</span>
         </div>
       </div>
+
+      {counts && counts.assigned === 0 && (
+        <section className="hop-card">
+          <p className="hop-muted">
+            Nothing assigned to you yet — new requests will show up on{' '}
+            <a href="/hop/concierge/requests">My requests</a> the moment an admin assigns one.
+          </p>
+        </section>
+      )}
     </div>
   )
 }

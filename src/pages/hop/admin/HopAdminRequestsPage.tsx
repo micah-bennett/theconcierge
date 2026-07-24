@@ -10,6 +10,7 @@ import {
 } from '../../../hop/api'
 import { useHopAuth } from '../../../hop/useHopAuth'
 import { RequestMessageThread } from '../../../hop/requestMessages/RequestMessageThread'
+import { ContactMenu } from '../../../hop/ContactMenu'
 
 const LOCATION_PUSH_INTERVAL_MS = 20000
 
@@ -61,7 +62,7 @@ function RideLocationSharing({ requestId }: { requestId: string }) {
 
   return (
     <div className="hop-card" style={{ marginTop: '0.75rem' }}>
-      <h2>Location sharing</h2>
+      <h2>📍 Location sharing</h2>
       {!sharing ? (
         <>
           <p className="hop-muted">
@@ -225,8 +226,18 @@ export function HopAdminRequestsPage() {
               <div>
                 <strong>{SERVICE_TYPE_LABEL[req.service_type] || req.service_type}</strong>
                 <div className="hop-muted">
-                  {req.first_name} {req.last_name} — {req.email}
+                  <ContactMenu
+                    name={`${req.first_name} ${req.last_name}`}
+                    phone={req.user_phone}
+                    email={req.email}
+                  />
                 </div>
+                {req.assignee_name && (
+                  <div className="hop-muted">
+                    Assigned: {req.assignee_name}
+                    {req.assignee_rating && ` — ${req.assignee_rating.avg.toFixed(1)}★ (${req.assignee_rating.count})`}
+                  </div>
+                )}
               </div>
               <span className={`hop-status hop-status--${req.status}`}>{STATUS_LABEL[req.status] || req.status}</span>
             </div>

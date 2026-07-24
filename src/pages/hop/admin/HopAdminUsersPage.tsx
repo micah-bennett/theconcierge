@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { hopAdminListUsers, hopAdminUpdateUserStatus, type HopAdminUser } from '../../../hop/api'
 
 export function HopAdminUsersPage() {
@@ -40,6 +41,7 @@ export function HopAdminUsersPage() {
               <tr>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Phone</th>
                 <th>Status</th>
                 <th>Integrations</th>
                 <th>Joined</th>
@@ -53,12 +55,16 @@ export function HopAdminUsersPage() {
                     {user.first_name} {user.last_name}
                   </td>
                   <td>{user.email}</td>
+                  <td>{user.phone || '—'}</td>
                   <td>
                     <span className={`hop-status hop-status--${user.status}`}>{user.status}</span>
                   </td>
                   <td>{user.connected_integrations}</td>
                   <td>{new Date(user.created_at).toLocaleDateString()}</td>
-                  <td>
+                  <td style={{ display: 'flex', gap: '0.5rem' }}>
+                    <Link className="hop-btn-ghost" to={`/hop/admin/messages?userId=${user.id}`}>
+                      Message
+                    </Link>
                     <button
                       type="button"
                       className="hop-btn-ghost"
