@@ -21,9 +21,24 @@ export async function GET(request: Request): Promise<Response> {
     return json({ staff })
   }
 
+  // ?scope=integrations — folded in from the former api/hop/admin/integrations.ts (2026-07-23,
+  // function-budget consolidation, see docs/hop/architecture.md). Every user's connection
+  // status across every provider, for the admin integrations triage table.
+  if (new URL(request.url).searchParams.get('scope') === 'integrations') {
+    const integrations = await sql`
+      SELECT
+        i.provider, i.status, i.connected_at, i.last_synced_at,
+        u.id AS user_id, u.first_name, u.last_name, u.email
+      FROM hop_integrations i
+      JOIN hop_users u ON u.id = i.user_id
+      ORDER BY i.connected_at DESC NULLS LAST
+    `
+    return json({ integrations })
+  }
+
   const rows = await sql`
     SELECT
-      u.id, u.email, u.first_name, u.last_name, u.role, u.status, u.created_at,
+      u.id, u.email, u.first_name, u.last_name, u.phone, u.role, u.status, u.created_at,
       COUNT(i.id) FILTER (WHERE i.status = 'connected') AS connected_integrations
     FROM hop_users u
     LEFT JOIN hop_integrations i ON i.user_id = u.id

@@ -19,10 +19,11 @@ how it might look eventually — check `mvp-scope.md` for what's real vs. stubbe
   `api/hop/requests.ts`'s body-based `PATCH`). This also matters for the Hobby-plan
   12-Serverless-Function cap, tracked **per Vercel project** — see "Deployments" below for how
   `main` and the ConciergeHub deployment now carry different `api/` trees and different counts.
-  `main` (`theconcierge`) is at **12 of 12, no headroom left**: `chat.ts`, `requests.ts`,
-  `relief.ts`, and 9 under `api/hop/**` (including `request-messages.ts`, added 2026-07-16). Any
-  future `main` feature needing a new function must fold into an existing `?action=` file or free
-  a slot first (`api/relief.ts` is the current best candidate — see `mvp-scope.md`).
+  `main` (`theconcierge`) is at **11 of 12** as of the 2026-07-23 Phase 1 pass (see "Phase 1 quick
+  wins" above) — `chat.ts`, `requests.ts`, `relief.ts`, and 8 under `api/hop/**`. Any future
+  `main` feature needing a new function must fold into an existing `?action=` file or free a slot
+  first (`api/relief.ts` is the current best candidate — see `mvp-scope.md` and
+  `docs/hop/roadmap.md`, which already spends that slot in its Phase 3 design).
 - **Database**: Neon serverless Postgres via `@neondatabase/serverless`'s `neon()` tagged-template
   client. One schema file, `db/schema.sql`, written idempotently (`CREATE TABLE IF NOT EXISTS`,
   `ADD COLUMN IF NOT EXISTS`, etc.) and applied with `npm run db:migrate`.
@@ -112,6 +113,102 @@ new admin analytics view built on top of this table — it is explicitly not bui
   check-in's `shift_protection` answer, if any, is also folded into the pre-filled details text
   (`&shift=` query param) so it's visible to dispatch — there's no direct DB link between a
   check-in row and the request it produces.
+
+## Visual redesign + onboarding tour (2026-07-24)
+
+- **Design tokens** (`src/styles/hopApp.css`, root `.hop-shell, .hop-auth-page` block): a distinct
+  "aurora dusk" identity — a fixed, low-opacity multi-color radial-gradient glow (`--hop-aurora-1/
+  2/3`) behind glass-panel cards (`backdrop-filter: blur(...)`), the existing indigo/violet/cyan
+  trio kept as the cool brand palette, plus a new `--hop-gold` reserved for ratings/rewards/
+  highlights so those moments read as distinct from routine indigo badges. New shared radius/
+  shadow tokens (`--hop-radius-sm/md/lg/pill`, `--hop-shadow-card`, `--hop-shadow-glow`). Both
+  dark and light theme variants defined, same as before. Every rule still reads colors via
+  `var(--hop-*)` — see `docs/design-system.md`.
+- **Sidebar nav** (`HopAppLayout.tsx`, `HopAdminLayout.tsx`, `HopConciergeLayout.tsx`): each
+  `NAV_ITEMS` entry now carries an `icon` (emoji) rendered alongside its label; the active item is
+  a gradient pill with a glow shadow. A small gradient brand mark (✦) replaces the plain "HOP"
+  wordmark. The theme toggle/logout buttons moved into a `.hop-shell__utility-row` of small pill
+  buttons alongside the new "🧭 Quick tour" button.
+- **Onboarding tour** (`src/hop/OnboardingTour.tsx` + `src/hop/useTourVisibility.ts`): a
+  dismissible modal carousel, not a DOM-anchored spotlight tour — deliberately, so it works
+  identically regardless of which page happens to be open and never needs to track real page
+  elements. `useTourVisibility(storageKey)` gates it on a `localStorage` flag scoped **per role,
+  per browser** (`hop-tour-member`, `hop-tour-concierge`, `hop-tour-admin`,
+  `hop-tour-conciergehub-admin`) — not per account, which avoids an async-timing dependency on the
+  logged-in user id being available on first render. Step content is authored per layout (each
+  `*Layout.tsx` defines its own `*_TOUR_STEPS` array) since the four roles' features differ
+  meaningfully; see `docs/hop/walkthrough.md` for the plain-language version of the same content.
+  Split into two files (component vs. hook) specifically to satisfy
+  `react-refresh/only-export-components` — Fast Refresh requires a component file to export only
+  components.
+- **Known gradient-text gotcha, already fixed**: `.hop-page-title`'s gradient-text effect
+  (`-webkit-background-clip: text`) clips letter descenders (a lowercase "y"/"g" reads as cut off)
+  without enough `line-height`/`padding-bottom` — both are set explicitly on `.hop-page-title` for
+  this reason. If a future gradient-text treatment is added elsewhere, budget the same headroom or
+  it will visibly clip in Chrome.
+
+## Phase 1 quick wins (2026-07-23)
+
+A batch of concierge-rep, admin, and member features from a strategy review between the product
+owner and their boss. Full phased design (including what's *not* built yet — the Facility portal,
+mood check-ins, family profiles, social feed, rewards) lives in `docs/hop/roadmap.md`; this
+section covers only what shipped in this pass.
+
+- **Acceptance/acknowledgment**: `hop_service_requests.accepted_at` (nullable timestamp) — the
+  assigned staff member must call `PATCH { id, accept: true }` before the request can move past
+  `assigned`. Deliberately a separate column, not a new status value, so
+  `isValidStatusTransition()`/`nextValidStatuses()` in `hopRequestWorkflow.ts` stay untouched;
+  the gate is `requiresAcceptance(current)` (true only for `assigned`), checked in
+  `api/hop/requests.ts`'s `PATCH` alongside the existing transition check. Only the current
+  `handled_by` can accept; accepting logs a `hop_service_request_status_history` row
+  (`note='Accepted'`) but does not itself change `status`. The concierge UI hides the status
+  `<select>` entirely until accepted (shows an "Accept request" button instead), so the
+  server-side rejection path is a defense-in-depth backstop, not the primary UX.
+- **Click-to-call/text/email**: `hop_users.phone` (new column, editable via
+  `auth.ts?action=update-profile`, alongside `firstName`/`lastName`). Surfaced on request cards as
+  a `ContactMenu` component (`src/hop/ContactMenu.tsx`, staff-portal) — click a name, a small
+  disclosure reveals `tel:`/`sms:`/`mailto:` links. No telephony vendor integration; these are
+  plain browser-native link schemes. The concierge's "Call the office" button
+  (`HopConciergeRequestsPage.tsx`) is a static `tel:` link sourced from the build-time
+  `VITE_HOP_DISPATCH_PHONE` env var (staff-portal only — see `.env.example`), not a DB-backed
+  setting; changing the number requires a redeploy.
+- **Concierge ratings**: `hop_concierge_ratings` (`request_id` UNIQUE, `concierge_id`,
+  `rated_by`, `stars` 1–5, `comment`, `created_at`) — one rating per completed request, submitted
+  by the request's own member via `POST /api/hop/requests?action=rate`
+  (`api/hop/requests.ts`). Both the member's request list and the admin's dispatch view include
+  an `assignee_rating` aggregate (`AVG(stars)`, `COUNT(*)`, computed live via
+  `attachAssigneeRatings()`, not denormalized onto `hop_users`) so a concierge's overall rating is
+  visible wherever they're shown as an assignee. The concierge's own profile page
+  (`api/hop/concierge.ts?action=profile`) also returns this aggregate for their own account. No
+  gratuity/payout logic — this is visibility only, for the human decision the boss described.
+- **Admin ↔ member direct messaging**: `hop_direct_messages` (`thread_user_id`, `sender_id`,
+  `body`, `read_at`, `created_at`) — new, flat `api/hop/messages.ts`. Deliberately separate from
+  `hop_request_messages` (which stays scoped to one request's requester/assignee/admin): this is a
+  single ongoing thread per member, not tied to any request, threaded by `thread_user_id` — "admin"
+  is a role here (any admin can read/reply into any member's thread), not one specific
+  counterparty, matching the existing assignment model. Member UI: `HopMessagesPage.tsx`
+  (`/hop/app/messages`, `main`). Admin UI: `HopAdminMessagesPage.tsx`
+  (`/hop/admin/messages`, staff-portal) — an inbox (`GET /messages?scope=admin`, latest message +
+  unread count per thread) plus a thread view (`GET /messages?scope=admin&userId=`); a "Message"
+  link on `HopAdminUsersPage.tsx` deep-links into a thread even before a first message exists.
+  15-second polling, same pattern as `RequestMessageThread`/`RideTracker` — no websockets.
+- **On/off-duty roster**: `hop_duty_log` (`user_id`, `clock_in_at`, `clock_out_at` nullable) —
+  self-toggle clock-in/out, not GPS/biometric-verified. Concierges toggle it from a badge in
+  `HopConciergeLayout.tsx`'s sidebar (`api/hop/concierge.ts?action=duty-status`, GET reads own
+  state, POST `{ onDuty }` opens/closes a row). Admin's dashboard shows a "Working today" count
+  and name/role list (`api/hop/admin/users.ts?scope=on-duty`, staff-portal only — the write side
+  only exists on `concierge.ts`, which isn't on `main`). `hop_users.default_shift_end_time` (new,
+  nullable `TIME` column) was added alongside this — not used by anything in this pass, but is the
+  minimal "shift schedule" the Facility portal's overtime metric (`docs/hop/roadmap.md`, Phase 2)
+  will read against.
+- **Function-budget consolidation** (needed to make room for `api/hop/messages.ts` on `main`,
+  which was already at 12/12): `api/hop/integrations.ts` folded into
+  `api/hop/integrations/google.ts` as `?action=list`; `api/hop/admin/integrations.ts` folded into
+  `api/hop/admin/users.ts` as `?scope=integrations`. Both consolidations applied on **both**
+  branches (frees 2 on `main`, 2 on `staff-portal`) — see "Deployments" below for the resulting
+  counts. No behavior change, just fewer files; `src/hop/api.ts`'s exported functions
+  (`hopListIntegrations`, `hopAdminListIntegrations`) kept the same names/signatures so no caller
+  changed.
 
 ## Dispatch workflow (2026-07-14)
 
@@ -319,10 +416,13 @@ decoupled from the consumer-facing product, as the seed of a future standalone E
 
 - **`theconcierge`** (`ay-projects3/theconcierge`, production domain `theconcierge.life`) — tracks
   the `main` branch. Full app: public marketing site + consumer HOP signup/login (`/hop/app/*`) +
-  a legacy admin portal (`/hop/admin/*`, frozen — see below). 12 of 12 functions used:
-  `chat.ts`, `requests.ts`, `relief.ts`, and 9 under `api/hop/**` (`admin/integrations.ts`,
-  `admin/users.ts`, `auth.ts`, `integrations.ts`, `integrations/google.ts`, `request-messages.ts`,
-  `requests.ts`, `ride-location.ts`, `wellness.ts`).
+  a legacy admin portal (`/hop/admin/*`, frozen — see below). **11 of 12** functions used as of
+  the 2026-07-23 Phase 1 pass: `chat.ts`, `requests.ts`, `relief.ts`, and 8 under `api/hop/**`
+  (`admin/users.ts`, `auth.ts`, `integrations/google.ts`, `messages.ts`, `request-messages.ts`,
+  `requests.ts`, `ride-location.ts`, `wellness.ts`). `admin/integrations.ts` and the top-level
+  `integrations.ts` were folded into `admin/users.ts` (`?scope=integrations`) and
+  `integrations/google.ts` (`?action=list`) respectively to make room for the new `messages.ts` —
+  see "Phase 1 quick wins" above. One slot of headroom.
 - **`theconcierge-staff`**, branded **HOP ConciergeHub** (`ay-projects3/theconcierge-staff`,
   `theconcierge-staff.vercel.app` for now — no custom domain attached yet) — tracks the
   `staff-portal` branch. This is where all *new* staff/admin functionality grows going forward;
@@ -330,24 +430,29 @@ decoupled from the consumer-facing product, as the seed of a future standalone E
   endpoints — see "ConciergeHub" above). `src/App.tsx` on this branch is trimmed to
   `/hop/admin/login`, the `RequireAdmin` → `/hop/admin/*` tree (now including `/concierges`), the
   `RequireConcierge` → `/hop/concierge/*` tree, and the shared `/hop/forgot-password` +
-  `/hop/reset-password` routes. Every other path redirects to `/hop/admin/login`. 11 of 12
-  functions used: `admin/concierges.ts`, `admin/integrations.ts`, `admin/users.ts`, `auth.ts`,
-  `concierge.ts`, `integrations.ts`, `integrations/google.ts`, `request-messages.ts`, `requests.ts`,
-  `ride-location.ts`, `wellness.ts` — one slot of headroom. Same `DATABASE_URL` as `main`, so
-  accounts, sessions, and data are consistent across both domains. Env vars (`DATABASE_URL`,
-  `SESSION_HASH_SECRET`) were copied over from the main project; **`RESEND_API_KEY` is a hard
-  requirement here now** (not just for password resets — the concierge-invite flow's clean path
-  depends on it too; see `docs/vercel-setup.md`). `GOOGLE_CLIENT_ID`/`SECRET`/`REDIRECT_URI` are
-  not needed here (no `/hop/app/integrations` page is ever served on this deployment).
+  `/hop/reset-password` routes. Every other path redirects to `/hop/admin/login`. **10 of 12**
+  functions used as of the 2026-07-23 Phase 1 pass: `admin/concierges.ts`, `admin/users.ts`,
+  `auth.ts`, `concierge.ts`, `integrations/google.ts`, `messages.ts`, `request-messages.ts`,
+  `requests.ts`, `ride-location.ts`, `wellness.ts` — the same `admin/integrations.ts`/
+  `integrations.ts` consolidation as `main` applies here too. Two slots of headroom. Same
+  `DATABASE_URL` as `main`, so accounts, sessions, and data are consistent across both domains.
+  Env vars (`DATABASE_URL`, `SESSION_HASH_SECRET`) were copied over from the main project;
+  **`RESEND_API_KEY` is a hard requirement here now** (not just for password resets — the
+  concierge-invite flow's clean path depends on it too; see `docs/vercel-setup.md`).
+  `GOOGLE_CLIENT_ID`/`SECRET`/`REDIRECT_URI` are not needed here (no `/hop/app/integrations` page
+  is ever served on this deployment). `VITE_HOP_DISPATCH_PHONE` (client-visible, build-time) is
+  new here as of Phase 1 — see `.env.example` and `docs/hop/backend-guide.md`.
 - **`api/**` is no longer identical between the two deployments** (it was until 2026-07-16).
   `admin/concierges.ts` and `concierge.ts` exist only on `staff-portal`; `chat.ts`, `requests.ts`,
   and `relief.ts` (the unrelated concierge-request/relief-call product) exist only on `main`.
-  Everything else stays shared/synced. Keeping `staff-portal` in sync: any future shared-file
-  change on `main` (`api/hop/**` besides the ConciergeHub-only files, `hop/AuthContext.tsx`,
-  `hop/RequireAuth.tsx`, theme/CSS) should be merged or cherry-picked into `staff-portal`
-  manually — the branches are not auto-synced. `src/App.tsx` and
-  `src/hop/HopAdminLayout.tsx`'s `NAV_ITEMS` are *expected* to permanently diverge; don't try to
-  reconcile them.
+  Everything else stays shared/synced — including `messages.ts` (new in Phase 1), even though
+  `main`'s frozen legacy admin has no UI calling its admin-side actions today; only the member-side
+  `HopMessagesPage.tsx` (`main`) and admin-side `HopAdminMessagesPage.tsx` (`staff-portal`) exist.
+  Keeping `staff-portal` in sync: any future shared-file change on `main` (`api/hop/**` besides
+  the ConciergeHub-only files, `hop/AuthContext.tsx`, `hop/RequireAuth.tsx`, theme/CSS) should be
+  merged or cherry-picked into `staff-portal` manually — the branches are not auto-synced.
+  `src/App.tsx` and `src/hop/HopAdminLayout.tsx`'s `NAV_ITEMS` are *expected* to permanently
+  diverge; don't try to reconcile them.
 - **No git auto-deploy (deliberate, for now)**: `theconcierge-staff`'s Production Branch setting
   defaulted to `main` (the repo's default branch) when the project was first connected to GitHub,
   and neither the `vercel` CLI nor the public `PATCH /v9/projects/:id` API expose a way to change

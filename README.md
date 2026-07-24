@@ -2,8 +2,9 @@
 
 React, TypeScript, and Vite frontend deployed on Vercel, with Vercel Functions and Neon Postgres for backend services.
 
-**Agents: read [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) first** — it's the map to
-everything else in `docs/` and covers project-wide conventions/gotchas this README doesn't.
+**Agents: read [CLAUDE.md](CLAUDE.md) first** (Claude Code loads it automatically) — it routes you
+to [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) and the rest of `docs/`, and covers
+project-wide conventions/gotchas this README doesn't.
 
 ## Development
 

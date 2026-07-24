@@ -61,7 +61,7 @@ function RideLocationSharing({ requestId }: { requestId: string }) {
 
   return (
     <div className="hop-card" style={{ marginTop: '0.75rem' }}>
-      <h2>Location sharing</h2>
+      <h2>📍 Location sharing</h2>
       {!sharing ? (
         <>
           <p className="hop-muted">

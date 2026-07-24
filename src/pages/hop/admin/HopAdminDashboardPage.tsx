@@ -26,15 +26,15 @@ export function HopAdminDashboardPage() {
       <div className="hop-stat-grid">
         <div className="hop-card hop-stat-card">
           <span className="hop-stat-card__value">{counts?.users ?? '—'}</span>
-          <span className="hop-stat-card__label">HOP users</span>
+          <span className="hop-stat-card__label">👥 HOP users</span>
         </div>
         <div className="hop-card hop-stat-card">
           <span className="hop-stat-card__value">{counts?.openRequests ?? '—'}</span>
-          <span className="hop-stat-card__label">Open requests</span>
+          <span className="hop-stat-card__label">📋 Open requests</span>
         </div>
         <div className="hop-card hop-stat-card">
           <span className="hop-stat-card__value">{counts?.connectedIntegrations ?? '—'}</span>
-          <span className="hop-stat-card__label">Connected integrations</span>
+          <span className="hop-stat-card__label">🔗 Connected integrations</span>
         </div>
       </div>
     </div>

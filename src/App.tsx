@@ -24,6 +24,7 @@ import { HopDashboardPage } from './pages/hop/app/HopDashboardPage'
 import { HopRequestsPage } from './pages/hop/app/HopRequestsPage'
 import { HopFamilyCarePage } from './pages/hop/app/HopFamilyCarePage'
 import { HopWellnessPage } from './pages/hop/app/HopWellnessPage'
+import { HopMessagesPage } from './pages/hop/app/HopMessagesPage'
 import { HopIntegrationsPage } from './pages/hop/app/HopIntegrationsPage'
 import { HopProfilePage } from './pages/hop/app/HopProfilePage'
 import { HopAdminDashboardPage } from './pages/hop/admin/HopAdminDashboardPage'
@@ -118,6 +119,7 @@ function AppRoutes() {
                 <Route path="requests" element={<HopRequestsPage />} />
                 <Route path="family-care" element={<HopFamilyCarePage />} />
                 <Route path="wellness" element={<HopWellnessPage />} />
+                <Route path="messages" element={<HopMessagesPage />} />
                 <Route path="integrations" element={<HopIntegrationsPage />} />
                 <Route path="profile" element={<HopProfilePage />} />
               </Route>

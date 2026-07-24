@@ -45,6 +45,15 @@ export function isValidStatusTransition(serviceType: string, current: RequestSta
   return nextIndex === currentIndex + 1
 }
 
+// Acceptance/acknowledgment (2026-07-23): the assigned staff member must explicitly accept a
+// request before it can move past 'assigned' — see docs/hop/architecture.md ("Phase 1 quick
+// wins"). Deliberately just this one gate, not a new status value, so the rest of this file's
+// sequence logic is untouched; `accepted_at` lives on hop_service_requests and is checked
+// alongside this in api/hop/requests.ts's PATCH.
+export function requiresAcceptance(current: RequestStatus): boolean {
+  return current === 'assigned'
+}
+
 // Used by the admin dispatch UI so it only ever offers statuses the server will actually accept.
 export function nextValidStatuses(serviceType: string, current: RequestStatus): RequestStatus[] {
   if (TERMINAL_STATUSES.includes(current)) return []

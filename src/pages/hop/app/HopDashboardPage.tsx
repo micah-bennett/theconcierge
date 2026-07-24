@@ -36,7 +36,7 @@ function ActiveRequestTracker({ request }: { request: HopServiceRequest }) {
   return (
     <section className="hop-card hop-tracker-card">
       <div className="hop-card__header">
-        <h2>Active request — {SERVICE_TYPE_LABEL[request.service_type] || request.service_type}</h2>
+        <h2>🚦 Active request — {SERVICE_TYPE_LABEL[request.service_type] || request.service_type}</h2>
         <span className={`hop-status hop-status--${request.status}`}>
           {STATUS_LABEL[request.status] || request.status}
         </span>
@@ -111,7 +111,7 @@ export function HopDashboardPage() {
 
       <section className="hop-card">
         <div className="hop-card__header">
-          <h2>Upcoming on your calendar</h2>
+          <h2>📅 Upcoming on your calendar</h2>
           {!connected && !eventsError && <Link to="/hop/app/integrations">Connect Google Calendar →</Link>}
         </div>
         {loadingEvents && <p className="hop-muted">Loading…</p>}

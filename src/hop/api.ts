@@ -3,6 +3,7 @@ export type HopUser = {
   email: string
   firstName: string
   lastName: string
+  phone: string
   role: 'user' | 'admin' | 'concierge'
   status: 'active' | 'disabled'
 }
@@ -15,6 +16,8 @@ export type HopRequestHistoryEntry = {
   staff_name?: string | null
 }
 
+export type HopRatingAggregate = { avg: number; count: number }
+
 export type HopServiceRequest = {
   id: string
   service_type: string
@@ -22,7 +25,11 @@ export type HopServiceRequest = {
   details: string
   requested_for: string | null
   handled_by: string | null
+  accepted_at: string | null
   assignee_name: string | null
+  assignee_phone: string | null
+  assignee_rating: HopRatingAggregate | null
+  my_rating: { stars: number; comment: string } | null
   history: HopRequestHistoryEntry[]
   created_at: string
   updated_at: string
@@ -83,7 +90,7 @@ export function hopResetPassword(token: string, password: string) {
   })
 }
 
-export function hopUpdateProfile(data: { firstName: string; lastName: string }) {
+export function hopUpdateProfile(data: { firstName: string; lastName: string; phone: string }) {
   return request<{ user: HopUser }>('/auth?action=update-profile', {
     method: 'PATCH',
     body: JSON.stringify(data),
@@ -105,8 +112,22 @@ export function hopAdminUpdateRequest(data: { id: string; status?: string; assig
   })
 }
 
+export function hopAcceptRequest(id: string) {
+  return request<{ request: HopServiceRequest; validNextStatuses: string[] }>('/requests', {
+    method: 'PATCH',
+    body: JSON.stringify({ id, accept: true }),
+  })
+}
+
+export function hopRateRequest(data: { requestId: string; stars: number; comment: string }) {
+  return request<{ rating: { id: string; stars: number; comment: string; created_at: string } }>(
+    '/requests?action=rate',
+    { method: 'POST', body: JSON.stringify(data) },
+  )
+}
+
 export function hopListIntegrations() {
-  return request<{ integrations: HopIntegration[] }>('/integrations')
+  return request<{ integrations: HopIntegration[] }>('/integrations/google?action=list')
 }
 
 export function hopDisconnectGoogleCalendar() {
@@ -122,6 +143,7 @@ export type HopAdminUser = {
   email: string
   first_name: string
   last_name: string
+  phone: string
   role: string
   status: string
   created_at: string
@@ -141,6 +163,7 @@ export type HopAdminRequest = HopServiceRequest & {
   first_name: string
   last_name: string
   email: string
+  user_phone: string
   valid_next_statuses: string[]
 }
 
@@ -225,7 +248,7 @@ export type HopAdminIntegration = {
 }
 
 export function hopAdminListIntegrations() {
-  return request<{ integrations: HopAdminIntegration[] }>('/admin/integrations')
+  return request<{ integrations: HopAdminIntegration[] }>('/admin/users?scope=integrations')
 }
 
 export type HopRequestMessage = {
@@ -265,7 +288,7 @@ export type HopConciergeProfile = {
 }
 
 export function hopConciergeGetProfile() {
-  return request<{ profile: HopConciergeProfile }>('/concierge?action=profile')
+  return request<{ profile: HopConciergeProfile; rating: HopRatingAggregate | null }>('/concierge?action=profile')
 }
 
 export function hopConciergeUpdateProfile(data: HopConciergeProfile) {
@@ -277,6 +300,29 @@ export function hopConciergeUpdateProfile(data: HopConciergeProfile) {
 
 export function hopConciergeMyRequests() {
   return request<{ requests: HopAdminRequest[] }>('/concierge?action=my-requests')
+}
+
+export function hopConciergeGetDutyStatus() {
+  return request<{ onDuty: boolean; since: string | null }>('/concierge?action=duty-status')
+}
+
+export function hopConciergeSetDutyStatus(onDuty: boolean) {
+  return request<{ onDuty: boolean; since: string | null }>('/concierge?action=duty-status', {
+    method: 'POST',
+    body: JSON.stringify({ onDuty }),
+  })
+}
+
+export type HopOnDutyStaff = {
+  id: string
+  first_name: string
+  last_name: string
+  role: 'admin' | 'concierge'
+  clock_in_at: string
+}
+
+export function hopAdminListOnDuty() {
+  return request<{ onDuty: HopOnDutyStaff[] }>('/admin/users?scope=on-duty')
 }
 
 export type HopConcierge = {
@@ -305,5 +351,50 @@ export function hopAdminUpdateConciergeStatus(id: string, status: 'active' | 'di
   return request<{ concierge: HopConcierge }>('/admin/concierges', {
     method: 'PATCH',
     body: JSON.stringify({ id, status }),
+  })
+}
+
+// ── Direct messaging (admin <-> member), not tied to a request ─────────────
+
+export type HopDirectMessage = {
+  id: string
+  sender_id: string
+  sender_name: string
+  sender_role: 'user' | 'admin' | 'concierge'
+  body: string
+  created_at: string
+}
+
+export function hopListMyMessages() {
+  return request<{ messages: HopDirectMessage[] }>('/messages')
+}
+
+export function hopSendMessage(body: string) {
+  return request<{ message: HopDirectMessage }>('/messages', { method: 'POST', body: JSON.stringify({ body }) })
+}
+
+export type HopMessageThreadSummary = {
+  user_id: string
+  first_name: string
+  last_name: string
+  email: string
+  last_message: string
+  last_sender_id: string
+  last_message_at: string
+  unread_count: number
+}
+
+export function hopAdminListMessageThreads() {
+  return request<{ threads: HopMessageThreadSummary[] }>('/messages?scope=admin')
+}
+
+export function hopAdminGetMessageThread(userId: string) {
+  return request<{ messages: HopDirectMessage[] }>(`/messages?scope=admin&userId=${encodeURIComponent(userId)}`)
+}
+
+export function hopAdminSendMessage(userId: string, body: string) {
+  return request<{ message: HopDirectMessage }>('/messages', {
+    method: 'POST',
+    body: JSON.stringify({ userId, body }),
   })
 }

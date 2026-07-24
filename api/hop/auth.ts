@@ -57,9 +57,16 @@ async function handleSignup(request: Request): Promise<Response> {
     const rows = await sql`
       INSERT INTO hop_users (email, password_hash, first_name, last_name, role)
       VALUES (${data.email}, ${passwordHash}, ${data.firstName}, ${data.lastName}, 'user')
-      RETURNING id, email, first_name, last_name, role
+      RETURNING id, email, first_name, last_name, phone, role
     `
-    const row = rows[0] as { id: string; email: string; first_name: string; last_name: string; role: string }
+    const row = rows[0] as {
+      id: string
+      email: string
+      first_name: string
+      last_name: string
+      phone: string
+      role: string
+    }
 
     const token = await createSession(sql, row.id, request)
 
@@ -100,7 +107,7 @@ async function handleLogin(request: Request): Promise<Response> {
     const data = validateLogin(await request.json())
 
     const rows = await sql`
-      SELECT id, email, first_name, last_name, role, status, password_hash,
+      SELECT id, email, first_name, last_name, phone, role, status, password_hash,
              failed_login_attempts, locked_until
       FROM hop_users
       WHERE LOWER(email) = ${data.email}
@@ -111,6 +118,7 @@ async function handleLogin(request: Request): Promise<Response> {
           email: string
           first_name: string
           last_name: string
+          phone: string
           role: string
           status: string
           password_hash: string
@@ -214,18 +222,23 @@ async function handleResetPassword(request: Request): Promise<Response> {
   }
 }
 
-type UpdateProfilePayload = { firstName: string; lastName: string }
+type UpdateProfilePayload = { firstName: string; lastName: string; phone: string }
 
+// Phone is optional (empty string clears it) — needed for click-to-call/text on request cards
+// (see docs/hop/architecture.md, "Phase 1 quick wins"), loosely validated since formats vary
+// internationally; just a sane length/character cap, not a strict phone-number parser.
 function validateUpdateProfile(value: unknown): UpdateProfilePayload {
   if (!value || typeof value !== 'object') throw new Error('Invalid request body')
   const source = value as Record<string, unknown>
   const firstName = typeof source.firstName === 'string' ? source.firstName.trim() : ''
   const lastName = typeof source.lastName === 'string' ? source.lastName.trim() : ''
+  const phone = typeof source.phone === 'string' ? source.phone.trim() : ''
 
   if (!firstName || firstName.length > 80) throw new Error('Enter a first name')
   if (!lastName || lastName.length > 80) throw new Error('Enter a last name')
+  if (phone.length > 30 || (phone && !/^[0-9+()\-.\s]+$/.test(phone))) throw new Error('Enter a valid phone number')
 
-  return { firstName, lastName }
+  return { firstName, lastName, phone }
 }
 
 async function handleUpdateProfile(request: Request): Promise<Response> {
@@ -240,15 +253,22 @@ async function handleUpdateProfile(request: Request): Promise<Response> {
 
     const rows = await sql`
       UPDATE hop_users
-      SET first_name = ${data.firstName}, last_name = ${data.lastName}, updated_at = NOW()
+      SET first_name = ${data.firstName}, last_name = ${data.lastName}, phone = ${data.phone}, updated_at = NOW()
       WHERE id = ${user.id}
-      RETURNING id, email, first_name, last_name, role
+      RETURNING id, email, first_name, last_name, phone, role
     `
-    const row = rows[0] as { id: string; email: string; first_name: string; last_name: string; role: string }
+    const row = rows[0] as {
+      id: string
+      email: string
+      first_name: string
+      last_name: string
+      phone: string
+      role: string
+    }
     return json({ user: toPublicUser(row) })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not update profile'
-    const status = /Enter a/i.test(message) ? 400 : 500
+    const status = /Enter a|Enter a valid/i.test(message) ? 400 : 500
     if (status === 500) console.error('HOP profile update failed', error)
     return json({ error: status === 400 ? message : 'Could not update profile' }, status)
   }

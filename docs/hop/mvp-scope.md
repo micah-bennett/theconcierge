@@ -59,6 +59,42 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   is active-browser sharing, not background tracking — see "Live ride location" in
   `architecture.md` for exactly what that means and its real limitations.
 
+## 2026-07-24: Visual redesign + onboarding tour
+
+A full pass on HOP's visual identity (`src/styles/hopApp.css`, shared across every page) plus a
+new dismissible "🧭 Quick tour" walkthrough per role. See "Visual redesign + onboarding tour" in
+`architecture.md` for the shape, and `docs/hop/walkthrough.md` for what each tour actually says
+per role — that doc doubles as a plain-language page-by-page reference. Nothing here changed any
+API/data behavior — CSS and two new frontend-only files (`OnboardingTour.tsx`,
+`useTourVisibility.ts`).
+
+## 2026-07-23: Phase 1 quick wins (concierge acceptance, ratings, messaging, duty status)
+
+From a strategy review between the product owner and their boss covering concierge-rep, admin,
+and member experience. See "Phase 1 quick wins" in `architecture.md` for the full technical shape;
+`docs/hop/roadmap.md` has the phased design for everything from that review **not** built in this
+pass (Facility portal, mood check-ins, family profiles, social feed, rewards — Phases 2 and 3).
+
+What's real as of this pass:
+
+- Concierges must explicitly accept an assigned request (`accepted_at`) before moving its status
+  past `assigned` — no more silent assignment.
+- Every HOP user can set a phone number (`/hop/app/profile`, `auth.ts?action=update-profile`);
+  request cards (member, concierge, admin) surface it as click-to-call/text/email links.
+- Members rate the concierge/admin who fulfilled a completed request (1–5 stars + optional
+  comment, one per request); the rating aggregate shows on request cards and the concierge's own
+  profile page.
+- Admin ↔ member direct messaging (`/hop/app/messages`, `/hop/admin/messages`), separate from the
+  existing per-request message thread.
+- Concierges self-toggle on/off duty; admin's dashboard shows who's working today.
+- The concierge's "Call the office" button and calendar's History/Upcoming toggle
+  (`/hop/concierge/calendar`) — both staff-portal only.
+
+**Not built in this pass** (see `docs/hop/roadmap.md` for the design): the Facility/hospital-
+admin portal, the "how are you feeling right now" one-tap mood check-in and its stress-level heat
+map, self/family profile dates, the dashboard suggestion feed, the internal social feed, and the
+HVCS points/rewards ledger.
+
 ## 2026-07-16: HOP ConciergeHub, Phase 1 (Foundation)
 
 Turned the admin-only dispatch tooling into a two-sided staff product on the ConciergeHub
@@ -112,8 +148,11 @@ specific from a design reference, it needs its own explicit spec first.
 - IP-based login rate limiting (only per-account lockout after repeated failures exists).
 - Any real fulfillment/dispatch logic behind a service request — requests are just recorded
   and status-tracked, not routed to an actual provider network.
-- The "VBC Dashboard" mentioned on the marketing page (hospital-admin-facing analytics).
-- "HOP AI" as an actual assistant/service (it's currently just a marketing chip).
+- The "VBC Dashboard" mentioned on the marketing page (hospital-admin-facing analytics) — the
+  Facility portal design in `docs/hop/roadmap.md` (Phase 2) is the closest concrete plan for this.
+- "HOP AI" as an actual assistant/service (it's currently just a marketing chip) — the dashboard
+  suggestion feed in `docs/hop/roadmap.md` (Phase 3) names the seam where a real AI call could
+  eventually replace the rule-based v1, but that's not built either.
 
 Before building any of the above, re-check this file and `architecture.md` — don't assume a
 stubbed integration is further along than described here.

@@ -48,7 +48,7 @@ export function HopAuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
-  const updateProfile = useCallback(async (data: { firstName: string; lastName: string }) => {
+  const updateProfile = useCallback(async (data: { firstName: string; lastName: string; phone: string }) => {
     const { user: updated } = await hopUpdateProfile(data)
     setUser(updated)
     return updated

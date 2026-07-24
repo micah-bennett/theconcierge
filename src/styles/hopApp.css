@@ -1,22 +1,34 @@
-/* HOP app + admin portal — shares the marketing page's dark indigo/violet theme. */
+/* HOP app + admin portal — a distinct "aurora dusk" identity: deep midnight base, a soft
+   multi-color glow behind glass-panel cards, indigo/violet/cyan as the cool brand trio plus gold
+   reserved for ratings/rewards/highlights so those moments read as genuinely special, not just
+   another blue badge. Every rule here reads colors via var(--hop-*) — see docs/design-system.md. */
 
 .hop-shell,
 .hop-auth-page {
-  --hop-bg: #0d0f1a;
-  --hop-panel: #161a2c;
-  --hop-panel-2: #1a1a2e;
-  --hop-border: rgba(255, 255, 255, 0.1);
-  --hop-border-hover: rgba(255, 255, 255, 0.25);
-  --hop-overlay: rgba(255, 255, 255, 0.04);
-  --hop-overlay-strong: rgba(255, 255, 255, 0.08);
-  --hop-indigo: #6366f1;
-  --hop-violet: #8b5cf6;
-  --hop-cyan: #06b6d4;
-  --hop-text: rgba(255, 255, 255, 0.92);
-  --hop-muted: rgba(255, 255, 255, 0.58);
+  --hop-bg: #090a13;
+  --hop-panel: rgba(22, 25, 43, 0.82);
+  --hop-panel-2: rgba(26, 26, 46, 0.9);
+  --hop-border: rgba(255, 255, 255, 0.09);
+  --hop-border-hover: rgba(255, 255, 255, 0.24);
+  --hop-overlay: rgba(255, 255, 255, 0.045);
+  --hop-overlay-strong: rgba(255, 255, 255, 0.09);
+  --hop-indigo: #6d6ef5;
+  --hop-violet: #9b5cf7;
+  --hop-cyan: #22d3ee;
+  --hop-gold: #f5b942;
+  --hop-aurora-1: rgba(109, 110, 245, 0.22);
+  --hop-aurora-2: rgba(155, 92, 247, 0.16);
+  --hop-aurora-3: rgba(34, 211, 238, 0.12);
+  --hop-text: rgba(255, 255, 255, 0.94);
+  --hop-muted: rgba(255, 255, 255, 0.6);
   --hop-hint: rgba(255, 255, 255, 0.4);
-  --hop-link: #a5b4fc;
+  --hop-link: #a9b6fd;
   --hop-radius-lg: 20px;
+  --hop-radius-md: 14px;
+  --hop-radius-sm: 10px;
+  --hop-radius-pill: 999px;
+  --hop-shadow-card: 0 12px 32px -16px rgba(0, 0, 0, 0.55);
+  --hop-shadow-glow: 0 0 0 1px rgba(109, 110, 245, 0.35), 0 14px 36px -14px rgba(109, 110, 245, 0.45);
   --hop-font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--hop-text);
@@ -24,17 +36,22 @@
 
 [data-hop-theme='light'] .hop-shell,
 [data-hop-theme='light'] .hop-auth-page {
-  --hop-bg: #f4f5fb;
-  --hop-panel: #ffffff;
-  --hop-panel-2: #eef0fa;
+  --hop-bg: #f3f4fc;
+  --hop-panel: rgba(255, 255, 255, 0.86);
+  --hop-panel-2: rgba(238, 240, 250, 0.92);
   --hop-border: rgba(15, 23, 42, 0.1);
   --hop-border-hover: rgba(15, 23, 42, 0.25);
   --hop-overlay: rgba(15, 23, 42, 0.03);
   --hop-overlay-strong: rgba(15, 23, 42, 0.06);
+  --hop-aurora-1: rgba(109, 110, 245, 0.1);
+  --hop-aurora-2: rgba(155, 92, 247, 0.08);
+  --hop-aurora-3: rgba(34, 211, 238, 0.07);
   --hop-text: rgba(15, 23, 42, 0.92);
   --hop-muted: rgba(15, 23, 42, 0.58);
   --hop-hint: rgba(15, 23, 42, 0.4);
   --hop-link: #4f46e5;
+  --hop-shadow-card: 0 10px 26px -16px rgba(15, 23, 42, 0.28);
+  --hop-shadow-glow: 0 0 0 1px rgba(79, 70, 229, 0.22), 0 12px 28px -14px rgba(79, 70, 229, 0.28);
 }
 
 .hop-app-loading {
@@ -46,6 +63,30 @@
   background: var(--hop-bg, #0d0f1a);
 }
 
+/* Fixed aurora glow behind every HOP surface — subtle on light theme, more present on dark.
+   `isolation: isolate` on the surfaces below keeps this pseudo-element from bleeding z-index
+   above real content while still being `position: fixed` (covers the viewport, not just the
+   scrollable panel). */
+.hop-shell,
+.hop-auth-page {
+  position: relative;
+  isolation: isolate;
+  background: var(--hop-bg);
+}
+
+.hop-shell::before,
+.hop-auth-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 900px 560px at 12% -8%, var(--hop-aurora-1), transparent 60%),
+    radial-gradient(ellipse 760px 560px at 105% 0%, var(--hop-aurora-2), transparent 55%),
+    radial-gradient(ellipse 900px 620px at 45% 115%, var(--hop-aurora-3), transparent 60%);
+}
+
 /* ── Auth pages ─────────────────────────────── */
 .hop-auth-page {
   min-height: 100vh;
@@ -53,15 +94,17 @@
   align-items: center;
   justify-content: center;
   padding: 2rem 1.25rem;
-  background: radial-gradient(circle at 50% 0%, #1e1b3a 0%, var(--hop-bg) 60%);
 }
 
 .hop-auth-card {
   width: 100%;
   max-width: 420px;
   background: var(--hop-panel);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--hop-border);
-  border-radius: 16px;
+  border-radius: var(--hop-radius-lg);
+  box-shadow: var(--hop-shadow-card);
   padding: 2rem;
   display: flex;
   flex-direction: column;
@@ -160,89 +203,132 @@
 .hop-shell {
   display: flex;
   min-height: 100vh;
-  background: var(--hop-bg);
 }
 
 .hop-shell__sidebar {
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
   padding: 1.5rem 1.1rem;
   background: var(--hop-panel);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid var(--hop-border);
 }
 
 .hop-shell__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
+  padding: 0 0.15rem;
+}
+
+.hop-shell__brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: 0.95rem;
+  color: #fff;
+  background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 55%, var(--hop-cyan) 100%);
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--hop-indigo) 60%, transparent);
+  flex-shrink: 0;
 }
 
 .hop-shell__nav {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
   flex: 1;
 }
 
 .hop-shell__nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   padding: 0.6rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--hop-radius-sm);
   color: var(--hop-muted);
   text-decoration: none;
   font-size: 0.92rem;
   font-weight: 600;
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.hop-shell__nav-link__icon {
+  font-size: 1.05rem;
+  width: 1.3rem;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .hop-shell__nav-link:hover {
   background: var(--hop-overlay);
   color: var(--hop-text);
+  transform: translateX(2px);
 }
 
 .hop-shell__nav-link--active {
   background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
   color: #fff;
+  box-shadow: var(--hop-shadow-glow);
+}
+
+.hop-shell__nav-link--active:hover {
+  transform: none;
 }
 
 .hop-shell__user {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.65rem;
   padding-top: 1rem;
   border-top: 1px solid var(--hop-border);
 }
 
 .hop-shell__user-name {
   font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--hop-text);
+}
+
+.hop-shell__utility-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hop-shell__utility-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--hop-overlay);
+  border: 1px solid var(--hop-border);
+  border-radius: var(--hop-radius-pill);
   color: var(--hop-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.35rem 0.7rem;
+  text-decoration: none;
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.hop-shell__utility-btn:hover {
+  background: var(--hop-overlay-strong);
+  border-color: var(--hop-border-hover);
+  color: var(--hop-text);
 }
 
 .hop-shell__logout {
-  align-self: flex-start;
-  background: none;
-  border: none;
   color: var(--hop-link);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-}
-
-.hop-shell__theme-toggle {
-  align-self: flex-start;
-  background: none;
-  border: none;
-  color: var(--hop-muted);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-}
-
-.hop-shell__theme-toggle:hover {
-  color: var(--hop-text);
 }
 
 .hop-shell__content {
@@ -261,9 +347,15 @@
 
 .hop-page-title {
   margin: 0;
+  padding-bottom: 0.15em;
+  line-height: 1.25;
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 800;
-  color: var(--hop-text);
+  background: linear-gradient(120deg, var(--hop-text) 35%, var(--hop-indigo) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  width: fit-content;
 }
 
 .hop-page-sub {
@@ -274,12 +366,20 @@
 /* ── Cards ──────────────────────────────────── */
 .hop-card {
   background: var(--hop-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--hop-border);
-  border-radius: 14px;
+  border-radius: var(--hop-radius-md);
+  box-shadow: var(--hop-shadow-card);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.hop-card:hover {
+  border-color: var(--hop-border-hover);
 }
 
 .hop-card h2 {
@@ -318,25 +418,64 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1.1rem 0.5rem;
+  gap: 0.6rem;
+  padding: 1.25rem 0.5rem;
   background: var(--hop-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--hop-border);
-  border-radius: 12px;
+  border-radius: var(--hop-radius-md);
+  box-shadow: var(--hop-shadow-card);
   color: var(--hop-text);
   text-decoration: none;
   font-size: 0.85rem;
-  font-weight: 600;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  font-weight: 700;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .hop-quick-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   border-color: var(--hop-border-hover);
+  box-shadow: var(--hop-shadow-glow);
 }
 
 .hop-quick-card__icon {
-  font-size: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hop-indigo) 70%, transparent);
+}
+
+/* Cycle a distinct accent per tile so the 6 quick-request categories read as visually distinct
+   at a glance, not six identical gray boxes. */
+.hop-quick-card:nth-child(2) .hop-quick-card__icon {
+  background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 100%);
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hop-cyan) 70%, transparent);
+}
+
+.hop-quick-card:nth-child(3) .hop-quick-card__icon {
+  background: linear-gradient(135deg, var(--hop-gold) 0%, #f97316 100%);
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hop-gold) 70%, transparent);
+}
+
+.hop-quick-card:nth-child(4) .hop-quick-card__icon {
+  background: linear-gradient(135deg, #f472b6 0%, var(--hop-violet) 100%);
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, #f472b6 70%, transparent);
+}
+
+.hop-quick-card:nth-child(5) .hop-quick-card__icon {
+  background: linear-gradient(135deg, #34d399 0%, var(--hop-cyan) 100%);
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, #34d399 70%, transparent);
+}
+
+.hop-quick-card:nth-child(6) .hop-quick-card__icon {
+  background: linear-gradient(135deg, var(--hop-violet) 0%, #f472b6 100%);
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hop-violet) 70%, transparent);
 }
 
 /* ── Events / tables ────────────────────────── */
@@ -518,18 +657,38 @@
   color: var(--hop-text);
   background: var(--hop-overlay);
   border: 1px solid var(--hop-border);
-  border-radius: 8px;
+  border-radius: var(--hop-radius-sm);
   cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 }
 
 .hop-btn-secondary:hover {
   background: var(--hop-overlay-strong);
   border-color: var(--hop-border-hover);
+  transform: translateY(-1px);
 }
 
 .hop-btn-secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+}
+
+/* `.hop-btn-ghost` is defined in App.css for the public /hop marketing hero (hardcoded white,
+   since that page is always dark) — reused inside the app shell (e.g. HopAdminUsersPage's
+   row actions), which also supports light mode, so it needs theme-aware colors here instead of
+   silently going white-on-white in light mode. */
+.hop-shell .hop-btn-ghost,
+.hop-auth-page .hop-btn-ghost {
+  color: var(--hop-text);
+  border-color: var(--hop-border);
+  border-radius: var(--hop-radius-sm);
+}
+
+.hop-shell .hop-btn-ghost:hover,
+.hop-auth-page .hop-btn-ghost:hover {
+  background: var(--hop-overlay);
+  border-color: var(--hop-border-hover);
 }
 
 /* ── Forms not already scoped by .hop-auth-card's own flex/gap ──── */
@@ -569,16 +728,35 @@
 
 .hop-stat-card {
   align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+}
+
+/* A colored top accent strip, not a full border-image outline (which would paint over
+   .hop-card's existing 1px border on every side, not just the top). */
+.hop-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--hop-indigo), var(--hop-violet));
 }
 
 .hop-stat-card__value {
-  font-size: 2rem;
+  font-size: 2.1rem;
   font-weight: 800;
+  background: linear-gradient(120deg, var(--hop-text) 30%, var(--hop-indigo) 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .hop-stat-card__label {
   color: var(--hop-muted);
   font-size: 0.85rem;
+  font-weight: 600;
 }
 
 /* ── Dispatch tabs (admin request filters) ──── */
@@ -590,13 +768,14 @@
 
 .hop-tab {
   padding: 0.45rem 0.9rem;
-  border-radius: 999px;
+  border-radius: var(--hop-radius-pill);
   border: 1px solid var(--hop-border);
   background: var(--hop-overlay);
   color: var(--hop-muted);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .hop-tab:hover {
@@ -798,6 +977,132 @@
   margin-top: 0.15rem;
 }
 
+/* ── Phase 1: contact actions, ratings, messaging, duty status (2026-07-23) ── */
+
+.hop-btn-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.hop-star-picker {
+  display: flex;
+  gap: 0.15rem;
+  margin: 0.4rem 0;
+}
+
+.hop-star-picker__btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--hop-indigo, #6366f1);
+  padding: 0.1rem;
+}
+
+.hop-star-picker__btn:hover {
+  opacity: 0.8;
+}
+
+/* Click-a-name-for-contact-options dropdown (concierge/admin request cards). */
+.hop-contact-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.hop-contact-menu__trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
+.hop-contact-menu__panel {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  margin-top: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: var(--hop-surface);
+  border: 1px solid var(--hop-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.hop-contact-menu__panel a {
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.35rem;
+  color: var(--hop-text);
+  text-decoration: none;
+}
+
+.hop-contact-menu__panel a:hover {
+  background: var(--hop-overlay-strong);
+}
+
+/* Direct-message inbox list (HopMessagesPage / HopAdminMessagesPage) — the thread itself reuses
+   the existing .hop-message-thread__* classes above (RequestMessageThread's styling). */
+.hop-inbox-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--hop-border);
+  cursor: pointer;
+}
+
+.hop-inbox-row:last-child {
+  border-bottom: none;
+}
+
+.hop-unread-badge {
+  background: var(--hop-indigo, #6366f1);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+}
+
+/* On/off-duty roster (concierge nav toggle + admin "working today" widget). */
+.hop-duty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--hop-border);
+}
+
+.hop-duty-badge--on::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #22c55e;
+  display: inline-block;
+}
+
+.hop-duty-badge--off::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--hop-muted);
+  display: inline-block;
+}
+
 @media (max-width: 720px) {
   .hop-shell {
     flex-direction: column;
@@ -824,4 +1129,106 @@
   .hop-field-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Onboarding tour (2026-07-24) ─────────────────────────────────────────
+   A dismissible, replayable "here's what you can do" walkthrough shown on first login per
+   role, reopenable anytime from the sidebar's "Quick tour" button — see
+   src/hop/OnboardingTour.tsx. */
+.hop-tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(6, 7, 14, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.hop-tour-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--hop-panel);
+  border: 1px solid var(--hop-border);
+  border-radius: var(--hop-radius-lg);
+  box-shadow: var(--hop-shadow-glow);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  color: var(--hop-text);
+}
+
+.hop-tour-card__skip {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  color: var(--hop-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: -0.6rem;
+}
+
+.hop-tour-card__skip:hover {
+  color: var(--hop-text);
+}
+
+.hop-tour-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
+  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--hop-indigo) 70%, transparent);
+}
+
+.hop-tour-card__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.hop-tour-card__body {
+  margin: 0;
+  color: var(--hop-muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.hop-tour-card__dots {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.hop-tour-card__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--hop-overlay-strong);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.hop-tour-card__dot--active {
+  background: linear-gradient(135deg, var(--hop-indigo), var(--hop-violet));
+  transform: scale(1.3);
+}
+
+.hop-tour-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hop-tour-card__nav {
+  display: flex;
+  gap: 0.6rem;
 }
