@@ -1,6 +1,7 @@
 export type HopUser = {
   id: string
   email: string
+  hopNumber: string
   firstName: string
   lastName: string
   phone: string
@@ -64,7 +65,7 @@ export function hopSignup(data: { email: string; password: string; firstName: st
   return request<{ user: HopUser }>('/auth?action=signup', { method: 'POST', body: JSON.stringify(data) })
 }
 
-export function hopLogin(data: { email: string; password: string }) {
+export function hopLogin(data: { identifier: string; password: string }) {
   return request<{ user: HopUser }>('/auth?action=login', { method: 'POST', body: JSON.stringify(data) })
 }
 
@@ -141,6 +142,7 @@ export function hopGoogleCalendarEvents() {
 export type HopAdminUser = {
   id: string
   email: string
+  hop_number: string
   first_name: string
   last_name: string
   phone: string
@@ -396,5 +398,27 @@ export function hopAdminSendMessage(userId: string, body: string) {
   return request<{ message: HopDirectMessage }>('/messages', {
     method: 'POST',
     body: JSON.stringify({ userId, body }),
+  })
+}
+
+// ── Points/rewards — reduced scope this cycle: view own ledger/balance, staff manual award only.
+// No redemption yet, see docs/hop/roadmap.md.
+
+export type HopPointsLedgerEntry = {
+  id: string
+  delta: number
+  source: 'admin_award' | 'concierge_award' | 'checkin_streak' | 'profile_complete' | 'redemption' | 'wearable_challenge'
+  reason: string
+  created_at: string
+}
+
+export function hopGetRewards() {
+  return request<{ ledger: HopPointsLedgerEntry[]; balance: number }>('/rewards')
+}
+
+export function hopAdminAwardPoints(userId: string, delta: number, reason: string) {
+  return request<{ entry: HopPointsLedgerEntry; balance: number }>('/rewards?action=award', {
+    method: 'POST',
+    body: JSON.stringify({ userId, delta, reason }),
   })
 }

@@ -36,13 +36,16 @@
 
 [data-hop-theme='light'] .hop-shell,
 [data-hop-theme='light'] .hop-auth-page {
-  --hop-bg: #f3f4fc;
-  --hop-panel: rgba(255, 255, 255, 0.86);
-  --hop-panel-2: rgba(238, 240, 250, 0.92);
-  --hop-border: rgba(15, 23, 42, 0.1);
-  --hop-border-hover: rgba(15, 23, 42, 0.25);
-  --hop-overlay: rgba(15, 23, 42, 0.03);
-  --hop-overlay-strong: rgba(15, 23, 42, 0.06);
+  /* Deepened from #f3f4fc and raised panel/border contrast (2026-08-09) — the previous values
+     were both near-white with only a 10%-opacity border between them, so cards read as a flat,
+     washed-out surface in light mode instead of distinct panels. */
+  --hop-bg: #e9ebf7;
+  --hop-panel: rgba(255, 255, 255, 0.94);
+  --hop-panel-2: rgba(238, 240, 250, 0.96);
+  --hop-border: rgba(15, 23, 42, 0.16);
+  --hop-border-hover: rgba(15, 23, 42, 0.32);
+  --hop-overlay: rgba(15, 23, 42, 0.045);
+  --hop-overlay-strong: rgba(15, 23, 42, 0.09);
   --hop-aurora-1: rgba(109, 110, 245, 0.1);
   --hop-aurora-2: rgba(155, 92, 247, 0.08);
   --hop-aurora-3: rgba(34, 211, 238, 0.07);
@@ -238,7 +241,11 @@
   font-size: 0.95rem;
   color: #fff;
   background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 55%, var(--hop-cyan) 100%);
-  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--hop-indigo) 60%, transparent);
+  /* Precomputed rgba(), not color-mix() — color-mix() is unsupported before Safari/WKWebView
+     16.2, and this app's Capacitor iOS target is 15.0, so the whole declaration would silently
+     drop on real devices at/below that (see docs/hop/architecture.md). --hop-indigo is the same
+     across both themes, so a static value is safe here. */
+  box-shadow: 0 4px 14px -4px rgba(109, 110, 245, 0.6);
   flex-shrink: 0;
 }
 
@@ -275,13 +282,21 @@
   transform: translateX(2px);
 }
 
+/* :active alongside :hover throughout this file — :hover is unreliable/absent on touchscreens
+   (may not fire at all, or "stick" after a tap), so a press-down cue on :active gives every
+   interactive element real tactile feedback on mobile, not just desktop mouse users. */
+.hop-shell__nav-link:active {
+  transform: scale(0.98);
+}
+
 .hop-shell__nav-link--active {
   background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
   color: #fff;
   box-shadow: var(--hop-shadow-glow);
 }
 
-.hop-shell__nav-link--active:hover {
+.hop-shell__nav-link--active:hover,
+.hop-shell__nav-link--active:active {
   transform: none;
 }
 
@@ -308,6 +323,7 @@
 .hop-shell__utility-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   background: var(--hop-overlay);
   border: 1px solid var(--hop-border);
@@ -316,15 +332,22 @@
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 0.35rem 0.7rem;
+  /* min-height 44px is the standard iOS/Android touch-target guideline — this row (Quick tour,
+     theme toggle, log out) previously sat around 24-26px tall. */
+  min-height: 44px;
+  padding: 0.35rem 0.9rem;
   text-decoration: none;
-  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.1s ease;
 }
 
 .hop-shell__utility-btn:hover {
   background: var(--hop-overlay-strong);
   border-color: var(--hop-border-hover);
   color: var(--hop-text);
+}
+
+.hop-shell__utility-btn:active {
+  transform: scale(0.96);
 }
 
 .hop-shell__logout {
@@ -351,11 +374,25 @@
   line-height: 1.25;
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 800;
-  background: linear-gradient(120deg, var(--hop-text) 35%, var(--hop-indigo) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* index.css's global h1 rule (written for the 56px marketing hero) sets a tight
+     letter-spacing meant for display type at that size — reset it explicitly here so HOP
+     headings never inherit it and read cramped at this smaller size. */
+  letter-spacing: normal;
+  /* Real fallback: a plain, always-visible solid color. The gradient-clip treatment below is
+     gated behind an @supports check, not just declared after this in the cascade — a later plain
+     `color: transparent` would apply regardless of whether background-clip: text is supported,
+     which would make the text fully invisible on any engine that doesn't support the clip. */
+  color: var(--hop-text);
   width: fit-content;
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .hop-page-title {
+    background: linear-gradient(120deg, var(--hop-text) 35%, var(--hop-indigo) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
 .hop-page-sub {
@@ -385,6 +422,10 @@
 .hop-card h2 {
   margin: 0;
   font-size: 1.05rem;
+  /* index.css's global h2 rule (marketing site) leaves this at font-weight 500 otherwise — every
+     HOP card heading ("Rate your concierge", "Active request", etc.) read visibly thinner than
+     intended without this explicit override. */
+  font-weight: 700;
   color: var(--hop-text);
 }
 
@@ -439,6 +480,10 @@
   box-shadow: var(--hop-shadow-glow);
 }
 
+.hop-quick-card:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
 .hop-quick-card__icon {
   display: inline-flex;
   align-items: center;
@@ -448,34 +493,35 @@
   border-radius: 50%;
   font-size: 1.3rem;
   background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hop-indigo) 70%, transparent);
+  /* Precomputed rgba() — see the note on .hop-shell__brand-mark above re: color-mix() + iOS 15. */
+  box-shadow: 0 6px 16px -6px rgba(109, 110, 245, 0.7);
 }
 
 /* Cycle a distinct accent per tile so the 6 quick-request categories read as visually distinct
    at a glance, not six identical gray boxes. */
 .hop-quick-card:nth-child(2) .hop-quick-card__icon {
   background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 100%);
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hop-cyan) 70%, transparent);
+  box-shadow: 0 6px 16px -6px rgba(34, 211, 238, 0.7);
 }
 
 .hop-quick-card:nth-child(3) .hop-quick-card__icon {
   background: linear-gradient(135deg, var(--hop-gold) 0%, #f97316 100%);
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hop-gold) 70%, transparent);
+  box-shadow: 0 6px 16px -6px rgba(245, 185, 66, 0.7);
 }
 
 .hop-quick-card:nth-child(4) .hop-quick-card__icon {
   background: linear-gradient(135deg, #f472b6 0%, var(--hop-violet) 100%);
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, #f472b6 70%, transparent);
+  box-shadow: 0 6px 16px -6px rgba(244, 114, 182, 0.7);
 }
 
 .hop-quick-card:nth-child(5) .hop-quick-card__icon {
   background: linear-gradient(135deg, #34d399 0%, var(--hop-cyan) 100%);
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, #34d399 70%, transparent);
+  box-shadow: 0 6px 16px -6px rgba(52, 211, 153, 0.7);
 }
 
 .hop-quick-card:nth-child(6) .hop-quick-card__icon {
   background: linear-gradient(135deg, var(--hop-violet) 0%, #f472b6 100%);
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--hop-violet) 70%, transparent);
+  box-shadow: 0 6px 16px -6px rgba(155, 92, 247, 0.7);
 }
 
 /* ── Events / tables ────────────────────────── */
@@ -668,6 +714,10 @@
   transform: translateY(-1px);
 }
 
+.hop-btn-secondary:active {
+  transform: translateY(0) scale(0.97);
+}
+
 .hop-btn-secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -691,11 +741,37 @@
   border-color: var(--hop-border-hover);
 }
 
+.hop-shell .hop-btn-ghost:active,
+.hop-auth-page .hop-btn-ghost:active {
+  transform: scale(0.97);
+}
+
 /* ── Forms not already scoped by .hop-auth-card's own flex/gap ──── */
 .hop-form-stack {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+/* Inline award-points form, opened under a Users-table row (HopAdminUsersPage.tsx) */
+.hop-award-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--hop-radius-md);
+  border: 1px dashed var(--hop-border);
+  background: var(--hop-overlay);
+}
+
+.hop-award-form .hop-field {
+  min-width: 160px;
+}
+
+.hop-award-form .hop-auth-card__error,
+.hop-award-form .hop-banner {
+  flex-basis: 100%;
 }
 
 /* ── Profile / settings ─────────────────────── */
@@ -717,6 +793,99 @@
 .hop-profile-list dd {
   margin: 0.15rem 0 0;
   font-size: 1rem;
+}
+
+/* ── Service history / rewards (Profile page) ─ */
+.hop-history-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.9rem;
+  margin: 0.75rem 0 1.1rem;
+}
+
+.hop-history-stats__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--hop-radius-md);
+  border: 1px solid var(--hop-border);
+  background: var(--hop-overlay);
+}
+
+.hop-history-stats__value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--hop-text);
+}
+
+.hop-history-stats__label {
+  font-size: 0.78rem;
+  color: var(--hop-muted);
+  font-weight: 600;
+}
+
+.hop-history-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hop-history-list__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--hop-radius-sm);
+  border: 1px solid var(--hop-border);
+  background: var(--hop-overlay);
+  flex-wrap: wrap;
+}
+
+.hop-history-list__type {
+  font-weight: 600;
+  flex: 1 1 auto;
+}
+
+.hop-history-list__date {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--hop-muted);
+}
+
+.hop-rewards-balance {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.6rem 0 1.1rem;
+  padding: 1rem 1.2rem;
+  border-radius: var(--hop-radius-md);
+  border: 1px solid var(--hop-border);
+  background: linear-gradient(120deg, rgba(245, 197, 66, 0.14), rgba(245, 197, 66, 0.03));
+}
+
+.hop-rewards-balance__value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--hop-gold);
+}
+
+.hop-rewards-balance__label {
+  font-size: 0.9rem;
+  color: var(--hop-muted);
+  font-weight: 600;
+}
+
+.hop-rewards-delta {
+  font-weight: 700;
+  color: var(--hop-muted);
+}
+
+.hop-rewards-delta--up {
+  color: var(--hop-gold);
 }
 
 /* ── Admin stats ────────────────────────────── */
@@ -747,10 +916,17 @@
 .hop-stat-card__value {
   font-size: 2.1rem;
   font-weight: 800;
-  background: linear-gradient(120deg, var(--hop-text) 30%, var(--hop-indigo) 120%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* Real, always-visible fallback — see the .hop-page-title note above re: @supports gating. */
+  color: var(--hop-text);
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .hop-stat-card__value {
+    background: linear-gradient(120deg, var(--hop-text) 30%, var(--hop-indigo) 120%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
 .hop-stat-card__label {
@@ -768,6 +944,7 @@
 
 .hop-tab {
   padding: 0.45rem 0.9rem;
+  min-height: 44px;
   border-radius: var(--hop-radius-pill);
   border: 1px solid var(--hop-border);
   background: var(--hop-overlay);
@@ -775,12 +952,16 @@
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+  transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.1s ease;
 }
 
 .hop-tab:hover {
   background: var(--hop-overlay-strong);
   color: var(--hop-text);
+}
+
+.hop-tab:active {
+  transform: scale(0.96);
 }
 
 .hop-tab--active {
@@ -869,12 +1050,12 @@
 
 /* ── Active request tracker (dashboard) ──────── */
 .hop-tracker-card {
-  border: 1px solid color-mix(in srgb, var(--hop-indigo) 35%, transparent);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--hop-indigo) 10%, transparent),
-    color-mix(in srgb, var(--hop-cyan) 5%, transparent)
-  );
+  /* Precomputed rgba() — see the note on .hop-shell__brand-mark above re: color-mix() + iOS 15.
+     Without this fix, the whole border+background declaration silently dropped on iOS ≤16.1,
+     leaving this card flat/borderless — the most likely concrete cause of "pale" dashboard cards
+     reported on the real mobile app. */
+  border: 1px solid rgba(109, 110, 245, 0.35);
+  background: linear-gradient(135deg, rgba(109, 110, 245, 0.1), rgba(34, 211, 238, 0.05));
 }
 
 /* ── Ride location sharing ───────────────────── */
@@ -919,8 +1100,12 @@
 
 .hop-message-thread__bubble--own {
   align-self: flex-end;
-  background: color-mix(in srgb, var(--hop-indigo) 18%, var(--hop-panel-2));
-  border-color: color-mix(in srgb, var(--hop-indigo) 35%, transparent);
+  /* A flat semi-transparent indigo layer over --hop-panel-2, not color-mix() with a variable
+     (that mix is theme-dependent, so it can't be precomputed to a single static rgba() the way
+     the transparent-mix cases elsewhere in this file were) — still avoids color-mix() entirely,
+     so it doesn't hit the iOS ≤16.1 drop-the-whole-property failure mode. */
+  background: linear-gradient(rgba(109, 110, 245, 0.18), rgba(109, 110, 245, 0.18)), var(--hop-panel-2);
+  border-color: rgba(109, 110, 245, 0.35);
 }
 
 .hop-message-thread__bubble p {
@@ -999,11 +1184,19 @@
   font-size: 1.6rem;
   line-height: 1;
   color: var(--hop-indigo, #6366f1);
-  padding: 0.1rem;
+  /* Grown from ~26px (icon-only padding) toward the ~44px touch-target guideline — the icon
+     glyph itself stays the same visual size, the hit area around it grows. */
+  padding: 0.5rem 0.35rem;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .hop-star-picker__btn:hover {
   opacity: 0.8;
+}
+
+.hop-star-picker__btn:active {
+  transform: scale(0.9);
 }
 
 /* Click-a-name-for-contact-options dropdown (concierge/admin request cards). */
@@ -1015,7 +1208,8 @@
 .hop-contact-menu__trigger {
   background: none;
   border: none;
-  padding: 0;
+  padding: 0.4rem 0.2rem;
+  min-height: 44px;
   color: inherit;
   font: inherit;
   cursor: pointer;
@@ -1031,7 +1225,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  background: var(--hop-surface);
+  /* Was var(--hop-surface), a custom property never defined anywhere in this file — the panel
+     had no background at all (fully transparent), making this dropdown's links nearly unreadable
+     over whatever content sat behind it. --hop-panel-2 matches the other popover-style surfaces
+     in this file (e.g. .hop-message-thread__bubble). */
+  background: var(--hop-panel-2);
   border: 1px solid var(--hop-border);
   border-radius: 0.5rem;
   padding: 0.5rem;
@@ -1040,7 +1238,10 @@
 }
 
 .hop-contact-menu__panel a {
-  padding: 0.35rem 0.5rem;
+  padding: 0.5rem 0.5rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   border-radius: 0.35rem;
   color: var(--hop-text);
   text-decoration: none;
@@ -1048,6 +1249,10 @@
 
 .hop-contact-menu__panel a:hover {
   background: var(--hop-overlay-strong);
+}
+
+.hop-contact-menu__panel a:active {
+  transform: scale(0.98);
 }
 
 /* Direct-message inbox list (HopMessagesPage / HopAdminMessagesPage) — the thread itself reuses
@@ -1170,12 +1375,18 @@
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 0;
-  margin-bottom: -0.6rem;
+  /* Was padding: 0 (bare text, near-zero hit area) — grown toward the 44px touch-target
+     guideline; the negative margin keeps the card's visual spacing unchanged. */
+  padding: 0.6rem;
+  margin: -0.6rem -0.6rem -1.2rem 0;
 }
 
 .hop-tour-card__skip:hover {
   color: var(--hop-text);
+}
+
+.hop-tour-card__skip:active {
+  transform: scale(0.95);
 }
 
 .hop-tour-card__icon {
@@ -1187,7 +1398,7 @@
   border-radius: 50%;
   font-size: 1.6rem;
   background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
-  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--hop-indigo) 70%, transparent);
+  box-shadow: 0 8px 20px -8px rgba(109, 110, 245, 0.7);
 }
 
 .hop-tour-card__title {
@@ -1231,4 +1442,182 @@
 .hop-tour-card__nav {
   display: flex;
   gap: 0.6rem;
+}
+
+/* ── Motion/feedback polish (2026-08-09) ──────
+   No new dependency — plain CSS @keyframes/transitions throughout. Everything here respects
+   prefers-reduced-motion via the block at the bottom of this section. */
+
+/* Toasts — replaces static inline success banners for confirmations (HopToastProvider). */
+.hop-toast-stack {
+  position: fixed;
+  z-index: 100;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: min(320px, calc(100vw - 2.5rem));
+}
+
+.hop-toast {
+  padding: 0.75rem 1rem;
+  border-radius: var(--hop-radius-sm);
+  border: 1px solid var(--hop-border);
+  background: var(--hop-panel-2);
+  box-shadow: var(--hop-shadow-card);
+  color: var(--hop-text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  animation: hop-toast-in 0.25s ease-out;
+}
+
+.hop-toast--success {
+  border-left: 3px solid #34d399;
+}
+
+.hop-toast--error {
+  border-left: 3px solid #f87171;
+}
+
+.hop-toast--info {
+  border-left: 3px solid var(--hop-indigo);
+}
+
+@keyframes hop-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Skeleton loaders — replaces bare "Loading…" text while a page's data is still in flight. */
+.hop-skeleton-card {
+  gap: 0.75rem;
+}
+
+.hop-skeleton-bar {
+  height: 0.9rem;
+  border-radius: var(--hop-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--hop-overlay) 25%,
+    var(--hop-overlay-strong) 50%,
+    var(--hop-overlay) 75%
+  );
+  background-size: 200% 100%;
+  animation: hop-shimmer 1.4s ease-in-out infinite;
+}
+
+.hop-skeleton-bar--title {
+  width: 40%;
+  height: 1.2rem;
+}
+
+@keyframes hop-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Empty states — icon + one-line copy + optional action, replacing bare "No X yet." text. */
+.hop-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1rem 0;
+}
+
+.hop-empty-state__icon {
+  font-size: 1.75rem;
+}
+
+/* Status-change pulse — a one-shot highlight when a status badge's value changes (paired with
+   usePulseOnChange.ts), so live-polled updates feel like something happened. */
+.hop-status--just-changed {
+  animation: hop-status-pulse 0.6s ease-out;
+}
+
+@keyframes hop-status-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(109, 110, 245, 0.5);
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(109, 110, 245, 0);
+    transform: scale(1);
+  }
+}
+
+/* A subtle "breathing" glow on the single most important action (the first/primary quick-request
+   tile on the dashboard), so it reads as unmistakably primary — Uber's single "Where to?" button
+   is the reference point, not a literal redesign. */
+.hop-quick-grid > .hop-quick-card:first-child {
+  animation: hop-breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes hop-breathe {
+  0%,
+  100% {
+    box-shadow: var(--hop-shadow-card);
+  }
+  50% {
+    box-shadow: var(--hop-shadow-glow);
+  }
+}
+
+/* Staggered fade-up on page mount, so a page's cards feel like they assemble rather than snap
+   in. Scoped to direct children of .hop-page-body so it only affects top-level page sections. */
+.hop-page-body > .hop-card,
+.hop-quick-grid.hop-page-body > .hop-quick-card {
+  animation: hop-fade-up 0.4s ease-out backwards;
+}
+
+.hop-page-body > *:nth-child(1) {
+  animation-delay: 0s;
+}
+.hop-page-body > *:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.hop-page-body > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.hop-page-body > *:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.hop-page-body > *:nth-child(n + 5) {
+  animation-delay: 0.2s;
+}
+
+@keyframes hop-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hop-toast,
+  .hop-skeleton-bar,
+  .hop-status--just-changed,
+  .hop-quick-grid > .hop-quick-card:first-child,
+  .hop-page-body > .hop-card,
+  .hop-quick-grid.hop-page-body > .hop-quick-card {
+    animation: none;
+  }
 }

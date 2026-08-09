@@ -58,6 +58,14 @@ npm run db:migrate
 Get the connection string from the Vercel dashboard (Settings → Environment Variables →
 `DATABASE_URL`) or from Neon directly if you have access there.
 
+**One-time step after the 2026-08-09 HOP-number update**: run this once so accounts created
+*before* that update also get a HOP number (new accounts get one automatically going forward —
+this is only needed once, and it's safe to run again if you're ever unsure whether it ran):
+```bash
+export DATABASE_URL="your-database-connection-string"
+npm run hop:backfill-numbers
+```
+
 ## 3. Creating accounts
 
 - **The first HOP Admin account** (yourself, or whoever runs the dispatch/admin side) — there's
@@ -67,13 +75,20 @@ Get the connection string from the Vercel dashboard (Settings → Environment Va
   ```
   It'll prompt you for an email, password, first/last name.
 
-- **Concierge accounts** — created in-app, not the command line. Log in as an admin on
-  **theconcierge-staff.vercel.app**, go to Concierges, and add one. If `RESEND_API_KEY` is set up,
-  they get an email with a link to set their own password. If not, you'll see a temporary
-  password on screen to hand them directly.
+- **Concierge or member accounts, created by you** — created in-app, not the command line. Log in
+  as an admin on **theconcierge-staff.vercel.app**, go to the **Team** tab, choose "Concierge" or
+  "Member" as the account type, and add it. If `RESEND_API_KEY` is set up, they get an emailed
+  invite with a link to set their own password. If not, you'll see a temporary password on screen
+  to hand them directly. A member account created this way shows up on the **Users** tab, not
+  Team (Team only lists concierges) — that's normal, not a bug.
 
-- **HOP member accounts** (your hospital staff) — they sign themselves up at
-  **theconcierge.life/hop/signup**. No action needed from you.
+- **HOP member accounts, self-signup** — your hospital staff can also sign themselves up at
+  **theconcierge.life/hop/signup**, with no action needed from you. Both paths work side by side —
+  you don't have to invite everyone yourself if self-signup is easier for your rollout.
+
+- **Every account gets a "HOP number"** (like `HOP001`) automatically — a short code that works
+  as a second way to log in, instead of typing an email address. It's shown in the welcome/invite
+  email and on the member's own Profile page. Nothing for you to configure.
 
 ## 4. Deploying — this is the part that's easy to get wrong
 
@@ -100,9 +115,11 @@ If concierges or admins report they're not seeing a new feature that was suppose
 ## 5. Before asking for a new feature: the 12-function limit
 
 This app runs on Vercel's free "Hobby" plan, which caps each of the two projects at **12 backend
-functions** (roughly: 12 distinct "things the server can do"). Both apps currently have a little
-room left, but it's not unlimited, and the code has to work around this limit by combining
-related features into shared files rather than always adding a new one.
+functions** (roughly: 12 distinct "things the server can do"). **theconcierge.life (`main`) is
+now completely full — 12 of 12 — as of the 2026-08-09 update.** ConciergeHub still has one slot
+left. This means the *next* feature request on the main site will need some existing code
+combined/simplified first to make room, before the new thing can be added — that's expected, not
+a sign something's broken, but it does mean that next request may take a bit longer.
 
 You don't need to track the exact number — just know that:
 

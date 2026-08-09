@@ -28,8 +28,8 @@ export function HopAuthProvider({ children }: { children: ReactNode }) {
     void loadInitialSession()
   }, [loadInitialSession])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { user: signedIn } = await hopLogin({ email, password })
+  const login = useCallback(async (identifier: string, password: string) => {
+    const { user: signedIn } = await hopLogin({ identifier, password })
     setUser(signedIn)
     return signedIn
   }, [])

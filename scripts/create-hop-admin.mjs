@@ -37,9 +37,9 @@ try {
   const rows = await sql`
     INSERT INTO hop_users (email, password_hash, first_name, last_name, role)
     VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, 'admin')
-    RETURNING id
+    RETURNING id, hop_number
   `
-  console.log(`Created HOP admin ${email} (id: ${rows[0].id})`)
+  console.log(`Created HOP admin ${email} (id: ${rows[0].id}, HOP number: ${rows[0].hop_number})`)
 } catch (error) {
   console.error(error instanceof Error ? error.message : error)
   process.exitCode = 1

@@ -38,7 +38,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const rows = await sql`
     SELECT
-      u.id, u.email, u.first_name, u.last_name, u.phone, u.role, u.status, u.created_at,
+      u.id, u.email, u.hop_number, u.first_name, u.last_name, u.phone, u.role, u.status, u.created_at,
       COUNT(i.id) FILTER (WHERE i.status = 'connected') AS connected_integrations
     FROM hop_users u
     LEFT JOIN hop_integrations i ON i.user_id = u.id

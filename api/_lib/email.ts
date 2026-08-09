@@ -72,7 +72,11 @@ export async function sendReliefEmail(data: ReliefCallRequest): Promise<void> {
   if (error) throw new Error(`Relief call notification failed: ${error.message}`)
 }
 
-export async function sendHopWelcomeEmail(email: string, firstName: string): Promise<void> {
+export async function sendHopWelcomeEmail(
+  email: string,
+  firstName: string,
+  hopNumber: string,
+): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim()
   if (!apiKey) throw new Error('RESEND_API_KEY is not configured')
 
@@ -82,7 +86,7 @@ export async function sendHopWelcomeEmail(email: string, firstName: string): Pro
     to: email,
     replyTo: REPLY_TO,
     subject: 'Welcome to HOP',
-    html: hopWelcomeTemplate(firstName),
+    html: hopWelcomeTemplate(firstName, hopNumber),
   })
   if (error) throw new Error(`HOP welcome email failed: ${error.message}`)
 }

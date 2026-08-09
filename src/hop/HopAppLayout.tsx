@@ -3,6 +3,7 @@ import { OnboardingTour, type TourStep } from './OnboardingTour'
 import { useTourVisibility } from './useTourVisibility'
 import { useHopAuth } from './useHopAuth'
 import { useHopTheme } from './useHopTheme'
+import { HopToastProvider } from './ToastContext'
 
 const NAV_ITEMS = [
   { to: '/hop/app', label: 'Dashboard', end: true, icon: '🏠' },
@@ -11,7 +12,7 @@ const NAV_ITEMS = [
   { to: '/hop/app/wellness', label: 'Wellness', end: false, icon: '❤️' },
   { to: '/hop/app/messages', label: 'Messages', end: false, icon: '💬' },
   { to: '/hop/app/integrations', label: 'Integrations', end: false, icon: '🔗' },
-  { to: '/hop/app/profile', label: 'Settings', end: false, icon: '⚙️' },
+  { to: '/hop/app/profile', label: 'Profile', end: false, icon: '🪪' },
 ] as const
 
 const MEMBER_TOUR_STEPS: TourStep[] = [
@@ -36,9 +37,9 @@ const MEMBER_TOUR_STEPS: TourStep[] = [
     body: 'Once a request is completed, rate the concierge who helped you. It shows on their profile and helps us pair you with great people.',
   },
   {
-    icon: '⚙️',
-    title: 'Messages & Settings',
-    body: 'Message HOP Admin directly anytime from Messages. Add your phone number in Settings so your concierge can reach you by call or text.',
+    icon: '🪪',
+    title: 'Messages & Profile',
+    body: 'Message HOP Admin directly anytime from Messages. Your Profile page has your account settings, phone number, HOP number, your full service history, and any rewards points you\'ve earned.',
   },
 ]
 
@@ -54,57 +55,59 @@ export function HopAppLayout() {
   }
 
   return (
-    <div className="hop-shell">
-      <aside className="hop-shell__sidebar">
-        <div className="hop-shell__brand">
-          <span className="hop-shell__brand-mark">✦</span>
-          <span>HOP</span>
-        </div>
-        <nav className="hop-shell__nav">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `hop-shell__nav-link${isActive ? ' hop-shell__nav-link--active' : ''}`}
-            >
-              <span className="hop-shell__nav-link__icon" aria-hidden="true">
-                {item.icon}
-              </span>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="hop-shell__user">
-          <span className="hop-shell__user-name">
-            {user?.firstName} {user?.lastName}
-          </span>
-          <div className="hop-shell__utility-row">
-            <button type="button" className="hop-shell__utility-btn" onClick={tour.reopen}>
-              🧭 Quick tour
-            </button>
-            <button
-              type="button"
-              className="hop-shell__utility-btn"
-              onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
-            </button>
-            <button
-              type="button"
-              className="hop-shell__utility-btn hop-shell__logout"
-              onClick={handleLogout}
-            >
-              🚪 Log out
-            </button>
+    <HopToastProvider>
+      <div className="hop-shell">
+        <aside className="hop-shell__sidebar">
+          <div className="hop-shell__brand">
+            <span className="hop-shell__brand-mark">✦</span>
+            <span>HOP</span>
           </div>
-        </div>
-      </aside>
-      <main className="hop-shell__content">
-        <Outlet />
-      </main>
-      <OnboardingTour open={tour.open} onClose={tour.close} steps={MEMBER_TOUR_STEPS} />
-    </div>
+          <nav className="hop-shell__nav">
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) => `hop-shell__nav-link${isActive ? ' hop-shell__nav-link--active' : ''}`}
+              >
+                <span className="hop-shell__nav-link__icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+          <div className="hop-shell__user">
+            <span className="hop-shell__user-name">
+              {user?.firstName} {user?.lastName}
+            </span>
+            <div className="hop-shell__utility-row">
+              <button type="button" className="hop-shell__utility-btn" onClick={tour.reopen}>
+                🧭 Quick tour
+              </button>
+              <button
+                type="button"
+                className="hop-shell__utility-btn"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+              </button>
+              <button
+                type="button"
+                className="hop-shell__utility-btn hop-shell__logout"
+                onClick={handleLogout}
+              >
+                🚪 Log out
+              </button>
+            </div>
+          </div>
+        </aside>
+        <main className="hop-shell__content">
+          <Outlet />
+        </main>
+        <OnboardingTour open={tour.open} onClose={tour.close} steps={MEMBER_TOUR_STEPS} />
+      </div>
+    </HopToastProvider>
   )
 }

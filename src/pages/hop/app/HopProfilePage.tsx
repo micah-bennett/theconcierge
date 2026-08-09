@@ -3,26 +3,28 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useHopAuth } from '../../../hop/useHopAuth'
 import { useHopTheme } from '../../../hop/useHopTheme'
+import { useToast } from '../../../hop/useToast'
+import { HopServiceHistoryCard } from './HopServiceHistoryCard'
+import { HopRewardsCard } from './HopRewardsCard'
 
 export function HopProfilePage() {
   const { user, updateProfile } = useHopAuth()
   const { theme, toggleTheme } = useHopTheme()
+  const toast = useToast()
 
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
-    setSaved(false)
     setSaving(true)
     try {
       await updateProfile({ firstName, lastName, phone })
-      setSaved(true)
+      toast.success('Your changes have been saved.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save your changes')
     } finally {
@@ -32,7 +34,7 @@ export function HopProfilePage() {
 
   return (
     <div className="hop-page-body">
-      <h1 className="hop-page-title">Settings</h1>
+      <h1 className="hop-page-title">Profile</h1>
 
       <section className="hop-card">
         <h2>🪪 Account</h2>
@@ -40,11 +42,6 @@ export function HopProfilePage() {
           {error && (
             <div className="hop-auth-card__error" role="alert">
               {error}
-            </div>
-          )}
-          {saved && (
-            <div className="hop-banner hop-banner--success" role="status">
-              Your changes have been saved.
             </div>
           )}
 
@@ -56,10 +53,7 @@ export function HopProfilePage() {
                 required
                 maxLength={80}
                 value={firstName}
-                onChange={(e) => {
-                  setFirstName(e.target.value)
-                  setSaved(false)
-                }}
+                onChange={(e) => setFirstName(e.target.value)}
               />
             </label>
             <label className="hop-field">
@@ -69,10 +63,7 @@ export function HopProfilePage() {
                 required
                 maxLength={80}
                 value={lastName}
-                onChange={(e) => {
-                  setLastName(e.target.value)
-                  setSaved(false)
-                }}
+                onChange={(e) => setLastName(e.target.value)}
               />
             </label>
           </div>
@@ -83,16 +74,24 @@ export function HopProfilePage() {
               <input type="email" value={user?.email ?? ''} readOnly disabled />
             </label>
             <label className="hop-field">
+              <span>HOP number</span>
+              <input type="text" value={user?.hopNumber ?? ''} readOnly disabled />
+            </label>
+          </div>
+          <p className="hop-muted">
+            Your HOP number is a permanent ID for your account — you can use it instead of your
+            email to sign in.
+          </p>
+
+          <div className="hop-field-row">
+            <label className="hop-field">
               <span>Phone</span>
               <input
                 type="tel"
                 placeholder="(555) 555-5555"
                 maxLength={30}
                 value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value)
-                  setSaved(false)
-                }}
+                onChange={(e) => setPhone(e.target.value)}
               />
             </label>
           </div>
@@ -138,6 +137,9 @@ export function HopProfilePage() {
           Manage integrations
         </Link>
       </section>
+
+      <HopServiceHistoryCard />
+      <HopRewardsCard />
     </div>
   )
 }

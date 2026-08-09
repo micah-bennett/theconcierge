@@ -313,3 +313,40 @@ CREATE TABLE IF NOT EXISTS hop_duty_log (
 
 CREATE INDEX IF NOT EXISTS hop_duty_log_user_id_idx
   ON hop_duty_log (user_id, clock_in_at DESC);
+
+-- ── HOP number + points ledger (2026-08-09) ────────────────────────────────
+-- See docs/hop/architecture.md for the full shape.
+
+-- A permanent, human-readable account identifier (e.g. "HOP001"), usable as an alternate login
+-- identifier alongside email (see handleLogin in api/hop/auth.ts) and as the invite code an admin
+-- hands a new account. Backed by a real sequence so concurrent inserts never collide and no
+-- retry logic is needed anywhere that creates a hop_users row. Format degrades gracefully past
+-- 999 accounts (HOP1000, ...) rather than truncating or erroring — an accepted limitation, not a
+-- bug. Existing rows are backfilled once via scripts/backfill-hop-numbers.mjs, not here (schema.sql
+-- is DDL-only; that script assigns real sequence values in created_at order).
+CREATE SEQUENCE IF NOT EXISTS hop_number_seq START 1;
+
+ALTER TABLE hop_users ADD COLUMN IF NOT EXISTS hop_number TEXT
+  DEFAULT ('HOP' || LPAD(nextval('hop_number_seq')::text, 3, '0'));
+
+CREATE UNIQUE INDEX IF NOT EXISTS hop_users_hop_number_idx ON hop_users (hop_number);
+
+-- Append-only points ledger. Reduced scope for this cycle: only 'admin_award'/'concierge_award'
+-- are ever written (see api/hop/rewards.ts) — the other source values are kept in the CHECK set
+-- as forward-compatible plumbing for a future redemption/auto-earning cycle (docs/hop/roadmap.md),
+-- not implemented behavior today. request_id lets a future redemption tie a negative-delta row to
+-- the request it paid for; unused by anything that writes to this table yet.
+CREATE TABLE IF NOT EXISTS hop_points_ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  delta INT NOT NULL,
+  source TEXT NOT NULL
+    CHECK (source IN ('admin_award', 'concierge_award', 'checkin_streak', 'profile_complete', 'redemption', 'wearable_challenge')),
+  reason TEXT NOT NULL DEFAULT '',
+  awarded_by UUID REFERENCES hop_users (id) ON DELETE SET NULL,
+  request_id UUID REFERENCES hop_service_requests (id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hop_points_ledger_user_id_idx
+  ON hop_points_ledger (user_id, created_at DESC);

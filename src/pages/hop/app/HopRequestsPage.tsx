@@ -9,6 +9,7 @@ import {
   type HopServiceRequest,
 } from '../../../hop/api'
 import { RequestMessageThread } from '../../../hop/requestMessages/RequestMessageThread'
+import { EmptyState } from '../../../hop/EmptyState'
 
 const SERVICE_TYPES = [
   { value: 'ride', label: 'Ride' },
@@ -76,6 +77,18 @@ function timeAgo(iso: string): string {
   if (minutes < 60) return `${minutes} min ago`
   const hours = Math.floor(minutes / 60)
   return `${hours} hr ago`
+}
+
+// A one-shot pulse highlight whenever this request's status changes, so live-polled updates feel
+// like something happened rather than a silent re-render. `key={status}` remounts the span on
+// every status change (and on first mount) — remounting a DOM node naturally restarts any CSS
+// animation defined on it, so no JS-side "did this change" state/effect is needed at all.
+function RequestStatusBadge({ status }: { status: string }) {
+  return (
+    <span key={status} className={`hop-status hop-status--${status} hop-status--just-changed`}>
+      {STATUS_LABEL[status] || status}
+    </span>
+  )
 }
 
 function RideTracker({ requestId }: { requestId: string }) {
@@ -311,8 +324,14 @@ export function HopRequestsPage() {
 
       <section className="hop-card">
         <h2>📋 Your requests</h2>
-        {loading && <p className="hop-muted">Loading…</p>}
-        {!loading && requests.length === 0 && <p className="hop-muted">No requests yet.</p>}
+        {loading && (
+          <>
+            <div className="hop-skeleton-bar hop-skeleton-bar--title" />
+            <div className="hop-skeleton-bar" />
+            <div className="hop-skeleton-bar" />
+          </>
+        )}
+        {!loading && requests.length === 0 && <EmptyState icon="📋" message="No requests yet." />}
         {!loading &&
           requests.map((req) => (
             <div key={req.id} className="hop-dispatch-card" style={{ paddingBottom: '1.25rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--hop-border)' }}>
@@ -321,7 +340,7 @@ export function HopRequestsPage() {
                   <strong>{SERVICE_TYPES.find((s) => s.value === req.service_type)?.label || req.service_type}</strong>
                   <div className="hop-muted">{new Date(req.created_at).toLocaleString()}</div>
                 </div>
-                <span className={`hop-status hop-status--${req.status}`}>{STATUS_LABEL[req.status] || req.status}</span>
+                <RequestStatusBadge status={req.status} />
               </div>
 
               <p>{MEMBER_STATUS_MESSAGE[req.status] || 'Your request is being tracked.'}</p>

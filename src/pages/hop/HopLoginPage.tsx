@@ -7,7 +7,7 @@ export function HopLoginPage() {
   const { login, user, loading } = useHopAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -22,7 +22,7 @@ export function HopLoginPage() {
     setError(null)
     setSubmitting(true)
     try {
-      const user = await login(email, password)
+      const user = await login(identifier, password)
       const from = (location.state as { from?: string } | null)?.from
       navigate(user.role === 'admin' ? '/hop/admin' : from || '/hop/app', { replace: true })
     } catch (err) {
@@ -42,13 +42,14 @@ export function HopLoginPage() {
         {error && <div className="hop-auth-card__error">{error}</div>}
 
         <label className="hop-field">
-          <span>Email</span>
+          <span>Email or HOP number</span>
           <input
-            type="email"
+            type="text"
             required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+            placeholder="you@example.com or HOP001"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
           />
         </label>
 

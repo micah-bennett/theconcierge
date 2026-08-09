@@ -3485,6 +3485,24 @@
   transform: translateY(var(--motion-lift));
 }
 
+/* :active gives a press-down cue on touch, where :hover is unreliable/absent — this is the
+   button used for Sign in, Save, Submit, Send, Connect across the whole HOP app, so it's the
+   single highest-impact place to add tactile feedback. */
+.hop-btn-primary:active {
+  filter: brightness(0.95);
+  transform: translateY(0) scale(0.98);
+}
+
+/* Previously unstyled: stayed fully vivid while inert during a submit, giving no visual cue and
+   inviting a re-click. Mirrors .hop-btn-secondary:disabled's treatment in hopApp.css. */
+.hop-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+  transform: none;
+}
+
 .hop-btn-ghost {
   display: inline-flex;
   align-items: center;
