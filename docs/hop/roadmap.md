@@ -118,22 +118,35 @@ both ways even though only one branch's UI calls the new bits. `db/schema.sql` i
 Family/self profile dates, a rule-based dashboard suggestion feed, a lightweight internal social
 feed, and a points/rewards ledger.
 
+**Points ledger: shipped 2026-08-09, at reduced scope** — see "Points ledger" in
+`architecture.md` for the actual shape. `hop_points_ledger`, `api/hop/rewards.ts` (`GET` own
+ledger+balance, `POST ?action=award` staff-only) are real; the schema/API design below matches
+what shipped almost exactly, **except no `?action=redeem`** — that stays unbuilt, along with every
+automatic earning rule (`checkin_streak`/`profile_complete`/`wearable_challenge` sources exist in
+the CHECK constraint but nothing writes them). The family/self-dates and social-feed pieces below
+are still 100% unbuilt — don't assume they shipped alongside the ledger just because they were
+planned together.
+
 ### Prerequisite consolidation (do this first — `main` has 0 headroom otherwise)
 
-Phase 3 needs 3 new files on `main` (`profile.ts`, `social.ts`, `rewards.ts`), but `main` sits at
-11/12 after Phase 1 (facility work above doesn't touch `main`'s count). Free 2 slots first:
+The rest of Phase 3 needs 2 more new files on `main` (`profile.ts`, `social.ts` — `rewards.ts` is
+already shipped and counted), but `main` sits at **12/12, fully maxed** after the points-ledger
+pass (see "Deployments" in `architecture.md`). Free 2 slots first:
 
 - **Merge `api/relief.ts` → `api/requests.ts`** (the unrelated top-level concierge-request/
   relief-call product) as `?type=relief` on the existing handler. `main` only — `relief.ts` is
   already flagged in `mvp-scope.md` as the standing best candidate to free a slot; it's an
-  orphaned feature (backend works, no UI links to it). Frees 1 → 10/12.
+  orphaned feature (backend works, no UI links to it). Frees 1 → 11/12.
 - **Merge `api/hop/request-messages.ts` → `api/hop/requests.ts`** as `?action=messages` (GET/POST,
   `requestId` param), same visibility rules as today (requester + assignee + any admin/concierge).
-  **Shared file — apply on both branches.** Frees 1 on each: `main` → 9/12, `staff-portal` → 9/12
-  (staff-portal was at 10/12 after Phase 2's `facility.ts` addition, or 10/12 if Phase 2 hasn't
-  shipped yet — either way this merge frees exactly 1).
+  **Shared file — apply on both branches.** Frees 1 on each: `main` → 10/12, `staff-portal` →
+  10/12 (staff-portal is at 11/12 after the points-ledger pass, or wherever Phase 2's `facility.ts`
+  addition left it if that's shipped by then — either way this merge frees exactly 1).
 
 ### Schema
+
+Points ledger (`hop_points_ledger`) is already built — see "Points ledger" in `architecture.md`,
+don't re-create it. The rest of this schema (self/family dates, social feed) is still unbuilt:
 
 ```sql
 -- Self dates directly on hop_users (1:1, cheap); family members/moments as 1:many.
@@ -176,32 +189,18 @@ CREATE TABLE IF NOT EXISTS hop_user_status (
   status_note TEXT NOT NULL DEFAULT '',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- Append-only points ledger; balance = SUM(delta). `source` is an open set so a future
--- wearable-driven earning rule slots in later without restructuring anything. A redemption is
--- just a negative-delta row with source='redemption' and request_id pointing at the
--- hop_service_requests row it paid for — no separate redemption table, reuses the existing
--- request lifecycle instead of building a parallel one.
-CREATE TABLE IF NOT EXISTS hop_points_ledger (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
-  delta INT NOT NULL,
-  source TEXT NOT NULL
-    CHECK (source IN ('admin_award', 'concierge_award', 'checkin_streak', 'profile_complete', 'redemption', 'wearable_challenge')),
-  reason TEXT NOT NULL DEFAULT '',
-  awarded_by UUID REFERENCES hop_users (id) ON DELETE SET NULL,
-  request_id UUID REFERENCES hop_service_requests (id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS hop_points_ledger_user_id_idx ON hop_points_ledger (user_id, created_at DESC);
 ```
 
-**Rewards, without wearable data**: the boss's example (steps → points) needs real wearable sync,
-which doesn't exist yet (Fitbit/Oura/Apple Health/Garmin are still UI-only stubs — see
-`mvp-scope.md`). Ship the ledger now with non-wearable v1 earning sources — admin/concierge manual
-awards, a check-in streak bonus, profile-completion bonus — so the reward *mechanism* works
-end-to-end today, and `source='wearable_challenge'` is already a valid ledger value waiting for a
-real trigger once wearable OAuth exists.
+`hop_points_ledger` is already built exactly as originally designed here (append-only,
+`source` open set, redemption modeled as a future negative-delta row) — see "Points ledger" in
+`architecture.md`, don't recreate it.
+
+**Rewards, without wearable data**: still true — the boss's example (steps → points) needs real
+wearable sync, which doesn't exist yet (Fitbit/Oura/Apple Health/Garmin are still UI-only stubs —
+see `mvp-scope.md`). The ledger shipped with non-wearable v1 earning (admin/concierge manual
+awards only, not the streak/profile-completion bonuses this section originally proposed — those
+are still unbuilt) so the reward *mechanism* works end-to-end today, and `source='wearable_challenge'`
+is already a valid ledger value waiting for a real trigger once wearable OAuth exists.
 
 ### API
 
@@ -219,21 +218,21 @@ real trigger once wearable OAuth exists.
   - **Add `api/hop/social.ts`** — `?action=posts` (GET feed, POST new post); `?action=react`
     (POST/DELETE on `hop_social_reactions`); `?action=status` (GET/PATCH own `hop_user_status`,
     GET all for a coworker directory view).
-  - **Add `api/hop/rewards.ts`** (shared with `staff-portal`) — `GET` own ledger + running
-    balance (streak/profile-completion bonuses computed on read, or via a helper called from
-    wherever the qualifying action happens — e.g. `wellness.ts`'s mood `POST` could call a shared
-    `maybeAwardStreak()` helper — keep that logic in one place, not duplicated per caller);
-    `POST ?action=redeem` — deducts points, creates a `hop_service_requests` row, links
-    `request_id`; `POST ?action=award` (`requireStaff`) — manual award.
-  - Result: `main` at 9/12 (post-consolidation) + 3 new files = **12/12, fully maxed**. The next
-    feature on `main` needs another consolidation pass first — `api/hop/ride-location.ts` folding
-    into `api/hop/requests.ts` as `?action=location-*` is the next available lever; flag that
-    explicitly rather than silently exceeding the cap.
-- **`staff-portal`**: add the same `api/hop/rewards.ts` (shared file, identical content) — its
-  only caller here is a small "Award points" action on the admin/concierge request or client-
-  detail view. `profile.ts`/`social.ts` are `main`-only by design (no family/social surface planned
-  for ConciergeHub). Result: staff-portal at 9/12 (post-consolidation) + 1 = **10/12**, one slot
-  of headroom remaining.
+  - `api/hop/rewards.ts` is **already built and counted** in the 12/12 baseline above — this phase
+    only needs to extend it with `POST ?action=redeem` (deducts points, creates a
+    `hop_service_requests` row, links `request_id`) and wire the streak/profile-completion earning
+    rules (a shared `maybeAwardStreak()`-style helper called from wherever the qualifying action
+    happens, e.g. `wellness.ts`'s mood `POST`) — no new file for either.
+  - Result: `main` at 10/12 (post-consolidation) + 2 new files (`profile.ts`, `social.ts`) =
+    **12/12, fully maxed** again. The next feature on `main` after that needs another
+    consolidation pass — `api/hop/ride-location.ts` folding into `api/hop/requests.ts` as
+    `?action=location-*` is the next available lever; flag that explicitly rather than silently
+    exceeding the cap.
+- **`staff-portal`**: `api/hop/rewards.ts` is already shared here too (identical content, per the
+  points-ledger pass) — extend it with `?action=redeem` the same way, shared edit both branches.
+  `profile.ts`/`social.ts` are `main`-only by design (no family/social surface planned for
+  ConciergeHub) — this phase adds 0 new files to `staff-portal`. Result stays at whatever
+  `staff-portal` is at after Phase 2 (if shipped) — no new headroom pressure from this phase.
 
 ### Frontend
 
@@ -243,9 +242,14 @@ real trigger once wearable OAuth exists.
     dismissal table — avoids schema growth for a UX nicety).
   - New `HopFamilyProfilePage.tsx` — self dates + family member CRUD.
   - New `HopSocialPage.tsx` — post composer/feed/reactions, plus a status picker.
-  - New `HopRewardsPage.tsx` — points balance, ledger history, "redeem toward a request" flow that
-    routes into the existing request-tracking UI after redeeming.
-- **`staff-portal`**: small "Award points" action on the concierge/admin request view.
+  - `HopRewardsCard.tsx` (already built, mounted on `HopProfilePage.tsx` — not a standalone page,
+    see "Points ledger" in `architecture.md`) gains a "redeem toward a request" flow calling the
+    new `?action=redeem`, routing into the existing request-tracking UI after redeeming. Revisit
+    whether this still fits as a card or has earned a standalone `HopRewardsPage.tsx`/nav item once
+    redemption makes the page's content meaningfully bigger.
+- **`staff-portal`**: already has an "Award points" action on `HopAdminUsersPage.tsx` (shipped with
+  the points-ledger pass) — this phase's only addition would be the same on the concierge/admin
+  request view, if wanted.
 
 ### Cross-branch sync notes
 

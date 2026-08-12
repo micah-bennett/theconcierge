@@ -57,11 +57,12 @@ async function handleSignup(request: Request): Promise<Response> {
     const rows = await sql`
       INSERT INTO hop_users (email, password_hash, first_name, last_name, role)
       VALUES (${data.email}, ${passwordHash}, ${data.firstName}, ${data.lastName}, 'user')
-      RETURNING id, email, first_name, last_name, phone, role
+      RETURNING id, email, hop_number, first_name, last_name, phone, role
     `
     const row = rows[0] as {
       id: string
       email: string
+      hop_number: string
       first_name: string
       last_name: string
       phone: string
@@ -71,7 +72,7 @@ async function handleSignup(request: Request): Promise<Response> {
     const token = await createSession(sql, row.id, request)
 
     try {
-      await sendHopWelcomeEmail(row.email, row.first_name)
+      await sendHopWelcomeEmail(row.email, row.first_name, row.hop_number)
     } catch (error) {
       console.error('HOP welcome email failed (account still created)', {
         userId: row.id,
@@ -88,15 +89,21 @@ async function handleSignup(request: Request): Promise<Response> {
   }
 }
 
-type LoginPayload = { email: string; password: string }
+type LoginPayload = { identifier: string; password: string }
 
+// Accepts either an email address or a HOP number as the identifier — the same field, since a
+// caller can't reliably tell which shape a raw string is before the DB lookup runs. Trimmed only
+// (not lowercased here); the query itself does the case-insensitive comparison for each shape.
 function validateLogin(value: unknown): LoginPayload {
   if (!value || typeof value !== 'object') throw new Error('Invalid request body')
   const source = value as Record<string, unknown>
-  const email = typeof source.email === 'string' ? source.email.trim().toLowerCase() : ''
+  const rawIdentifier = typeof source.identifier === 'string' ? source.identifier : ''
+  // Back-compat: accept the old `email` field name too, in case any stale client is still sending it.
+  const legacyEmail = typeof source.email === 'string' ? source.email : ''
+  const identifier = (rawIdentifier || legacyEmail).trim()
   const password = typeof source.password === 'string' ? source.password : ''
-  if (!email || !password) throw new Error('Enter your email and password')
-  return { email, password }
+  if (!identifier || !password) throw new Error('Enter your email or HOP number and password')
+  return { identifier, password }
 }
 
 async function handleLogin(request: Request): Promise<Response> {
@@ -105,17 +112,20 @@ async function handleLogin(request: Request): Promise<Response> {
 
   try {
     const data = validateLogin(await request.json())
+    const identifierLower = data.identifier.toLowerCase()
+    const identifierUpper = data.identifier.toUpperCase()
 
     const rows = await sql`
-      SELECT id, email, first_name, last_name, phone, role, status, password_hash,
+      SELECT id, email, hop_number, first_name, last_name, phone, role, status, password_hash,
              failed_login_attempts, locked_until
       FROM hop_users
-      WHERE LOWER(email) = ${data.email}
+      WHERE LOWER(email) = ${identifierLower} OR UPPER(hop_number) = ${identifierUpper}
     `
     const row = rows[0] as
       | {
           id: string
           email: string
+          hop_number: string
           first_name: string
           last_name: string
           phone: string
@@ -127,7 +137,7 @@ async function handleLogin(request: Request): Promise<Response> {
         }
       | undefined
 
-    const genericError = 'Incorrect email or password'
+    const genericError = 'Incorrect email/HOP number or password'
     if (!row || row.status !== 'active') return json({ error: genericError }, 401)
 
     const lockMessage = checkLoginLock(row)
@@ -144,7 +154,7 @@ async function handleLogin(request: Request): Promise<Response> {
     return jsonWithCookie({ user: toPublicUser(row) }, 200, setSessionCookie(request, token))
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not sign in'
-    const status = /Enter your email/i.test(message) ? 400 : 500
+    const status = /Enter your email or HOP number/i.test(message) ? 400 : 500
     if (status === 500) console.error('HOP login failed', error)
     return json({ error: status === 400 ? message : 'Could not sign in' }, status)
   }
@@ -255,11 +265,12 @@ async function handleUpdateProfile(request: Request): Promise<Response> {
       UPDATE hop_users
       SET first_name = ${data.firstName}, last_name = ${data.lastName}, phone = ${data.phone}, updated_at = NOW()
       WHERE id = ${user.id}
-      RETURNING id, email, first_name, last_name, phone, role
+      RETURNING id, email, hop_number, first_name, last_name, phone, role
     `
     const row = rows[0] as {
       id: string
       email: string
+      hop_number: string
       first_name: string
       last_name: string
       phone: string

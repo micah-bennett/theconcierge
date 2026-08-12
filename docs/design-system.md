@@ -26,10 +26,15 @@ reversed (see `docs/PROJECT_OVERVIEW.md`).
 
 ## 2. HOP (everything under `/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/app/*`, `/hop/admin/*`)
 
-Styles live in `src/styles/hopApp.css` (shell, auth pages, app chrome) and
-`src/styles/hopDashboard.css` (the dashboard's componentized "why HOP" content, see
-`docs/hop/mvp-scope.md`). Both are scoped under `.hop-shell, .hop-auth-page` custom properties —
-**always reference these via `var(--hop-*)`, never hardcode a hex value in a new HOP component.**
+Styles live in `src/styles/hopApp.css` (shell, auth pages, app chrome — the single stylesheet for
+the whole authenticated app now). `src/styles/hopDashboard.css` was the dashboard's componentized
+"why HOP" sell content — removed 2026-07-13 as repetitive (see `docs/hop/mvp-scope.md`); if you
+see a reference to it anywhere else, that's stale, not a sign the file still exists. Scoped under
+`.hop-shell, .hop-auth-page` custom properties — **always reference these via `var(--hop-*)`,
+never hardcode a hex value in a new HOP component** (a few `box-shadow`/gradient values in
+`hopApp.css` do use precomputed `rgba()` instead of `var(--hop-*)`, deliberately — see that file's
+comments near `color-mix()` for why: `color-mix()` itself is avoided there since it's unsupported
+before Safari/WKWebView 16.2 and this app's Capacitor iOS target is 15.0).
 
 ```css
 --hop-bg: #0d0f1a;
@@ -57,18 +62,19 @@ font.**
   in `src/App.css`'s old `.hop-page` block (yes — the public `/hop` marketing page and the
   authenticated app share this one class; it's intentional, don't duplicate it).
 - **Conventions**: `.hop-card`, `.hop-page-body`, `.hop-page-title`, `.hop-muted`,
-  `.hop-quick-grid` etc. for the core app (dashboard/requests/integrations/profile/admin), and a
-  separate `hop-dash-*` prefix for the dashboard's componentized sell content (to avoid clashing
-  with the core app's own `.hop-card`/`.hop-stat*` class names — see `hopDashboard.css`'s header
-  comment).
+  `.hop-quick-grid` etc. for the core app (dashboard/requests/integrations/profile/admin). Shared
+  UI-polish components (`src/hop/SkeletonCard.tsx`, `EmptyState.tsx`, `ToastContext.tsx`/
+  `useToast.ts`) added 2026-08-09 have their own small class blocks (`.hop-skeleton-*`,
+  `.hop-empty-state*`, `.hop-toast*`) in `hopApp.css` — reuse them instead of writing bespoke
+  loading/empty/confirmation markup per page.
 
 ## Adding a new page or section
 
 - Public marketing page/section → new classes in `src/App.css`, DM Sans/Playfair, dark canvas
   background. Look at an existing page (e.g. `ContactPage.tsx`) for the pattern first.
-- HOP core app page → reuse existing `.hop-*` classes from `hopApp.css` where possible.
-- HOP dashboard "sell"/info content → follow the `hop-dash-*` pattern in `hopDashboard.css`,
-  componentized under `src/hop/dashboard/`.
+- HOP core app page → reuse existing `.hop-*` classes from `hopApp.css` where possible, including
+  the shared skeleton/empty-state/toast components above for loading, empty, and confirmation
+  states rather than one-off inline text.
 - Never add a global font-loading `<link>` to `index.html` without checking both systems above
   first — the whole site currently loads exactly three font families (DM Sans, Playfair Display,
   Cormorant Garamond) and that's deliberate, not an oversight.

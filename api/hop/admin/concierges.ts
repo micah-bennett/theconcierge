@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { dbUnavailable, getSql } from '../../_lib/hopDb.js'
-import { sendHopConciergeInviteEmail } from '../../_lib/email.js'
+import { sendHopAccountInviteEmail } from '../../_lib/email.js'
 import {
   createPasswordResetToken,
   hashPassword,
@@ -13,6 +13,10 @@ function actionFromUrl(request: Request): string {
   return new URL(request.url).searchParams.get('action') || ''
 }
 
+// Still lists/manages 'concierge' rows only — a member account created via handleCreate below
+// shows up on the existing Users tab (api/hop/admin/users.ts) instead, since it's the same
+// hop_users table and that tab already lists/toggles every 'user' row. Keeping this scoped avoids
+// two places managing the same accounts.
 async function handleList(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
@@ -22,7 +26,7 @@ async function handleList(request: Request): Promise<Response> {
 
   const rows = await sql`
     SELECT
-      u.id, u.email, u.first_name, u.last_name, u.status, u.created_at,
+      u.id, u.email, u.hop_number, u.first_name, u.last_name, u.status, u.created_at,
       p.headline,
       COUNT(r.id) FILTER (WHERE r.status NOT IN ('completed', 'cancelled')) AS open_assigned
     FROM hop_users u
@@ -35,7 +39,7 @@ async function handleList(request: Request): Promise<Response> {
   return json({ concierges: rows })
 }
 
-type CreatePayload = { email: string; firstName: string; lastName: string }
+type CreatePayload = { email: string; firstName: string; lastName: string; role: 'user' | 'concierge' }
 
 function validateCreate(value: unknown): CreatePayload {
   if (!value || typeof value !== 'object') throw new Error('Invalid request body')
@@ -43,19 +47,23 @@ function validateCreate(value: unknown): CreatePayload {
   const email = typeof source.email === 'string' ? source.email.trim().toLowerCase() : ''
   const firstName = typeof source.firstName === 'string' ? source.firstName.trim() : ''
   const lastName = typeof source.lastName === 'string' ? source.lastName.trim() : ''
+  // Default to 'concierge' for backward compatibility with any caller that doesn't send role yet.
+  const role = source.role === 'user' ? 'user' : 'concierge'
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address')
   if (!firstName || firstName.length > 80) throw new Error('Enter a first name')
   if (!lastName || lastName.length > 80) throw new Error('Enter a last name')
 
-  return { email, firstName, lastName }
+  return { email, firstName, lastName, role }
 }
 
-// Admin-driven, in-app account creation — there is no self-serve concierge signup. Generates a
-// random temporary password so the account works immediately, and separately emails a
-// password-reset link so the concierge can set their own password. If RESEND_API_KEY isn't
-// configured (or sending fails), the temp password is returned in the response so the admin can
-// hand it over directly — see docs/vercel-setup.md before assuming email is the only path.
+// Admin-driven, in-app account creation for both concierge and member (role='user') accounts —
+// there is no self-serve concierge signup, and this is now an additional path alongside the
+// self-serve member signup on main (both stay live). Generates a random temporary password so the
+// account works immediately, and separately emails a password-reset-style invite link plus the
+// account's permanent HOP number. If RESEND_API_KEY isn't configured (or sending fails), the temp
+// password is returned in the response so the admin can hand it over directly — see
+// docs/vercel-setup.md before assuming email is the only path.
 async function handleCreate(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
@@ -74,16 +82,18 @@ async function handleCreate(request: Request): Promise<Response> {
 
     const rows = await sql`
       INSERT INTO hop_users (email, password_hash, first_name, last_name, role)
-      VALUES (${data.email}, ${passwordHash}, ${data.firstName}, ${data.lastName}, 'concierge')
-      RETURNING id, email, first_name, last_name, status, created_at
+      VALUES (${data.email}, ${passwordHash}, ${data.firstName}, ${data.lastName}, ${data.role})
+      RETURNING id, email, hop_number, first_name, last_name, status, created_at, role
     `
     const row = rows[0] as {
       id: string
       email: string
+      hop_number: string
       first_name: string
       last_name: string
       status: string
       created_at: string
+      role: string
     }
 
     let emailSent = false
@@ -91,10 +101,10 @@ async function handleCreate(request: Request): Promise<Response> {
       const token = await createPasswordResetToken(sql, row.id)
       const origin = new URL(request.url).origin
       const resetUrl = `${origin}/hop/reset-password?token=${token}`
-      await sendHopConciergeInviteEmail(row.email, row.first_name, resetUrl)
+      await sendHopAccountInviteEmail(row.email, data.role, row.first_name, row.hop_number, resetUrl)
       emailSent = true
     } catch (error) {
-      console.error('HOP concierge invite email failed (account still created)', {
+      console.error('HOP account invite email failed (account still created)', {
         userId: row.id,
         error: error instanceof Error ? error.message : String(error),
       })
@@ -109,10 +119,10 @@ async function handleCreate(request: Request): Promise<Response> {
       201,
     )
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Could not create the concierge account'
+    const message = error instanceof Error ? error.message : 'Could not create the account'
     const status = /Invalid|valid|Enter/i.test(message) ? 400 : 500
-    if (status === 500) console.error('HOP concierge create failed', error)
-    return json({ error: status === 400 ? message : 'Could not create the concierge account' }, status)
+    if (status === 500) console.error('HOP account create failed', error)
+    return json({ error: status === 400 ? message : 'Could not create the account' }, status)
   }
 }
 

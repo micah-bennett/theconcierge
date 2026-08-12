@@ -8,7 +8,7 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-export function hopWelcomeTemplate(firstName: string): string {
+export function hopWelcomeTemplate(firstName: string, hopNumber: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -50,9 +50,18 @@ export function hopWelcomeTemplate(firstName: string): string {
                 Your HOP account is ready. One request handles the ride, meal, errand, or anything else — so you
                 can focus on what only you can do.
               </p>
-              <p style="margin:0 0 28px;font-family:${FONT_SANS};font-size:14px;color:#1a1a2e;line-height:1.6">
+              <p style="margin:0 0 20px;font-family:${FONT_SANS};font-size:14px;color:#1a1a2e;line-height:1.6">
                 Sign in any time to submit a request, connect your calendar, and track everything in one place.
               </p>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px">
+                <tr>
+                  <td style="background:#f3f4fc;border-radius:8px;padding:14px 20px">
+                    <p style="margin:0;font-family:${FONT_SANS};font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:1px">Your HOP number</p>
+                    <p style="margin:2px 0 0;font-family:${FONT_SERIF};font-size:20px;font-weight:700;color:#0d1b35;letter-spacing:1px">${escapeHtml(hopNumber)}</p>
+                    <p style="margin:6px 0 0;font-family:${FONT_SANS};font-size:12px;color:#6b7280;line-height:1.5">You can use it instead of your email to sign in next time.</p>
+                  </td>
+                </tr>
+              </table>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="background:#6366f1;border-radius:8px">

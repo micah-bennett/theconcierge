@@ -6,6 +6,7 @@ import type { NeonQueryFunction } from '@neondatabase/serverless'
 export type HopUser = {
   id: string
   email: string
+  hopNumber: string
   firstName: string
   lastName: string
   phone: string
@@ -154,7 +155,7 @@ export async function getSessionUser(sql: Sql, request: Request): Promise<HopUse
   if (!token) return null
 
   const rows = await sql`
-    SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.role, u.status
+    SELECT u.id, u.email, u.hop_number, u.first_name, u.last_name, u.phone, u.role, u.status
     FROM hop_sessions s
     JOIN hop_users u ON u.id = s.user_id
     WHERE s.token_hash = ${hashToken(token)} AND s.expires_at > NOW()
@@ -163,6 +164,7 @@ export async function getSessionUser(sql: Sql, request: Request): Promise<HopUse
     | {
         id: string
         email: string
+        hop_number: string | null
         first_name: string
         last_name: string
         phone: string
@@ -175,6 +177,7 @@ export async function getSessionUser(sql: Sql, request: Request): Promise<HopUse
   return {
     id: row.id,
     email: row.email,
+    hopNumber: row.hop_number || '',
     firstName: row.first_name,
     lastName: row.last_name,
     phone: row.phone,
@@ -272,6 +275,7 @@ export async function resetFailedLogins(sql: Sql, userId: string): Promise<void>
 export function toPublicUser(row: {
   id: string
   email: string
+  hop_number?: string | null
   first_name: string
   last_name: string
   phone?: string | null
@@ -280,6 +284,7 @@ export function toPublicUser(row: {
   return {
     id: row.id,
     email: row.email,
+    hopNumber: row.hop_number || '',
     firstName: row.first_name,
     lastName: row.last_name,
     phone: row.phone || '',

@@ -7,7 +7,7 @@ import { customerConfirmationTemplate } from './emailTemplates/customerConfirmat
 import { reliefOwnerNotificationTemplate } from './emailTemplates/reliefOwnerNotification.js'
 import { hopWelcomeTemplate } from './emailTemplates/hopWelcome.js'
 import { hopPasswordResetTemplate } from './emailTemplates/hopPasswordReset.js'
-import { hopConciergeInviteTemplate } from './emailTemplates/hopConciergeInvite.js'
+import { hopAccountInviteTemplate } from './emailTemplates/hopAccountInvite.js'
 
 const FROM = 'The Concierge <requests@theconcierge.life>'
 const REPLY_TO = 'micah@hvconcierge.com'
@@ -73,7 +73,11 @@ export async function sendReliefEmail(data: ReliefCallRequest): Promise<void> {
   if (error) throw new Error(`Relief call notification failed: ${error.message}`)
 }
 
-export async function sendHopWelcomeEmail(email: string, firstName: string): Promise<void> {
+export async function sendHopWelcomeEmail(
+  email: string,
+  firstName: string,
+  hopNumber: string,
+): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim()
   if (!apiKey) throw new Error('RESEND_API_KEY is not configured')
 
@@ -83,7 +87,7 @@ export async function sendHopWelcomeEmail(email: string, firstName: string): Pro
     to: email,
     replyTo: REPLY_TO,
     subject: 'Welcome to HOP',
-    html: hopWelcomeTemplate(firstName),
+    html: hopWelcomeTemplate(firstName, hopNumber),
   })
   if (error) throw new Error(`HOP welcome email failed: ${error.message}`)
 }
@@ -103,7 +107,13 @@ export async function sendHopPasswordResetEmail(email: string, resetUrl: string)
   if (error) throw new Error(`HOP password reset email failed: ${error.message}`)
 }
 
-export async function sendHopConciergeInviteEmail(email: string, firstName: string, resetUrl: string): Promise<void> {
+export async function sendHopAccountInviteEmail(
+  email: string,
+  role: 'user' | 'concierge',
+  firstName: string,
+  hopNumber: string,
+  resetUrl: string,
+): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim()
   if (!apiKey) throw new Error('RESEND_API_KEY is not configured')
 
@@ -112,8 +122,8 @@ export async function sendHopConciergeInviteEmail(email: string, firstName: stri
     from: FROM,
     to: email,
     replyTo: REPLY_TO,
-    subject: "You've been added as a HOP concierge",
-    html: hopConciergeInviteTemplate(firstName, resetUrl),
+    subject: role === 'concierge' ? "You've been added as a HOP concierge" : "You've been added to HOP",
+    html: hopAccountInviteTemplate(role, firstName, hopNumber, resetUrl),
   })
-  if (error) throw new Error(`HOP concierge invite email failed: ${error.message}`)
+  if (error) throw new Error(`HOP account invite email failed: ${error.message}`)
 }

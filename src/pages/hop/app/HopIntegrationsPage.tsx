@@ -111,8 +111,16 @@ export function HopIntegrationsPage() {
                   </>
                 ) : (
                   <>
-                    <p className="hop-muted">Coming soon.</p>
-                    <button type="button" className="hop-btn-secondary" disabled>
+                    <p className="hop-muted" id={`${integration.provider}-coming-soon`}>
+                      Coming soon.
+                    </p>
+                    <button
+                      type="button"
+                      className="hop-btn-secondary"
+                      disabled
+                      title="Coming soon"
+                      aria-describedby={`${integration.provider}-coming-soon`}
+                    >
                       Connect
                     </button>
                   </>

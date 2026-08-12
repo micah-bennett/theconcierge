@@ -316,9 +316,12 @@ side.
   table — not separate tables. `admin` and `concierge` are the two ConciergeHub roles: an admin
   manages concierge accounts and can do anything a concierge can; a concierge can only see and
   update requests assigned to them (`handled_by`) and can't reassign. See "ConciergeHub" below.
-  There is no self-serve signup for either staff role — admins are created with
-  `scripts/create-hop-admin.mjs`; concierges are created in-app by an admin
-  (`api/hop/admin/concierges.ts`, ConciergeHub only).
+  There is no self-serve signup for staff roles — admins are created with
+  `scripts/create-hop-admin.mjs`; concierges **and now also members** are created in-app by an
+  admin (`api/hop/admin/concierges.ts?action=create`, ConciergeHub only, takes an optional
+  `role: 'user' | 'concierge'`, default `'concierge'`) — see "HOP number" below. Self-serve
+  member signup (`/hop/signup`, `main`) still exists side by side; this is an additional path,
+  not a replacement.
 - Basic brute-force protection: after 8 failed logins, an account locks for 15 minutes
   (`hop_users.failed_login_attempts` / `locked_until`). No IP-based rate limiting yet.
 - Password reset: `hop_password_resets` (id, user_id, token_hash, expires_at, used_at). Same
@@ -331,6 +334,71 @@ side.
   (`destroyAllSessions`), forcing re-login everywhere. Requires `RESEND_API_KEY` to actually
   deliver the email — without it, the token is still created but the email send fails silently
   (logged, not thrown) so the generic response is unaffected.
+
+## HOP number (2026-08-09)
+
+A permanent, human-readable account identifier (e.g. `HOP001`), generated for every account —
+self-serve signups, CLI-created admins, and admin-invited concierge/member accounts alike — via a
+column `DEFAULT` on `hop_users.hop_number`, not per-`INSERT` logic:
+```sql
+CREATE SEQUENCE IF NOT EXISTS hop_number_seq START 1;
+ALTER TABLE hop_users ADD COLUMN IF NOT EXISTS hop_number TEXT
+  DEFAULT ('HOP' || LPAD(nextval('hop_number_seq')::text, 3, '0'));
+```
+A real Postgres `SEQUENCE` guarantees atomic, collision-free numbers under concurrent inserts with
+no retry logic needed at any of the three creation call sites — every `INSERT` just needs
+`hop_number` added to its `RETURNING` clause to surface the value the database already generated.
+Format degrades gracefully past 999 accounts (`HOP1000`, ...) rather than erroring — an accepted,
+non-urgent limitation. Existing rows from before this column existed are backfilled once via
+`scripts/backfill-hop-numbers.mjs` (`npm run hop:backfill-numbers`), assigning real sequence values
+in `created_at` order — a one-time data operation, not part of the idempotent `schema.sql`.
+
+**Login accepts email or HOP number**: `api/hop/auth.ts`'s `handleLogin` takes a generic
+`identifier` field (not `email`) and matches `LOWER(email) = ... OR UPPER(hop_number) = ...`
+case-insensitively either way. `HopLoginPage.tsx`/`HopAdminLoginPage.tsx` (both branches) show a
+plain text input labeled "Email or HOP number" (not `type="email"`, since a HOP number isn't valid
+email syntax). `src/hop/api.ts`'s `hopLogin()` takes `{ identifier, password }`.
+
+**Emailed to the account holder**: `main`'s self-serve welcome email
+(`hopWelcomeTemplate`/`sendHopWelcomeEmail`) and ConciergeHub's admin-invite email
+(`hopAccountInviteTemplate`/`sendHopAccountInviteEmail`, generalized 2026-08-09 from the old
+concierge-only `hopConciergeInviteTemplate`/`sendHopConciergeInviteEmail`) both surface the HOP
+number in a highlighted callout, framed as "use it instead of your email to sign in."
+
+## Points ledger (2026-08-09)
+
+A reduced-scope build of the roadmap's Phase 3 rewards design (`docs/hop/roadmap.md`) — a member's
+Profile tab needed "all the services they've taken" plus a rewards mechanism; this ships the
+points-earning half only, deliberately **without** a redemption flow.
+
+- **Schema**: `hop_points_ledger` (`user_id`, `delta`, `source` CHECK IN `admin_award` |
+  `concierge_award` | `checkin_streak` | `profile_complete` | `redemption` | `wearable_challenge`,
+  `reason`, `awarded_by`, `request_id` nullable, `created_at`) — append-only. Only
+  `admin_award`/`concierge_award` are ever written today; the other `source` values are kept in
+  the CHECK set as forward-compatible plumbing for the roadmap's still-unbuilt auto-earning rules
+  and redemption flow, not implemented behavior.
+- **API**: new `api/hop/rewards.ts` (shared, identical file on both branches). `GET`
+  (`requireUser`) returns the caller's own ledger + `SUM(delta)` balance. `POST ?action=award`
+  (`requireStaff`) takes `{ userId, delta, reason }`; `delta` must be a positive integer (1-1000,
+  negative/zero rejected — that's how a future redemption would work, explicitly out of scope
+  now); `source` is derived from the caller's own role (`admin_award` if admin, `concierge_award`
+  if concierge), never accepted from the client, so the audit trail can be trusted. **No
+  `?action=redeem`** — deliberately absent this cycle.
+- **Function budget**: this is the one new top-level file this cycle adds, on both branches — see
+  "Deployments" below for the resulting counts. `main` was at 11/12 before this; adding
+  `rewards.ts` brings it to **exactly 12/12, fully maxed** — the roadmap's original Phase 3 plan
+  assumed a prerequisite consolidation (merging `relief.ts` into `requests.ts`) only because it
+  needed 3 new files (`profile.ts`/`social.ts`/`rewards.ts`) at once; this cycle adds just the one,
+  so it fit without that consolidation. Any future `main` feature needs a consolidation pass first.
+- **Frontend**: member-facing UI lives on the merged Profile page (`HopProfilePage.tsx`, re-labeled
+  from "Settings"), not a standalone page/nav item — a view-only balance + ledger history is one
+  card's worth of content at this scope. New `HopServiceHistoryCard.tsx` (reuses the existing
+  `GET /api/hop/requests` call for service history, no new endpoint) and `HopRewardsCard.tsx` (new
+  `hopGetRewards()` call) both mount on `HopProfilePage.tsx`. Staff-side: `HopAdminUsersPage.tsx`
+  (ConciergeHub) gained an inline "Award points" form per row (`hopAdminAwardPoints()`), not a new
+  nav tab — award-giving is a small action, not a destination. No concierge-facing award UI is
+  built this cycle (concierge-sourced awards are only plumbed server-side, not reachable from any
+  concierge screen yet).
 
 ## Theme (dark/light)
 
@@ -369,10 +437,10 @@ The staff/admin side of HOP, branded "HOP ConciergeHub," lives on the `staff-por
 `theconcierge-staff` deployment (see "Deployments" below) — not on `main`. It turns the existing
 admin-only dispatch tooling into a two-sided staff product:
 
-- **Admin** creates and manages concierge accounts (`/hop/admin/concierges`,
-  `api/hop/admin/concierges.ts`), assigns them to requests (existing `handled_by` /
-  `api/hop/requests.ts` PATCH, now `requireStaff`-gated with ownership checks for concierge
-  callers), and can view everything a concierge can.
+- **Admin** creates and manages concierge accounts, and (2026-08-09) member accounts too
+  (`/hop/admin/concierges`, nav-labeled "Team" — see below), assigns them to requests (existing
+  `handled_by` / `api/hop/requests.ts` PATCH, now `requireStaff`-gated with ownership checks for
+  concierge callers), and can view everything a concierge can.
 - **Concierge** sees only requests assigned to them (`/hop/concierge/requests`,
   `api/hop/concierge.ts?action=my-requests`), can move status forward and add dispatch notes on
   those requests (not reassign), has an agenda-style calendar of their scheduled requests
@@ -390,21 +458,28 @@ admin-only dispatch tooling into a two-sided staff product:
   user-visible by design. This is the one ConciergeHub piece that also ships on `main`, since the
   HOP user's side of the conversation lives in the consumer app (`HopRequestsPage.tsx`) — it's
   what pushed `main` to its 12-function cap.
-- **Concierge account creation** is admin-driven and in-app (not the CLI script used for admins):
-  `POST /api/hop/admin/concierges?action=create` generates a random temp password, creates the
-  account as `active` immediately, and tries to email a password-reset link
-  (`hopConciergeInviteTemplate`) via the same `hop_password_resets` mechanism as forgot-password.
-  If `RESEND_API_KEY` isn't configured (or sending fails), the temp password is returned in the
-  API response so the admin can hand it over directly — the ConciergeHub deployment needs
-  `RESEND_API_KEY` set for the clean path; see `docs/vercel-setup.md`.
+- **Concierge and member account creation** is admin-driven and in-app (not the CLI script used
+  for admins): `POST /api/hop/admin/concierges?action=create` takes an optional
+  `role: 'user' | 'concierge'` (default `'concierge'`, 2026-08-09), generates a random temp
+  password, creates the account as `active` immediately, and tries to email an invite
+  (`hopAccountInviteTemplate`, surfacing the account's HOP number — see "HOP number" above) via
+  the same `hop_password_resets` mechanism as forgot-password. If `RESEND_API_KEY` isn't
+  configured (or sending fails), the temp password is returned in the API response so the admin
+  can hand it over directly — the ConciergeHub deployment needs `RESEND_API_KEY` set for the clean
+  path; see `docs/vercel-setup.md`. `handleList`/`handleUpdateStatus` on this file stay scoped to
+  `role = 'concierge'` deliberately — a member account created here shows up on the existing Users
+  tab (`api/hop/admin/users.ts`) instead, since it's the same `hop_users` table and that tab
+  already lists/toggles every `role = 'user'` row; duplicating that logic here would create two
+  places managing the same accounts.
 - **Function budget**: `api/hop/admin/concierges.ts` and `api/hop/concierge.ts` exist **only** on
-  the ConciergeHub deployment's `api/` tree — `main` is already at 12/12 and can't take them.
-  ConciergeHub itself drops three files unrelated to HOP (`chat.ts`, `requests.ts`, `relief.ts` —
-  they belong to the separate concierge-request/relief-call product on the same site) to make
-  room, landing at 11/12. See "Deployments" for the exact list per project.
+  the ConciergeHub deployment's `api/` tree. ConciergeHub drops three files unrelated to HOP
+  (`chat.ts`, `requests.ts`, `relief.ts` — they belong to the separate concierge-request/
+  relief-call product on the same site) to make room. See "Deployments" for the current exact
+  count per project.
 - **Divergence beyond `App.tsx`**: `src/hop/HopAdminLayout.tsx`'s `NAV_ITEMS` now also
-  legitimately diverges between branches (ConciergeHub's admin nav has a "Concierges" link that
-  main's admin portal can't support, since it has no backing endpoint there). When merging future
+  legitimately diverges between branches (ConciergeHub's admin nav has a "Team" link, renamed
+  from "Concierges" 2026-08-09 to reflect it now creates member accounts too, that main's admin
+  portal can't support, since it has no backing endpoint there). When merging future
   `main` changes into `staff-portal`, keep ConciergeHub's extra nav item rather than blindly
   taking `main`'s version of that one constant.
 
@@ -416,13 +491,15 @@ decoupled from the consumer-facing product, as the seed of a future standalone E
 
 - **`theconcierge`** (`ay-projects3/theconcierge`, production domain `theconcierge.life`) — tracks
   the `main` branch. Full app: public marketing site + consumer HOP signup/login (`/hop/app/*`) +
-  a legacy admin portal (`/hop/admin/*`, frozen — see below). **11 of 12** functions used as of
-  the 2026-07-23 Phase 1 pass: `chat.ts`, `requests.ts`, `relief.ts`, and 8 under `api/hop/**`
+  a legacy admin portal (`/hop/admin/*`, frozen — see below). **12 of 12 — fully maxed** as of the
+  2026-08-09 points-ledger pass: `chat.ts`, `requests.ts`, `relief.ts`, and 9 under `api/hop/**`
   (`admin/users.ts`, `auth.ts`, `integrations/google.ts`, `messages.ts`, `request-messages.ts`,
-  `requests.ts`, `ride-location.ts`, `wellness.ts`). `admin/integrations.ts` and the top-level
-  `integrations.ts` were folded into `admin/users.ts` (`?scope=integrations`) and
-  `integrations/google.ts` (`?action=list`) respectively to make room for the new `messages.ts` —
-  see "Phase 1 quick wins" above. One slot of headroom.
+  `requests.ts`, `rewards.ts`, `ride-location.ts`, `wellness.ts`). `admin/integrations.ts` and the
+  top-level `integrations.ts` were folded into `admin/users.ts` (`?scope=integrations`) and
+  `integrations/google.ts` (`?action=list`) respectively to make room for `messages.ts` (Phase 1);
+  the last slot of headroom after that went to `rewards.ts` (see "Points ledger" above). **Zero
+  headroom remains** — any future `main` feature needs a consolidation pass first (folding
+  `relief.ts` into `requests.ts` is the standing best candidate, per `mvp-scope.md`).
 - **`theconcierge-staff`**, branded **HOP ConciergeHub** (`ay-projects3/theconcierge-staff`,
   `theconcierge-staff.vercel.app` for now — no custom domain attached yet) — tracks the
   `staff-portal` branch. This is where all *new* staff/admin functionality grows going forward;
@@ -430,11 +507,12 @@ decoupled from the consumer-facing product, as the seed of a future standalone E
   endpoints — see "ConciergeHub" above). `src/App.tsx` on this branch is trimmed to
   `/hop/admin/login`, the `RequireAdmin` → `/hop/admin/*` tree (now including `/concierges`), the
   `RequireConcierge` → `/hop/concierge/*` tree, and the shared `/hop/forgot-password` +
-  `/hop/reset-password` routes. Every other path redirects to `/hop/admin/login`. **10 of 12**
-  functions used as of the 2026-07-23 Phase 1 pass: `admin/concierges.ts`, `admin/users.ts`,
+  `/hop/reset-password` routes. Every other path redirects to `/hop/admin/login`. **11 of 12**
+  functions used as of the 2026-08-09 points-ledger pass: `admin/concierges.ts`, `admin/users.ts`,
   `auth.ts`, `concierge.ts`, `integrations/google.ts`, `messages.ts`, `request-messages.ts`,
-  `requests.ts`, `ride-location.ts`, `wellness.ts` — the same `admin/integrations.ts`/
-  `integrations.ts` consolidation as `main` applies here too. Two slots of headroom. Same
+  `requests.ts`, `rewards.ts`, `ride-location.ts`, `wellness.ts` — the same
+  `admin/integrations.ts`/`integrations.ts` consolidation as `main` applies here too, plus the same
+  `rewards.ts` addition as `main` (shared file, identical content). One slot of headroom. Same
   `DATABASE_URL` as `main`, so accounts, sessions, and data are consistent across both domains.
   Env vars (`DATABASE_URL`, `SESSION_HASH_SECRET`) were copied over from the main project;
   **`RESEND_API_KEY` is a hard requirement here now** (not just for password resets — the

@@ -59,6 +59,37 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   is active-browser sharing, not background tracking — see "Live ride location" in
   `architecture.md` for exactly what that means and its real limitations.
 
+## 2026-08-09: HOP numbers, admin-invited accounts, points ledger, UI/UX pass
+
+From a push to make HOP "ready for real users" — sign-in/request-a-concierge for members, a
+single admin ERP surface, a member profile with service history + rewards, and a UI/UX bug-fix +
+polish pass. See "HOP number", "Points ledger", "Visual redesign" (this section's CSS fixes are a
+follow-on to that 2026-07-24 pass, not a replacement of it) in `architecture.md` for full shape.
+
+- Every HOP account (self-serve signups, CLI-created admins, admin-invited concierges/members) now
+  gets a permanent, human-readable HOP number (`HOP001`, ...), usable to log in instead of email.
+  Existing accounts were backfilled once via `scripts/backfill-hop-numbers.mjs`.
+- ConciergeHub admins can now create **member** accounts in-app (`/hop/admin/concierges`, nav
+  relabeled "Team"), not just concierge accounts — alongside the existing self-serve `/hop/signup`
+  on `main`, which is unchanged and still live. Both paths work side by side.
+- Member Profile tab (`/hop/app/profile`, relabeled from "Settings"): now also shows a full
+  service-history summary (total/completed requests, ratings given) and a points balance + ledger
+  history. Staff can manually award points from the Users tab (ConciergeHub). **No redemption
+  flow** — view-only balance/history is the full scope this cycle.
+- UI/UX bug-fix pass on `src/styles/hopApp.css`/`src/App.css` (shared across both deployments):
+  removed all 13 uses of `color-mix()`, which silently drops the whole containing CSS property on
+  WKWebView ≤16.1 (this app's Capacitor iOS target is 15.0) — the most likely concrete cause of
+  "pale"/flat cards reported on the real mobile app; added a real `@supports`-gated fallback color
+  for gradient-text headings/stat values (previously fully invisible if the clip effect failed);
+  added `:active` press states and `.hop-btn-primary:disabled` styling (buttons had zero touch
+  feedback before this, which read as "not working" even though every handler was correctly
+  wired); grew several under-44px touch targets; fixed a genuinely undefined `--hop-surface` CSS
+  variable (the contact-menu dropdown had no background at all); deepened light-theme contrast.
+  Plus new shared polish infrastructure — toast confirmations, skeleton loaders, empty states, a
+  status-change pulse animation, a breathing glow on the dashboard's primary action, staggered
+  card fade-in — wired into the highest-traffic pages (dashboard/requests/profile/admin users), no
+  new dependencies.
+
 ## 2026-07-24: Visual redesign + onboarding tour
 
 A full pass on HOP's visual identity (`src/styles/hopApp.css`, shared across every page) plus a
@@ -146,6 +177,10 @@ specific from a design reference, it needs its own explicit spec first.
 - Fitbit, Oura, Apple Health, Garmin integrations: UI cards exist and are disabled
   ("Coming soon"), no OAuth, no data. `hop_wearable_metrics` table exists but is unpopulated.
 - IP-based login rate limiting (only per-account lockout after repeated failures exists).
+- Rewards **redemption** (`hop_points_ledger` exists, points can be awarded and viewed, but
+  there's no "redeem points toward a request" flow) and any automatic point-earning rule
+  (check-in streaks, profile-completion bonus, wearable challenges) — the `source` CHECK values
+  exist for these, but nothing writes them yet. See "Points ledger" in `architecture.md`.
 - Any real fulfillment/dispatch logic behind a service request — requests are just recorded
   and status-tracked, not routed to an actual provider network.
 - The "VBC Dashboard" mentioned on the marketing page (hospital-admin-facing analytics) — the
