@@ -24,6 +24,12 @@ const ACCOUNTS = {
     lastName: 'Concierge',
     role: 'concierge',
   },
+  facility: {
+    email: 'test.facility@theconcierge.life',
+    firstName: 'Jordan',
+    lastName: 'Facility',
+    role: 'facility',
+  },
 }
 
 async function upsertAccount(sql, account) {
@@ -57,6 +63,7 @@ async function main() {
   const userId = await upsertAccount(sql, ACCOUNTS.user)
   const adminId = await upsertAccount(sql, ACCOUNTS.admin)
   const conciergeId = await upsertAccount(sql, ACCOUNTS.concierge)
+  await upsertAccount(sql, ACCOUNTS.facility)
 
   await sql`
     INSERT INTO hop_concierge_profiles (user_id, headline, bio, specialties, years_experience)
@@ -122,6 +129,9 @@ async function main() {
   console.log('')
   console.log('ConciergeHub concierge (/hop/admin/login on the ConciergeHub deployment):')
   console.log(' ', ACCOUNTS.concierge.email)
+  console.log('')
+  console.log('ConciergeHub Facility Admin (/hop/admin/login on the ConciergeHub deployment):')
+  console.log(' ', ACCOUNTS.facility.email)
   console.log('')
   console.log('Seeded sample request id:', requestId)
   console.log('(status: in_progress, assigned to the test concierge, with history + 2 messages)')
