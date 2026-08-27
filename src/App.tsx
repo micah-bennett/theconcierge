@@ -13,11 +13,18 @@ import { HopConciergeDashboardPage } from './pages/hop/concierge/HopConciergeDas
 import { HopConciergeRequestsPage } from './pages/hop/concierge/HopConciergeRequestsPage'
 import { HopConciergeCalendarPage } from './pages/hop/concierge/HopConciergeCalendarPage'
 import { HopConciergeProfilePage } from './pages/hop/concierge/HopConciergeProfilePage'
+import { HopConciergeMessagesPage } from './pages/hop/concierge/HopConciergeMessagesPage'
+import { HopFacilityDashboardPage } from './pages/hop/facility/HopFacilityDashboardPage'
+import { HopFacilityHeatMapPage } from './pages/hop/facility/HopFacilityHeatMapPage'
+import { HopFacilityRequestStatsPage } from './pages/hop/facility/HopFacilityRequestStatsPage'
+import { HopFacilityRetentionPage } from './pages/hop/facility/HopFacilityRetentionPage'
+import { HopFacilityRequestsPage } from './pages/hop/facility/HopFacilityRequestsPage'
 import { HopAuthProvider } from './hop/AuthContext'
 import { HopThemeProvider } from './hop/ThemeContext'
-import { RequireAdmin, RequireConcierge } from './hop/RequireAuth'
+import { RequireAdmin, RequireConcierge, RequireFacility } from './hop/RequireAuth'
 import { HopAdminLayout } from './hop/HopAdminLayout'
 import { HopConciergeLayout } from './hop/HopConciergeLayout'
+import { HopFacilityLayout } from './hop/HopFacilityLayout'
 import './styles/hopApp.css'
 
 // This is HOP ConciergeHub — a separate Vercel deployment from the main consumer app, trimmed
@@ -48,7 +55,17 @@ function AppRoutes() {
                 <Route index element={<HopConciergeDashboardPage />} />
                 <Route path="requests" element={<HopConciergeRequestsPage />} />
                 <Route path="calendar" element={<HopConciergeCalendarPage />} />
+                <Route path="messages" element={<HopConciergeMessagesPage />} />
                 <Route path="profile" element={<HopConciergeProfilePage />} />
+              </Route>
+            </Route>
+            <Route element={<RequireFacility />}>
+              <Route path="/hop/facility" element={<HopFacilityLayout />}>
+                <Route index element={<HopFacilityDashboardPage />} />
+                <Route path="heatmap" element={<HopFacilityHeatMapPage />} />
+                <Route path="requests-stats" element={<HopFacilityRequestStatsPage />} />
+                <Route path="retention" element={<HopFacilityRetentionPage />} />
+                <Route path="my-requests" element={<HopFacilityRequestsPage />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/hop/admin/login" replace />} />

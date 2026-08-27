@@ -1,23 +1,37 @@
-# HOP — Roadmap (Phases 2 and 3)
+# HOP — Roadmap (Phase 3 remainder)
 
 This is the technical design for the HOP feature backlog that came out of a 2026-07-23 strategy
 review between the product owner and their boss, covering the concierge rep, HOP Admin, a new
-Facility (hospital-client) portal, and the HOP member experience. **Phase 1 (quick wins) is
-built** — see `architecture.md` for its actual shape. This file is the plan for Phase 2 (Facility
-portal) and Phase 3 (deeper member engagement), written so a future session can execute either
-phase without re-deriving the design. Update this file in place as each phase ships — move its
-"what's real" content into `architecture.md`/`mvp-scope.md` and delete it from here, the same way
-Phase 1 no longer needs its own section in this file.
+Facility (hospital-client) portal, and the HOP member experience. **Phase 1 (quick wins), Phase 2
+(Facility portal), and most of Phase 3 are now built** — see "HOP Phase 2" in `architecture.md`
+for the actual shape of everything shipped 2026-08-27 (which absorbed Phase 2's Facility portal
+plus Phase 3's points ledger, self/family dates, and certifications — a broader single cycle than
+this doc's original two-phase split). This file now only covers what's genuinely still unbuilt:
+the internal social feed and rewards redemption. Update this file in place as each remaining
+piece ships — move its "what's real" content into `architecture.md`/`mvp-scope.md` and delete it
+from here.
 
-Function-budget baseline entering this roadmap (confirmed by counting `api/**/*.ts` excluding
-`_lib/` on each branch): **`main` (theconcierge) at 11/12**, **`staff-portal`/ConciergeHub
-(theconcierge-staff) at 10/12**. Both plans below are designed to stay within the Hobby-plan
-12-function cap — see `CLAUDE.md` and `architecture.md` → "Deployments" before adding any new
-top-level `api/*.ts` file outside what's specified here.
+Function budget as of the 2026-08-27 pass (confirmed by counting `api/**/*.ts` excluding `_lib/`
+on each branch): **`main` (theconcierge) at 12/12, fully maxed**, **`staff-portal`/ConciergeHub
+(theconcierge-staff) at 12/12, fully maxed**. Any remaining item below needs a real consolidation
+pass first on whichever branch it targets — see `CLAUDE.md` and `architecture.md` → "Deployments".
 
 ---
 
-## Phase 2 — Facility portal
+## Facility portal — shipped 2026-08-27
+
+Built as designed below, plus the manually-logged retention/cost-savings piece that wasn't in
+this doc's original sketch. See "HOP Phase 2" in `architecture.md` for the actual shape
+(`hop_mood_checkins`, `role='facility'`, `hop_users.department`, `hop_retention_events`,
+`api/hop/facility.ts`, `requireFacility`/`requireFacilityOrStaff`, `/hop/facility/*`). The
+open decisions originally listed at the bottom of this file (mood check-in taps as 4 not 3,
+`default_shift_end_time` as the minimal shift signal, department as a single free-text column,
+deploying to `staff-portal` not `main`) were all confirmed and built as proposed. The design
+below is kept only as historical reference for *how* it was designed — don't re-read it as "not
+built yet."
+
+<details>
+<summary>Original Phase 2 design (click to expand — superseded by architecture.md)</summary>
 
 A new, read-only aggregate dashboard for hospital-side administrators (the vendor/client — not
 HOP's own admin). Ships on `staff-portal`/ConciergeHub, not `main` — it's read-only ops/aggregate
@@ -111,61 +125,46 @@ change join `hop_mood_checkins` back to a name in a facility-facing response.
 both ways even though only one branch's UI calls the new bits. `db/schema.sql` is one shared edit.
 `facility.ts`, the Facility frontend pages, and `/hop/facility/*` are staff-portal only.
 
+</details>
+
 ---
 
-## Phase 3 — Deeper member engagement
+## Points ledger, self/family dates, certifications — shipped 2026-08-27
 
-Family/self profile dates, a rule-based dashboard suggestion feed, a lightweight internal social
-feed, and a points/rewards ledger.
+All real — see "HOP Phase 2" in `architecture.md`. `hop_points_ledger`/`api/hop/rewards.ts`
+shipped 2026-08-09 (manual award only); this cycle added the daily-task earning source
+(`task_complete`) and `api/hop/profile.ts` (self/family dates, certifications, the AI-assistant
+feed) on `main` only — deliberately not synced to `staff-portal`, since syncing it would exceed
+that deployment's function cap now that `facility.ts` also landed this cycle. **Still not
+built**: `?action=redeem` (no redemption flow) and the streak/profile-completion automatic
+earning rules — the `source` CHECK values exist for these but nothing writes them. If either is
+wanted later, `main` needs a consolidation pass first (see "Function budget" below) since it's
+already at 12/12.
 
-**Points ledger: shipped 2026-08-09, at reduced scope** — see "Points ledger" in
-`architecture.md` for the actual shape. `hop_points_ledger`, `api/hop/rewards.ts` (`GET` own
-ledger+balance, `POST ?action=award` staff-only) are real; the schema/API design below matches
-what shipped almost exactly, **except no `?action=redeem`** — that stays unbuilt, along with every
-automatic earning rule (`checkin_streak`/`profile_complete`/`wearable_challenge` sources exist in
-the CHECK constraint but nothing writes them). The family/self-dates and social-feed pieces below
-are still 100% unbuilt — don't assume they shipped alongside the ledger just because they were
-planned together.
+---
 
-### Prerequisite consolidation (do this first — `main` has 0 headroom otherwise)
+## Still unbuilt — internal social feed + rewards redemption
 
-The rest of Phase 3 needs 2 more new files on `main` (`profile.ts`, `social.ts` — `rewards.ts` is
-already shipped and counted), but `main` sits at **12/12, fully maxed** after the points-ledger
-pass (see "Deployments" in `architecture.md`). Free 2 slots first:
+A lightweight internal social feed (posts/reactions/coworker status) and the rewards ledger's
+redemption flow. Both explicitly deferred by the user's own decision in the 2026-08-27 cycle, not
+forgotten — see "HOP Phase 2" in `architecture.md`.
 
-- **Merge `api/relief.ts` → `api/requests.ts`** (the unrelated top-level concierge-request/
-  relief-call product) as `?type=relief` on the existing handler. `main` only — `relief.ts` is
-  already flagged in `mvp-scope.md` as the standing best candidate to free a slot; it's an
-  orphaned feature (backend works, no UI links to it). Frees 1 → 11/12.
-- **Merge `api/hop/request-messages.ts` → `api/hop/requests.ts`** as `?action=messages` (GET/POST,
-  `requestId` param), same visibility rules as today (requester + assignee + any admin/concierge).
-  **Shared file — apply on both branches.** Frees 1 on each: `main` → 10/12, `staff-portal` →
-  10/12 (staff-portal is at 11/12 after the points-ledger pass, or wherever Phase 2's `facility.ts`
-  addition left it if that's shipped by then — either way this merge frees exactly 1).
+### Function budget — read this before starting either piece
 
-### Schema
+Both `main` and `staff-portal` are now **12/12, fully maxed** (see "Deployments" in
+`architecture.md`). Redemption needs no new file (extends the already-built `api/hop/rewards.ts`
+with `POST ?action=redeem`). The social feed needs one new file (`api/hop/social.ts`, `main`
+only — no family/social surface is planned for ConciergeHub). Free a slot on `main` first:
 
-Points ledger (`hop_points_ledger`) is already built — see "Points ledger" in `architecture.md`,
-don't re-create it. The rest of this schema (self/family dates, social feed) is still unbuilt:
+- **Merge `api/hop/ride-location.ts` → `api/hop/requests.ts`** as `?action=location-*` (GET/POST,
+  same visibility rules as today). This is the next available lever on `main`, already flagged in
+  `architecture.md`'s "Deployments" section. **Shared file — apply on both branches** if
+  `staff-portal` also needs a slot freed later (it doesn't yet, since nothing currently proposed
+  needs a new `staff-portal` file).
+
+### Schema (social feed only — everything else in the original design is already built)
 
 ```sql
--- Self dates directly on hop_users (1:1, cheap); family members/moments as 1:many.
-ALTER TABLE hop_users ADD COLUMN IF NOT EXISTS birthday DATE;
-ALTER TABLE hop_users ADD COLUMN IF NOT EXISTS anniversary DATE;
-
-CREATE TABLE IF NOT EXISTS hop_family_members (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
-  relationship TEXT NOT NULL DEFAULT '',
-  name TEXT NOT NULL,
-  birthday DATE,
-  special_moment_note TEXT NOT NULL DEFAULT '',
-  special_moment_date DATE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS hop_family_members_user_id_idx ON hop_family_members (user_id);
-
--- Posts, reactions, lightweight presence/status.
 CREATE TABLE IF NOT EXISTS hop_social_posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   author_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
@@ -191,83 +190,42 @@ CREATE TABLE IF NOT EXISTS hop_user_status (
 );
 ```
 
-`hop_points_ledger` is already built exactly as originally designed here (append-only,
-`source` open set, redemption modeled as a future negative-delta row) — see "Points ledger" in
-`architecture.md`, don't recreate it.
-
-**Rewards, without wearable data**: still true — the boss's example (steps → points) needs real
-wearable sync, which doesn't exist yet (Fitbit/Oura/Apple Health/Garmin are still UI-only stubs —
-see `mvp-scope.md`). The ledger shipped with non-wearable v1 earning (admin/concierge manual
-awards only, not the streak/profile-completion bonuses this section originally proposed — those
-are still unbuilt) so the reward *mechanism* works end-to-end today, and `source='wearable_challenge'`
-is already a valid ledger value waiting for a real trigger once wearable OAuth exists.
-
 ### API
 
-- **`main`**:
-  - **Add `api/hop/profile.ts`** — `?action=self` (GET/PATCH birthday/anniversary — natural home
-    for the Phase 1 `phone` field too, if `auth.ts?action=update-profile` outgrows itself);
-    `?action=family` (GET/POST/DELETE family members); `?action=feed` — **rule-based v1**: server
-    assembles upcoming birthdays/anniversaries (self + family, next 14 days) + time-of-day
-    suggestion rules (e.g. 11:30–13:30 local → "want HOP to arrange lunch?"). Calendar proximity
-    comes from the client separately calling the existing `integrations/google.ts?action=events`
-    and merging client-side — keeps this endpoint DB-only, no outbound Google call from here. A
-    future version could pass the same signals to `api/chat.ts`'s existing Anthropic client for a
-    generated suggestion instead of the static rule table — same input shape, swap the rule
-    engine for a prompt; don't build toward that now, just leave the seam obvious.
-  - **Add `api/hop/social.ts`** — `?action=posts` (GET feed, POST new post); `?action=react`
-    (POST/DELETE on `hop_social_reactions`); `?action=status` (GET/PATCH own `hop_user_status`,
-    GET all for a coworker directory view).
-  - `api/hop/rewards.ts` is **already built and counted** in the 12/12 baseline above — this phase
-    only needs to extend it with `POST ?action=redeem` (deducts points, creates a
-    `hop_service_requests` row, links `request_id`) and wire the streak/profile-completion earning
-    rules (a shared `maybeAwardStreak()`-style helper called from wherever the qualifying action
-    happens, e.g. `wellness.ts`'s mood `POST`) — no new file for either.
-  - Result: `main` at 10/12 (post-consolidation) + 2 new files (`profile.ts`, `social.ts`) =
-    **12/12, fully maxed** again. The next feature on `main` after that needs another
-    consolidation pass — `api/hop/ride-location.ts` folding into `api/hop/requests.ts` as
-    `?action=location-*` is the next available lever; flag that explicitly rather than silently
-    exceeding the cap.
-- **`staff-portal`**: `api/hop/rewards.ts` is already shared here too (identical content, per the
-  points-ledger pass) — extend it with `?action=redeem` the same way, shared edit both branches.
-  `profile.ts`/`social.ts` are `main`-only by design (no family/social surface planned for
-  ConciergeHub) — this phase adds 0 new files to `staff-portal`. Result stays at whatever
-  `staff-portal` is at after Phase 2 (if shipped) — no new headroom pressure from this phase.
+- **Redemption**: extend `api/hop/rewards.ts` (shared, both branches) with
+  `POST ?action=redeem` — deducts points, creates a `hop_service_requests` row, links
+  `request_id`. No new file. Also wire the still-unwritten `checkin_streak`/`profile_complete`
+  automatic earning rules (`profile_complete` is actually already wired as of 2026-08-27 — see
+  "HOP Phase 2" in `architecture.md` — only `checkin_streak`/`wearable_challenge` remain
+  genuinely unwired, and `wearable_challenge` has no real trigger until wearable OAuth exists).
+- **Social feed**: new `api/hop/social.ts` (`main` only) — `?action=posts` (GET feed, POST new
+  post); `?action=react` (POST/DELETE on `hop_social_reactions`); `?action=status` (GET/PATCH own
+  `hop_user_status`, GET all for a coworker directory view).
 
 ### Frontend
 
-- **`main`**:
-  - `HopDashboardPage.tsx` — new "roadmap" feed section pulling `profile.ts?action=feed` +
-    calendar events, rendered as a card list; dismissal state in `localStorage` (no server-side
-    dismissal table — avoids schema growth for a UX nicety).
-  - New `HopFamilyProfilePage.tsx` — self dates + family member CRUD.
-  - New `HopSocialPage.tsx` — post composer/feed/reactions, plus a status picker.
-  - `HopRewardsCard.tsx` (already built, mounted on `HopProfilePage.tsx` — not a standalone page,
-    see "Points ledger" in `architecture.md`) gains a "redeem toward a request" flow calling the
-    new `?action=redeem`, routing into the existing request-tracking UI after redeeming. Revisit
-    whether this still fits as a card or has earned a standalone `HopRewardsPage.tsx`/nav item once
-    redemption makes the page's content meaningfully bigger.
-- **`staff-portal`**: already has an "Award points" action on `HopAdminUsersPage.tsx` (shipped with
-  the points-ledger pass) — this phase's only addition would be the same on the concierge/admin
-  request view, if wanted.
+- `HopRewardsCard.tsx` (already built, on `HopProfilePage.tsx`) gains a "redeem toward a request"
+  flow calling the new `?action=redeem`, routing into the existing request-tracking UI after
+  redeeming. Revisit whether this still fits as a card or has earned a standalone
+  `HopRewardsPage.tsx`/nav item once redemption makes the page's content meaningfully bigger.
+  Staff-side: extend the existing "Award points" action (`HopAdminUsersPage.tsx`) to a
+  concierge-facing surface too, if wanted — deliberately not built in the 2026-08-27 cycle (see
+  "HOP Phase 2" in `architecture.md`'s Concierge section for why).
+- New `HopSocialPage.tsx` (`main` only) — post composer/feed/reactions, plus a status picker.
 
 ### Cross-branch sync notes
 
-`api/hop/requests.ts` (now also carrying the merged message-thread logic) and `api/hop/rewards.ts`
-are shared — edit once, sync both ways. `profile.ts`, `social.ts`, and their frontend pages are
-`main`-only, expected permanent divergence. `db/schema.sql` is one shared edit for all of the
-above.
+`api/hop/rewards.ts` is shared — edit once, sync both ways. `api/hop/social.ts` and its frontend
+page are `main`-only, expected permanent divergence. `db/schema.sql` is one shared edit.
 
 ---
 
-## Open decisions to confirm before building (recap)
+## Decisions confirmed by what actually shipped (2026-08-27)
 
-1. **Facility portal deployment**: `staff-portal`/ConciergeHub, not `main` — reasoned default,
-   not something the boss specified. Confirm before Phase 2.
-2. **Mood check-in taps: 4, not the boss's literal 3** — maps 1:1 to the heat map's 4 colors.
-   Reasoned default; flag if it needs to match the boss's exact wording instead.
-3. **Shift schedule stays minimal**: a per-user `default_shift_end_time` (already built in Phase
-   1) + `hop_duty_log`, not a real scheduling system. Revisit only if per-day variable schedules
-   are actually requested.
-4. **Department is a single nullable free-text column**, no taxonomy table — the heat map
-   degrades to "Unspecified" if unused.
+All four of this file's original open decisions were confirmed and built exactly as proposed:
+Facility portal deployed to `staff-portal`/ConciergeHub, not `main`; mood check-in as 4 taps, not
+3; shift schedule stayed minimal (`default_shift_end_time` + `hop_duty_log`, no real scheduling
+system); department stayed a single nullable free-text column. See "HOP Phase 2" in
+`architecture.md` for the shipped shape, and its "Known limitations" note for what these minimal
+choices mean going forward (no facilities/multi-tenancy model, the on-duty signal is HOP's own
+concierge duty log not hospital staff shifts, retention/satisfaction stays a proxy metric).

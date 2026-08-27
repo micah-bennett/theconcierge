@@ -13,10 +13,11 @@ function actionFromUrl(request: Request): string {
   return new URL(request.url).searchParams.get('action') || ''
 }
 
-// Still lists/manages 'concierge' rows only — a member account created via handleCreate below
-// shows up on the existing Users tab (api/hop/admin/users.ts) instead, since it's the same
-// hop_users table and that tab already lists/toggles every 'user' row. Keeping this scoped avoids
-// two places managing the same accounts.
+// Lists/manages 'concierge' AND 'facility' rows — both are staff-created-only roles with no
+// self-serve signup, shown together on the Team page. A member account (role='user') created via
+// handleCreate below shows up on the existing Users tab (api/hop/admin/users.ts) instead, since
+// it's the same hop_users table and that tab already lists/toggles every 'user' row. Keeping
+// member accounts off this list avoids two places managing the same accounts.
 async function handleList(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
@@ -26,20 +27,27 @@ async function handleList(request: Request): Promise<Response> {
 
   const rows = await sql`
     SELECT
-      u.id, u.email, u.hop_number, u.first_name, u.last_name, u.status, u.created_at,
+      u.id, u.email, u.hop_number, u.first_name, u.last_name, u.status, u.created_at, u.role,
+      u.default_shift_end_time, u.department,
       p.headline,
       COUNT(r.id) FILTER (WHERE r.status NOT IN ('completed', 'cancelled')) AS open_assigned
     FROM hop_users u
     LEFT JOIN hop_concierge_profiles p ON p.user_id = u.id
     LEFT JOIN hop_service_requests r ON r.handled_by = u.id
-    WHERE u.role = 'concierge'
+    WHERE u.role IN ('concierge', 'facility')
     GROUP BY u.id, p.headline
     ORDER BY u.created_at DESC
   `
   return json({ concierges: rows })
 }
 
-type CreatePayload = { email: string; firstName: string; lastName: string; role: 'user' | 'concierge' }
+type CreatePayload = {
+  email: string
+  firstName: string
+  lastName: string
+  role: 'user' | 'concierge' | 'facility'
+  defaultShiftEndTime: string | null
+}
 
 function validateCreate(value: unknown): CreatePayload {
   if (!value || typeof value !== 'object') throw new Error('Invalid request body')
@@ -48,22 +56,28 @@ function validateCreate(value: unknown): CreatePayload {
   const firstName = typeof source.firstName === 'string' ? source.firstName.trim() : ''
   const lastName = typeof source.lastName === 'string' ? source.lastName.trim() : ''
   // Default to 'concierge' for backward compatibility with any caller that doesn't send role yet.
-  const role = source.role === 'user' ? 'user' : 'concierge'
+  const role = source.role === 'user' ? 'user' : source.role === 'facility' ? 'facility' : 'concierge'
+  const defaultShiftEndTime = source.defaultShiftEndTime
+  const shiftEndTimeStr =
+    typeof defaultShiftEndTime === 'string' && /^\d{2}:\d{2}$/.test(defaultShiftEndTime)
+      ? defaultShiftEndTime
+      : null
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address')
   if (!firstName || firstName.length > 80) throw new Error('Enter a first name')
   if (!lastName || lastName.length > 80) throw new Error('Enter a last name')
 
-  return { email, firstName, lastName, role }
+  return { email, firstName, lastName, role, defaultShiftEndTime: shiftEndTimeStr }
 }
 
-// Admin-driven, in-app account creation for both concierge and member (role='user') accounts —
-// there is no self-serve concierge signup, and this is now an additional path alongside the
-// self-serve member signup on main (both stay live). Generates a random temporary password so the
-// account works immediately, and separately emails a password-reset-style invite link plus the
-// account's permanent HOP number. If RESEND_API_KEY isn't configured (or sending fails), the temp
-// password is returned in the response so the admin can hand it over directly — see
-// docs/vercel-setup.md before assuming email is the only path.
+// Admin-driven, in-app account creation for concierge, member (role='user'), and facility
+// accounts — there is no self-serve signup for any staff role, and the member path is an
+// additional option alongside the self-serve member signup on main (both stay live). Generates a
+// random temporary password so the account works immediately, and separately emails a
+// password-reset-style invite link plus the account's permanent HOP number. If RESEND_API_KEY
+// isn't configured (or sending fails), the temp password is returned in the response so the
+// admin can hand it over directly — see docs/vercel-setup.md before assuming email is the only
+// path.
 async function handleCreate(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
@@ -81,8 +95,8 @@ async function handleCreate(request: Request): Promise<Response> {
     const passwordHash = await hashPassword(temporaryPassword)
 
     const rows = await sql`
-      INSERT INTO hop_users (email, password_hash, first_name, last_name, role)
-      VALUES (${data.email}, ${passwordHash}, ${data.firstName}, ${data.lastName}, ${data.role})
+      INSERT INTO hop_users (email, password_hash, first_name, last_name, role, default_shift_end_time)
+      VALUES (${data.email}, ${passwordHash}, ${data.firstName}, ${data.lastName}, ${data.role}, ${data.defaultShiftEndTime})
       RETURNING id, email, hop_number, first_name, last_name, status, created_at, role
     `
     const row = rows[0] as {
@@ -134,17 +148,32 @@ async function handleUpdateStatus(request: Request): Promise<Response> {
   if (isResponse(admin)) return admin
 
   try {
-    const body = (await request.json()) as { id?: unknown; status?: unknown }
+    const body = (await request.json()) as {
+      id?: unknown
+      status?: unknown
+      defaultShiftEndTime?: unknown
+      department?: unknown
+    }
     const id = body.id
     const status = body.status
     if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid concierge id')
-    if (status !== 'active' && status !== 'disabled') throw new Error('Choose a valid status')
+    if (status !== undefined && status !== 'active' && status !== 'disabled') throw new Error('Choose a valid status')
+
+    const defaultShiftEndTime =
+      typeof body.defaultShiftEndTime === 'string' && /^\d{2}:\d{2}$/.test(body.defaultShiftEndTime)
+        ? body.defaultShiftEndTime
+        : null
+    const department = typeof body.department === 'string' ? body.department.trim().slice(0, 120) : null
 
     const rows = await sql`
       UPDATE hop_users
-      SET status = ${status}, updated_at = NOW()
-      WHERE id = ${id} AND role = 'concierge'
-      RETURNING id, email, first_name, last_name, status, created_at
+      SET
+        status = COALESCE(${status ?? null}, status),
+        default_shift_end_time = COALESCE(${defaultShiftEndTime}, default_shift_end_time),
+        department = COALESCE(${department}, department),
+        updated_at = NOW()
+      WHERE id = ${id} AND role IN ('concierge', 'facility')
+      RETURNING id, email, first_name, last_name, status, created_at, role
     `
     if (rows.length === 0) return json({ error: 'Concierge not found' }, 404)
 

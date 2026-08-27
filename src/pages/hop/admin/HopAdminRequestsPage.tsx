@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  hopAdminListOnDuty,
   hopAdminListRequests,
   hopAdminListStaff,
   hopAdminUpdateRequest,
   hopStopRideLocationSharing,
   hopUpdateRideLocation,
   type HopAdminRequest,
+  type HopOnDutyStaff,
   type HopStaffMember,
 } from '../../../hop/api'
 import { useHopAuth } from '../../../hop/useHopAuth'
@@ -135,6 +137,7 @@ export function HopAdminRequestsPage() {
   const { user } = useHopAuth()
   const [requests, setRequests] = useState<HopAdminRequest[]>([])
   const [staff, setStaff] = useState<HopStaffMember[]>([])
+  const [onDuty, setOnDuty] = useState<HopOnDutyStaff[]>([])
   const [loading, setLoading] = useState(true)
   const [bucket, setBucket] = useState<Bucket>('new')
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -143,14 +146,16 @@ export function HopAdminRequestsPage() {
 
   function load() {
     setLoading(true)
-    Promise.all([hopAdminListRequests(), hopAdminListStaff()])
-      .then(([requestsResult, staffResult]) => {
+    Promise.all([hopAdminListRequests(), hopAdminListStaff(), hopAdminListOnDuty()])
+      .then(([requestsResult, staffResult, onDutyResult]) => {
         setRequests(requestsResult.requests)
         setStaff(staffResult.staff)
+        setOnDuty(onDutyResult.onDuty)
       })
       .catch(() => {
         setRequests([])
         setStaff([])
+        setOnDuty([])
       })
       .finally(() => setLoading(false))
   }
@@ -164,6 +169,33 @@ export function HopAdminRequestsPage() {
   }, [requests])
 
   const visibleRequests = requests.filter((req) => bucketFor(req) === bucket)
+
+  // Auto-match suggestion (client-side convenience only — see docs/hop/architecture.md, "Admin:
+  // on-duty auto-match suggestion"). Suggests the on-duty concierge with the fewest currently
+  // open (non-completed/cancelled) assigned requests. The admin still explicitly clicks to
+  // accept it or picks someone else from the existing dropdown — handleAssign/the dropdown's own
+  // behavior is untouched.
+  const suggestedAssignee = useMemo(() => {
+    if (onDuty.length === 0) return null
+    const openCountByStaffId = new Map<string, number>()
+    for (const staffMember of onDuty) openCountByStaffId.set(staffMember.id, 0)
+    for (const req of requests) {
+      if (!req.handled_by || req.status === 'completed' || req.status === 'cancelled') continue
+      if (openCountByStaffId.has(req.handled_by)) {
+        openCountByStaffId.set(req.handled_by, (openCountByStaffId.get(req.handled_by) || 0) + 1)
+      }
+    }
+    let best: HopOnDutyStaff | null = null
+    let bestCount = Infinity
+    for (const staffMember of onDuty) {
+      const count = openCountByStaffId.get(staffMember.id) || 0
+      if (count < bestCount) {
+        best = staffMember
+        bestCount = count
+      }
+    }
+    return best
+  }, [onDuty, requests])
 
   async function handleAssign(id: string, staffId: string) {
     setBusyId(id)
@@ -273,6 +305,16 @@ export function HopAdminRequestsPage() {
                     </option>
                   ))}
                 </select>
+                {!req.handled_by && suggestedAssignee && (
+                  <button
+                    type="button"
+                    className="hop-btn-ghost hop-suggested-assignee"
+                    disabled={busyId === req.id}
+                    onClick={() => handleAssign(req.id, suggestedAssignee.id)}
+                  >
+                    🎯 Suggested: {suggestedAssignee.first_name} {suggestedAssignee.last_name} (on duty)
+                  </button>
+                )}
               </label>
 
               <label className="hop-field">

@@ -21,6 +21,8 @@ export function HopAdminLoginPage() {
         navigate('/hop/admin', { replace: true })
       } else if (user.role === 'concierge') {
         navigate('/hop/concierge', { replace: true })
+      } else if (user.role === 'facility') {
+        navigate('/hop/facility', { replace: true })
       } else {
         setError('This account is not a staff account.')
       }

@@ -8,20 +8,30 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-// Generalized from the original concierge-only invite template (2026-08-09) — an admin can now
-// create either a concierge or a plain member ('user') account from ConciergeHub, and both need
-// the same "set your password" invite email, just with role-aware copy and a surfaced HOP number.
+// Generalized from the original concierge-only invite template (2026-08-09), then widened again
+// (2026-08-27) to cover 'facility' accounts too — an admin can now create a concierge, a plain
+// member ('user'), or a Facility Admin account from ConciergeHub, and all three need the same
+// "set your password" invite email, just with role-aware copy and a surfaced HOP number.
 export function hopAccountInviteTemplate(
-  role: 'user' | 'concierge',
+  role: 'user' | 'concierge' | 'facility',
   firstName: string,
   hopNumber: string,
   resetUrl: string,
 ): string {
-  const isConcierge = role === 'concierge'
-  const eyebrow = isConcierge ? 'Concierge Account Created' : 'Member Account Created'
-  const bodyCopy = isConcierge
-    ? "You've been added as a concierge on HOP ConciergeHub. Set your password to get access to your assigned requests, calendar, and profile."
-    : "You've been added to HOP. Set your password to get access to your account, request a concierge, and track everything in one place."
+  const eyebrows: Record<typeof role, string> = {
+    concierge: 'Concierge Account Created',
+    facility: 'Facility Admin Account Created',
+    user: 'Member Account Created',
+  }
+  const bodyCopies: Record<typeof role, string> = {
+    concierge:
+      "You've been added as a concierge on HOP ConciergeHub. Set your password to get access to your assigned requests, calendar, and profile.",
+    facility:
+      "You've been added to HOP as a Facility Admin. Set your password to get access to your facility's dashboard — request trends, wellness heat map, and staff retention impact.",
+    user: "You've been added to HOP. Set your password to get access to your account, request a concierge, and track everything in one place.",
+  }
+  const eyebrow = eyebrows[role]
+  const bodyCopy = bodyCopies[role]
 
   return `<!DOCTYPE html>
 <html lang="en">

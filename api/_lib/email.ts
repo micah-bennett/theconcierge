@@ -109,7 +109,7 @@ export async function sendHopPasswordResetEmail(email: string, resetUrl: string)
 
 export async function sendHopAccountInviteEmail(
   email: string,
-  role: 'user' | 'concierge',
+  role: 'user' | 'concierge' | 'facility',
   firstName: string,
   hopNumber: string,
   resetUrl: string,
@@ -117,12 +117,18 @@ export async function sendHopAccountInviteEmail(
   const apiKey = process.env.RESEND_API_KEY?.trim()
   if (!apiKey) throw new Error('RESEND_API_KEY is not configured')
 
+  const subjects: Record<typeof role, string> = {
+    concierge: "You've been added as a HOP concierge",
+    facility: "You've been added to HOP as a Facility Admin",
+    user: "You've been added to HOP",
+  }
+
   const resend = new Resend(apiKey)
   const { error } = await resend.emails.send({
     from: FROM,
     to: email,
     replyTo: REPLY_TO,
-    subject: role === 'concierge' ? "You've been added as a HOP concierge" : "You've been added to HOP",
+    subject: subjects[role],
     html: hopAccountInviteTemplate(role, firstName, hopNumber, resetUrl),
   })
   if (error) throw new Error(`HOP account invite email failed: ${error.message}`)

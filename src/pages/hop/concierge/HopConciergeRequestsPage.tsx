@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   hopAcceptRequest,
+  hopAddMemberNote,
   hopAdminUpdateRequest,
   hopConciergeMyRequests,
+  hopListMemberNotes,
   hopStopRideLocationSharing,
   hopUpdateRideLocation,
   type HopAdminRequest,
+  type HopMemberNote,
 } from '../../../hop/api'
 import { RequestMessageThread } from '../../../hop/requestMessages/RequestMessageThread'
 import { ContactMenu } from '../../../hop/ContactMenu'
@@ -84,6 +87,84 @@ function RideLocationSharing({ requestId }: { requestId: string }) {
       {error && (
         <div className="hop-auth-card__error" role="alert">
           {error}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Staff-only, cross-request notes about this member — separate from the per-request dispatch
+// note above. See hop_member_notes in db/schema.sql and docs/hop/architecture.md.
+function MemberNotesPanel({ memberId, memberFirstName }: { memberId: string; memberFirstName: string }) {
+  const [open, setOpen] = useState(false)
+  const [notes, setNotes] = useState<HopMemberNote[]>([])
+  const [loading, setLoading] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [adding, setAdding] = useState(false)
+
+  function toggle() {
+    const opening = !open
+    setOpen(opening)
+    if (opening) {
+      setLoading(true)
+      hopListMemberNotes(memberId)
+        .then((result) => setNotes(result.notes))
+        .catch(() => setNotes([]))
+        .finally(() => setLoading(false))
+    }
+  }
+
+  async function handleAdd() {
+    const body = draft.trim()
+    if (!body) return
+    setAdding(true)
+    try {
+      await hopAddMemberNote(memberId, body)
+      setDraft('')
+      const result = await hopListMemberNotes(memberId)
+      setNotes(result.notes)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  return (
+    <div style={{ marginTop: '0.5rem' }}>
+      <button type="button" className="hop-btn-secondary" onClick={toggle}>
+        {open ? 'Hide member notes' : '📝 Member notes'}
+      </button>
+      {open && (
+        <div className="hop-card" style={{ marginTop: '0.5rem' }}>
+          <p className="hop-muted" style={{ margin: 0 }}>
+            Staff-only — {memberFirstName} never sees these notes.
+          </p>
+          {loading && <div className="hop-skeleton-bar" />}
+          {!loading && notes.length === 0 && <p className="hop-muted">No notes yet.</p>}
+          {!loading && notes.length > 0 && (
+            <ul className="hop-history-list">
+              {notes.map((note) => (
+                <li key={note.id} className="hop-history-list__item">
+                  <span className="hop-history-list__type">{note.body}</span>
+                  <span className="hop-muted">
+                    {note.author_first_name} {note.author_last_name} — {new Date(note.created_at).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              type="text"
+              maxLength={1000}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Add a note about this member…"
+              style={{ flex: 1 }}
+            />
+            <button type="button" className="hop-btn-secondary" disabled={adding || !draft.trim()} onClick={handleAdd}>
+              {adding ? 'Adding…' : 'Add note'}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -330,6 +411,8 @@ export function HopConciergeRequestsPage() {
             )}
 
             {req.service_type === 'ride' && req.status === 'en_route' && <RideLocationSharing requestId={req.id} />}
+
+            <MemberNotesPanel memberId={req.user_id} memberFirstName={req.first_name} />
 
             {openHistoryId === req.id && <RequestMessageThread requestId={req.id} />}
           </section>

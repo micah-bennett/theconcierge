@@ -753,6 +753,12 @@
   gap: 1rem;
 }
 
+.hop-divider {
+  border: none;
+  border-top: 1px solid var(--hop-border);
+  margin: 0.25rem 0;
+}
+
 /* Inline award-points form, opened under a Users-table row (HopAdminUsersPage.tsx) */
 .hop-award-form {
   display: flex;
@@ -1538,6 +1544,247 @@
 
 .hop-empty-state__icon {
   font-size: 1.75rem;
+}
+
+/* Nag banner — a recurring (component-state-only dismiss, not localStorage) reminder shown at
+   the top of a page when a daily action is missing. See DailyNagBanner.tsx. */
+.hop-nag-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1.25rem;
+  border-radius: var(--hop-radius-md);
+  border: 1px solid rgba(245, 185, 66, 0.35);
+  background: linear-gradient(120deg, rgba(245, 185, 66, 0.14), rgba(245, 185, 66, 0.04));
+}
+
+.hop-nag-banner__icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.hop-nag-banner__message {
+  flex: 1 1 240px;
+  color: var(--hop-text);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.hop-nag-banner__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Hand-rolled trend bar chart (HopWellnessTrendsCard.tsx) — no charting library. */
+.hop-trend-chart__title {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--hop-muted);
+  font-weight: 700;
+}
+
+.hop-trend-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  height: 140px;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.hop-trend-chart__col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 1 1 0;
+  height: 100%;
+}
+
+.hop-trend-chart__bar-track {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 28px;
+  display: flex;
+  align-items: flex-end;
+  border-radius: var(--hop-radius-sm) var(--hop-radius-sm) 0 0;
+  background: var(--hop-overlay);
+}
+
+.hop-trend-chart__bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: var(--hop-radius-sm) var(--hop-radius-sm) 0 0;
+  background: linear-gradient(180deg, var(--hop-indigo), var(--hop-cyan));
+  transition: height 0.3s ease;
+}
+
+.hop-trend-chart__value {
+  font-size: 0.7rem;
+  color: var(--hop-text);
+  font-weight: 600;
+}
+
+.hop-trend-chart__label {
+  font-size: 0.68rem;
+  color: var(--hop-muted);
+}
+
+.hop-mood-picker {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.hop-mood-picker__btn {
+  background: var(--hop-overlay);
+  border: 1px solid var(--hop-border);
+  border-radius: var(--hop-radius-sm);
+  font-size: 1.3rem;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.hop-mood-picker__btn:hover {
+  background: var(--hop-overlay-strong);
+}
+
+.hop-mood-picker__btn:active {
+  transform: scale(0.94);
+}
+
+.hop-mood-picker__btn--active {
+  border-color: var(--hop-indigo);
+  background: rgba(109, 110, 245, 0.16);
+}
+
+/* HOP AI assistant — floating bottom-right widget (HopAiAssistant.tsx), member app only. */
+.hop-ai-widget {
+  position: fixed;
+  z-index: 90;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.hop-ai-widget__trigger {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.5rem;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
+  box-shadow: var(--hop-shadow-glow);
+  transition: transform 0.15s ease;
+}
+
+.hop-ai-widget__trigger:hover {
+  transform: scale(1.05);
+}
+
+.hop-ai-widget__trigger:active {
+  transform: scale(0.95);
+}
+
+.hop-ai-widget__panel {
+  width: min(340px, calc(100vw - 3rem));
+  max-height: min(480px, calc(100vh - 8rem));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: var(--hop-radius-lg);
+  border: 1px solid var(--hop-border);
+  background: var(--hop-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--hop-shadow-card);
+  animation: hop-fade-up 0.2s ease-out;
+}
+
+.hop-ai-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  color: var(--hop-text);
+}
+
+.hop-ai-widget__close {
+  background: none;
+  border: none;
+  color: var(--hop-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.3rem;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.hop-ai-widget__disclaimer {
+  font-size: 0.75rem;
+}
+
+.hop-ai-widget__suggestion {
+  padding: 0.75rem;
+  border-radius: var(--hop-radius-sm);
+  border: 1px solid var(--hop-border);
+  background: var(--hop-overlay);
+}
+
+.hop-ai-widget__question {
+  margin: 0 0 0.6rem;
+  font-size: 0.88rem;
+  color: var(--hop-text);
+}
+
+.hop-ai-widget__options {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hop-ai-widget__chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hop-ai-widget__chip {
+  padding: 0.4rem 0.8rem;
+  min-height: 36px;
+  border-radius: var(--hop-radius-pill);
+  border: 1px solid var(--hop-border);
+  background: var(--hop-overlay);
+  color: var(--hop-text);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.16s ease, transform 0.1s ease;
+}
+
+.hop-ai-widget__chip:hover {
+  background: var(--hop-overlay-strong);
+}
+
+.hop-ai-widget__chip:active {
+  transform: scale(0.95);
+}
+
+/* Auto-match suggestion (HopAdminRequestsPage.tsx, staff-portal) — a one-click accept next to
+   the existing manual assignment dropdown, not a replacement for it. */
+.hop-suggested-assignee {
+  align-self: flex-start;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.6rem;
 }
 
 /* Status-change pulse — a one-shot highlight when a status badge's value changes (paired with

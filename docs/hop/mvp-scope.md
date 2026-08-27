@@ -59,6 +59,39 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   is active-browser sharing, not background tracking — see "Live ride location" in
   `architecture.md` for exactly what that means and its real limitations.
 
+## 2026-08-27: HOP Phase 2 — Facility portal, member engagement, staff tools
+
+A large cycle from a detailed feature request covering all four HOP access levels. See "HOP
+Phase 2" in `architecture.md` for the full technical shape of every item below.
+
+- **Member**: special dates + family profile (birthday/anniversary, family member CRUD) on the
+  Profile page; certifications with a 30-day renewal nag; four fixed daily health tasks worth
+  points each (walk, stand, read an article, a rotating daily question); self-reported wellness
+  trends (steps/sleep/mood) with a daily check-in nag; a one-tap anonymized mood check-in that
+  feeds the Facility portal's morale/heatmap views; a floating HOP AI assistant widget (bottom-
+  right, tap-only suggestions from upcoming family dates/certifications, no free text, no real
+  push notifications — an honest in-app-only limitation stated in the widget itself).
+- **HOP Admin (ConciergeHub)**: an on-duty auto-match suggestion on the dispatch page (one-click
+  accept, manual reassignment untouched); admin-created member accounts confirmed already live
+  from before this cycle.
+- **HOP Concierge**: peer-to-peer staff messaging (new "Messages" nav item, first messaging
+  surface for concierges) with admins and fellow concierges; staff-only, cross-request notes
+  about a member, visible to admin and concierge, never the member.
+- **Facility Admin** (net-new role + portal, ConciergeHub only): Overview (on-duty count,
+  overtime, today's aggregate morale), Heat map (mood by hour × department), Request stats
+  (daily/weekly/monthly/yearly volume), Retention (manually-logged cost-savings entries, not
+  computed), and a "My Requests" tab so a Facility Admin can also use their own regular member
+  identity without a second login. Everything facility-facing is aggregate/de-identified — no
+  member is ever named alongside mood/heatmap/retention data.
+- **Explicitly deferred this cycle** (stated, not silently dropped): real wearable OAuth
+  integration (self-report only); real push notifications (in-app nag pattern only); automatic
+  retention/cost-savings computation (manual entries only); a second linked member account +
+  switcher for Facility Admins (single account, "My Requests" tab instead); a
+  facilities/multi-tenancy model (every Facility view is site-wide, not scoped to one client).
+- Function budget: `main` and `staff-portal` both landed at **12/12, fully maxed** — see
+  "Deployments" in `architecture.md`. `api/relief.ts` was folded into `api/requests.ts` as
+  `?type=relief` to free `main`'s last slot for `api/hop/profile.ts`.
+
 ## 2026-08-09: HOP numbers, admin-invited accounts, points ledger, UI/UX pass
 
 From a push to make HOP "ready for real users" — sign-in/request-a-concierge for members, a
@@ -183,11 +216,19 @@ specific from a design reference, it needs its own explicit spec first.
   exist for these, but nothing writes them yet. See "Points ledger" in `architecture.md`.
 - Any real fulfillment/dispatch logic behind a service request — requests are just recorded
   and status-tracked, not routed to an actual provider network.
-- The "VBC Dashboard" mentioned on the marketing page (hospital-admin-facing analytics) — the
-  Facility portal design in `docs/hop/roadmap.md` (Phase 2) is the closest concrete plan for this.
-- "HOP AI" as an actual assistant/service (it's currently just a marketing chip) — the dashboard
-  suggestion feed in `docs/hop/roadmap.md` (Phase 3) names the seam where a real AI call could
-  eventually replace the rule-based v1, but that's not built either.
+- Real wearable OAuth data behind the wellness trends chart and mood check-in (both are
+  self-reported this cycle — see "HOP Phase 2" above); a facilities/multi-tenancy model for the
+  Facility portal (every view is currently site-wide, not scoped to one hospital client); real
+  push notifications (every "reminder" in the app is an in-app nag, not a push notification);
+  automatic retention/cost-savings computation (the Facility portal's retention entries are
+  manually logged by staff, never derived).
+- The "VBC Dashboard" mentioned on the marketing page (hospital-admin-facing analytics) — built as
+  of 2026-08-27's Facility portal (`/hop/facility/*`, staff-portal only). See "Facility portal" in
+  `architecture.md`.
+- "HOP AI" as an actual assistant (it was previously just a marketing chip) — built as of
+  2026-08-27 as a rule-based, tap-only suggestion widget (`HopAiAssistant.tsx`), **not** a real
+  LLM call. `api/hop/profile.ts?action=feed`'s DB-only rule table is the seam a future version
+  could hand to `api/chat.ts`'s existing Anthropic client instead — not built now.
 
 Before building any of the above, re-check this file and `architecture.md` — don't assume a
 stubbed integration is further along than described here.
@@ -215,10 +256,13 @@ too). Result:
   that's the public `/hop` marketing page's job (`src/pages/HopPage.tsx`), not the authenticated
   dashboard — see "Where HOP's app lives in routing" in `architecture.md`.
 - **Orphaned (backend kept, no frontend)**: the "Book a Relief Call" facility-lead-capture feature
-  (`api/relief.ts`, `relief_call_requests` table, `sendReliefEmail`) has no page linking to it
-  anymore — its sidebar was part of the reverted homepage. It still works end-to-end if called
-  directly; it just isn't reachable from any UI right now. If asked to add a facility-contact
-  flow, check here first before rebuilding it — a natural home would be the Contact page.
+  (`relief_call_requests` table, `sendReliefEmail`) has no page linking to it anymore — its
+  sidebar was part of the reverted homepage. It still works end-to-end if called directly (now
+  via `POST /api/requests?type=relief` — merged from the former standalone `api/relief.ts` into
+  `api/requests.ts` on 2026-08-27 as a function-budget consolidation, freeing a slot for
+  `api/hop/profile.ts`; see `docs/hop/architecture.md`); it just isn't reachable from any UI right
+  now. If asked to add a facility-contact flow, check here first before rebuilding it — a natural
+  home would be the Contact page.
 - **Reverted**: the `path` (`'individual' | 'facility'`) field that was added to
   `concierge_requests`/`api/requests.ts`/`api/_lib/requestValidation.ts` for the redesign's toggle
   was removed from the app layer. The `path` column itself is still in the DB (harmless, unused,

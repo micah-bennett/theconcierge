@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { hopConciergeGetDutyStatus, hopConciergeSetDutyStatus } from './api'
+import { hopConciergeGetDutyStatus, hopConciergeSetDutyStatus, hopListStaffThreads } from './api'
 import { OnboardingTour, type TourStep } from './OnboardingTour'
 import { useTourVisibility } from './useTourVisibility'
 import { useHopAuth } from './useHopAuth'
@@ -48,6 +48,7 @@ const NAV_ITEMS = [
   { to: '/hop/concierge', label: 'Overview', end: true, icon: '📊' },
   { to: '/hop/concierge/requests', label: 'My requests', end: false, icon: '📋' },
   { to: '/hop/concierge/calendar', label: 'Calendar', end: false, icon: '📅' },
+  { to: '/hop/concierge/messages', label: 'Messages', end: false, icon: '💬' },
   { to: '/hop/concierge/profile', label: 'Profile', end: false, icon: '👤' },
 ] as const
 
@@ -84,6 +85,13 @@ export function HopConciergeLayout() {
   const { theme, toggleTheme } = useHopTheme()
   const navigate = useNavigate()
   const tour = useTourVisibility('hop-tour-concierge')
+  const [unreadStaffCount, setUnreadStaffCount] = useState(0)
+
+  useEffect(() => {
+    hopListStaffThreads()
+      .then((result) => setUnreadStaffCount(result.threads.reduce((sum, t) => sum + t.unread_count, 0)))
+      .catch(() => setUnreadStaffCount(0))
+  }, [])
 
   async function handleLogout() {
     await logout()
@@ -110,6 +118,9 @@ export function HopConciergeLayout() {
                   {item.icon}
                 </span>
                 {item.label}
+                {item.to === '/hop/concierge/messages' && unreadStaffCount > 0 && (
+                  <span className="hop-unread-badge">{unreadStaffCount}</span>
+                )}
               </NavLink>
             ))}
           </nav>

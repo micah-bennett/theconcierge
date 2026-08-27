@@ -20,6 +20,21 @@ HOP is actually two separate live websites sharing the same database:
 They share one database, so a person only has one account either way — but the two websites are
 deployed separately and don't update at the same time automatically (see "Deploying" below).
 
+## What's new as of the 2026-08-27 update, in plain terms
+
+- **Members** now have a fuller Profile page: they can add their own and their family's
+  birthdays/anniversaries (so HOP can do something special for those dates), track
+  certifications with a renewal reminder, do a few small daily wellness tasks for points, and
+  log their own steps/sleep/mood if they want to see a trend chart. A small assistant icon in the
+  bottom-right corner of the app suggests things like "want HOP to arrange a birthday cake?" —
+  answered entirely by tapping a button, never typing. **This is not a text message or push
+  notification** — it only shows up while the member has the app open.
+- **Your concierge team** can now message each other and message any admin directly (not just
+  through a specific request), and can leave private notes about a member that only staff ever
+  see.
+- **A new Facility Admin account type** exists for hospital-side stakeholders — see "3. Creating
+  accounts" below for what it's for and how to create one.
+
 ## 1. Environment variables (settings Vercel needs to run the app)
 
 Environment variables are configuration values — API keys, secrets, phone numbers — that live in
@@ -75,12 +90,19 @@ npm run hop:backfill-numbers
   ```
   It'll prompt you for an email, password, first/last name.
 
-- **Concierge or member accounts, created by you** — created in-app, not the command line. Log in
-  as an admin on **theconcierge-staff.vercel.app**, go to the **Team** tab, choose "Concierge" or
-  "Member" as the account type, and add it. If `RESEND_API_KEY` is set up, they get an emailed
-  invite with a link to set their own password. If not, you'll see a temporary password on screen
-  to hand them directly. A member account created this way shows up on the **Users** tab, not
-  Team (Team only lists concierges) — that's normal, not a bug.
+- **Concierge, member, or Facility Admin accounts, created by you** — created in-app, not the
+  command line. Log in as an admin on **theconcierge-staff.vercel.app**, go to the **Team** tab,
+  choose "Concierge," "Member," or "Facility Admin" as the account type, and add it. If
+  `RESEND_API_KEY` is set up, they get an emailed invite with a link to set their own password.
+  If not, you'll see a temporary password on screen to hand them directly. A member account
+  created this way shows up on the **Users** tab, not Team (Team only lists concierges and
+  Facility Admins) — that's normal, not a bug.
+- **What a Facility Admin account is for**: it's for someone on the hospital/client side (not
+  your own staff) who wants to see the value HOP is creating — how many requests are being made,
+  a wellness/morale heat map, and a place to log cost-savings estimates. They sign in at
+  **theconcierge-staff.vercel.app/hop/admin/login** just like your own staff, and land on their
+  own dashboard automatically. They also have a "My Requests" tab so they can use HOP for
+  themselves without needing a second account.
 
 - **HOP member accounts, self-signup** — your hospital staff can also sign themselves up at
   **theconcierge.life/hop/signup**, with no action needed from you. Both paths work side by side —
@@ -115,11 +137,11 @@ If concierges or admins report they're not seeing a new feature that was suppose
 ## 5. Before asking for a new feature: the 12-function limit
 
 This app runs on Vercel's free "Hobby" plan, which caps each of the two projects at **12 backend
-functions** (roughly: 12 distinct "things the server can do"). **theconcierge.life (`main`) is
-now completely full — 12 of 12 — as of the 2026-08-09 update.** ConciergeHub still has one slot
-left. This means the *next* feature request on the main site will need some existing code
+functions** (roughly: 12 distinct "things the server can do"). **As of the 2026-08-27 update,
+both apps are completely full — 12 of 12 on theconcierge.life, and 12 of 12 on ConciergeHub.**
+This means *any* future feature request on either site will need some existing code
 combined/simplified first to make room, before the new thing can be added — that's expected, not
-a sign something's broken, but it does mean that next request may take a bit longer.
+a sign something's broken, but it does mean the next request on either side may take a bit longer.
 
 You don't need to track the exact number — just know that:
 

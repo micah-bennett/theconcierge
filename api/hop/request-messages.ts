@@ -17,7 +17,7 @@ async function loadRequest(sql: Sql, requestId: string): Promise<RequestRow | un
 // (admin or concierge), and any admin — mirroring the access rule already used for ride
 // location, but returning 403 rather than an empty result, since a conversation's existence
 // isn't the same probing concern as live GPS coordinates.
-function canAccess(user: { id: string; role: 'user' | 'admin' | 'concierge' }, target: RequestRow): boolean {
+function canAccess(user: { id: string; role: 'user' | 'admin' | 'concierge' | 'facility' }, target: RequestRow): boolean {
   if (user.role === 'admin') return true
   if (target.user_id === user.id) return true
   if (target.handled_by === user.id) return true

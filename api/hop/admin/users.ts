@@ -1,25 +1,30 @@
 import { dbUnavailable, getSql } from '../../_lib/hopDb.js'
-import { isResponse, json, requireAdmin } from '../../_lib/hopAuth.js'
+import { isResponse, json, requireAdmin, requireStaff } from '../../_lib/hopAuth.js'
 
 export async function GET(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
 
-  const admin = await requireAdmin(sql, request)
-  if (isResponse(admin)) return admin
-
   // ?scope=staff is a short, read-only list of eligible assignees for the dispatch UI
   // (HopAdminRequestsPage.tsx) — deliberately never includes role='user' accounts. Includes
   // 'concierge' alongside 'admin' now that concierges can be assigned to requests too.
+  // requireStaff (not requireAdmin), widened 2026-08-27: concierges browsing this same
+  // directory to start a staff-to-staff message thread (HopConciergeMessagesPage.tsx) need it
+  // too — a read-only, low-risk widening. Every other scope below stays admin-only.
   if (new URL(request.url).searchParams.get('scope') === 'staff') {
-    const staff = await sql`
+    const staff = await requireStaff(sql, request)
+    if (isResponse(staff)) return staff
+    const rows = await sql`
       SELECT id, first_name, last_name, email, role
       FROM hop_users
       WHERE role IN ('admin', 'concierge') AND status = 'active'
       ORDER BY first_name, last_name
     `
-    return json({ staff })
+    return json({ staff: rows })
   }
+
+  const admin = await requireAdmin(sql, request)
+  if (isResponse(admin)) return admin
 
   // ?scope=on-duty — concierges/admins currently on duty (an open hop_duty_log row), for the
   // admin dashboard's "working today" roster. Staff-portal only: the self-toggle that writes

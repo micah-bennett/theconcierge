@@ -5,7 +5,7 @@ export type HopUser = {
   firstName: string
   lastName: string
   phone: string
-  role: 'user' | 'admin' | 'concierge'
+  role: 'user' | 'admin' | 'concierge' | 'facility'
   status: 'active' | 'disabled'
 }
 
@@ -257,7 +257,7 @@ export type HopRequestMessage = {
   id: string
   sender_id: string
   sender_name: string
-  sender_role: 'user' | 'admin' | 'concierge'
+  sender_role: 'user' | 'admin' | 'concierge' | 'facility'
   body: string
   created_at: string
 }
@@ -335,8 +335,11 @@ export type HopConcierge = {
   last_name: string
   status: 'active' | 'disabled'
   created_at: string
+  role: 'concierge' | 'facility'
   headline: string | null
   open_assigned: number
+  default_shift_end_time: string | null
+  department: string | null
 }
 
 export function hopAdminListConcierges() {
@@ -347,7 +350,8 @@ export function hopAdminCreateConcierge(data: {
   email: string
   firstName: string
   lastName: string
-  role: 'user' | 'concierge'
+  role: 'user' | 'concierge' | 'facility'
+  defaultShiftEndTime?: string | null
 }) {
   return request<{ concierge: HopConcierge; temporaryPassword: string | null; emailSent: boolean }>(
     '/admin/concierges?action=create',
@@ -355,10 +359,13 @@ export function hopAdminCreateConcierge(data: {
   )
 }
 
-export function hopAdminUpdateConciergeStatus(id: string, status: 'active' | 'disabled') {
+export function hopAdminUpdateConciergeStatus(
+  id: string,
+  updates: { status?: 'active' | 'disabled'; defaultShiftEndTime?: string; department?: string },
+) {
   return request<{ concierge: HopConcierge }>('/admin/concierges', {
     method: 'PATCH',
-    body: JSON.stringify({ id, status }),
+    body: JSON.stringify({ id, ...updates }),
   })
 }
 
@@ -368,7 +375,7 @@ export type HopDirectMessage = {
   id: string
   sender_id: string
   sender_name: string
-  sender_role: 'user' | 'admin' | 'concierge'
+  sender_role: 'user' | 'admin' | 'concierge' | 'facility'
   body: string
   created_at: string
 }
@@ -407,13 +414,58 @@ export function hopAdminSendMessage(userId: string, body: string) {
   })
 }
 
+// ── Staff messaging (admin<->one specific concierge, concierge<->concierge) — a separate
+// peer-to-peer mode on the same api/hop/messages.ts file, backed by hop_staff_messages, distinct
+// from the admin<->member threads above.
+
+export type HopStaffMessage = {
+  id: string
+  sender_id: string
+  sender_name: string
+  body: string
+  created_at: string
+}
+
+export type HopStaffThreadSummary = {
+  peer_id: string
+  first_name: string
+  last_name: string
+  role: 'admin' | 'concierge'
+  last_message: string
+  last_sender_id: string
+  last_message_at: string
+  unread_count: number
+}
+
+export function hopListStaffThreads() {
+  return request<{ threads: HopStaffThreadSummary[] }>('/messages?scope=staff')
+}
+
+export function hopGetStaffThread(peerId: string) {
+  return request<{ messages: HopStaffMessage[] }>(`/messages?scope=staff&peerId=${encodeURIComponent(peerId)}`)
+}
+
+export function hopSendStaffMessage(peerId: string, body: string) {
+  return request<{ message: HopStaffMessage }>('/messages?scope=staff', {
+    method: 'POST',
+    body: JSON.stringify({ peerId, body }),
+  })
+}
+
 // ── Points/rewards — reduced scope this cycle: view own ledger/balance, staff manual award only.
 // No redemption yet, see docs/hop/roadmap.md.
 
 export type HopPointsLedgerEntry = {
   id: string
   delta: number
-  source: 'admin_award' | 'concierge_award' | 'checkin_streak' | 'profile_complete' | 'redemption' | 'wearable_challenge'
+  source:
+    | 'admin_award'
+    | 'concierge_award'
+    | 'checkin_streak'
+    | 'profile_complete'
+    | 'redemption'
+    | 'wearable_challenge'
+    | 'task_complete'
   reason: string
   created_at: string
 }
@@ -426,5 +478,84 @@ export function hopAdminAwardPoints(userId: string, delta: number, reason: strin
   return request<{ entry: HopPointsLedgerEntry; balance: number }>('/rewards?action=award', {
     method: 'POST',
     body: JSON.stringify({ userId, delta, reason }),
+  })
+}
+
+// ── Staff-only member notes (cross-request, never member-visible) — see hop_member_notes in
+// db/schema.sql and docs/hop/architecture.md, "Staff member notes".
+
+export type HopMemberNote = {
+  id: string
+  body: string
+  created_at: string
+  author_first_name: string
+  author_last_name: string
+}
+
+export function hopListMemberNotes(memberId: string) {
+  return request<{ notes: HopMemberNote[] }>(`/requests?action=notes&memberId=${encodeURIComponent(memberId)}`)
+}
+
+export function hopAddMemberNote(memberId: string, body: string) {
+  return request<{ note: HopMemberNote }>('/requests?action=notes', {
+    method: 'POST',
+    body: JSON.stringify({ memberId, body }),
+  })
+}
+
+export function hopGetMemberNotesCountToday() {
+  return request<{ count: number }>('/requests?action=notes-count')
+}
+
+// ── Healthcare Facility Admin portal — staff-portal only. Everything here is aggregate/
+// de-identified — see api/hop/facility.ts and docs/hop/architecture.md, "Facility portal".
+
+export type HopFacilityOnDutyStaff = { id: string; first_name: string; last_name: string; role: string }
+export type HopFacilityMorale = { level: string; percent: number }
+
+export function hopFacilityOverview() {
+  return request<{
+    onDuty: HopFacilityOnDutyStaff[]
+    onDutyCount: number
+    overtimeCount: number
+    morale: HopFacilityMorale[]
+    moodResponseCount: number
+  }>('/facility?action=overview')
+}
+
+export type HopFacilityHeatmapBucket = { hour: number; department: string; level: string; count: number }
+
+export function hopFacilityHeatmap() {
+  return request<{ buckets: HopFacilityHeatmapBucket[] }>('/facility?action=heatmap')
+}
+
+export type HopFacilityStatBucket = { bucket: string; count: number }
+
+export function hopFacilityRequestStats() {
+  return request<{
+    daily: HopFacilityStatBucket[]
+    weekly: HopFacilityStatBucket[]
+    monthly: HopFacilityStatBucket[]
+    yearly: HopFacilityStatBucket[]
+    total: number
+  }>('/facility?action=request-stats')
+}
+
+export type HopRetentionEvent = {
+  id: string
+  role_title: string
+  estimated_cost: number
+  note: string
+  created_at: string
+}
+
+export function hopFacilityListRetention() {
+  return request<{ events: HopRetentionEvent[]; total: number }>('/facility?action=retention')
+}
+
+export function hopFacilityAddRetention(data: { roleTitle: string; estimatedCost: number; note: string }) {
+  return request<{ event: HopRetentionEvent }>('/facility?action=retention', {
+    method: 'POST',
+    body: JSON.stringify(data),
   })
 }
