@@ -6,6 +6,8 @@ import { useHopTheme } from '../../../hop/useHopTheme'
 import { useToast } from '../../../hop/useToast'
 import { HopServiceHistoryCard } from './HopServiceHistoryCard'
 import { HopRewardsCard } from './HopRewardsCard'
+import { HopSpecialDatesCard } from './HopSpecialDatesCard'
+import { HopCertificationsCard } from './HopCertificationsCard'
 
 export function HopProfilePage() {
   const { user, updateProfile } = useHopAuth()
@@ -138,6 +140,8 @@ export function HopProfilePage() {
         </Link>
       </section>
 
+      <HopSpecialDatesCard />
+      <HopCertificationsCard />
       <HopServiceHistoryCard />
       <HopRewardsCard />
     </div>

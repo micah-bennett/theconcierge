@@ -5,7 +5,7 @@ export type HopUser = {
   firstName: string
   lastName: string
   phone: string
-  role: 'user' | 'admin' | 'concierge'
+  role: 'user' | 'admin' | 'concierge' | 'facility'
   status: 'active' | 'disabled'
 }
 
@@ -257,7 +257,7 @@ export type HopRequestMessage = {
   id: string
   sender_id: string
   sender_name: string
-  sender_role: 'user' | 'admin' | 'concierge'
+  sender_role: 'user' | 'admin' | 'concierge' | 'facility'
   body: string
   created_at: string
 }
@@ -362,7 +362,7 @@ export type HopDirectMessage = {
   id: string
   sender_id: string
   sender_name: string
-  sender_role: 'user' | 'admin' | 'concierge'
+  sender_role: 'user' | 'admin' | 'concierge' | 'facility'
   body: string
   created_at: string
 }
@@ -407,7 +407,14 @@ export function hopAdminSendMessage(userId: string, body: string) {
 export type HopPointsLedgerEntry = {
   id: string
   delta: number
-  source: 'admin_award' | 'concierge_award' | 'checkin_streak' | 'profile_complete' | 'redemption' | 'wearable_challenge'
+  source:
+    | 'admin_award'
+    | 'concierge_award'
+    | 'checkin_streak'
+    | 'profile_complete'
+    | 'redemption'
+    | 'wearable_challenge'
+    | 'task_complete'
   reason: string
   created_at: string
 }
@@ -421,4 +428,170 @@ export function hopAdminAwardPoints(userId: string, delta: number, reason: strin
     method: 'POST',
     body: JSON.stringify({ userId, delta, reason }),
   })
+}
+
+// ── Member profile: special dates, family, certifications, AI-assistant suggestion feed ────
+
+export type HopSelfDates = { birthday: string | null; anniversary: string | null }
+
+export type HopFamilyMember = {
+  id: string
+  relationship: string
+  name: string
+  birthday: string | null
+  special_moment_note: string
+  special_moment_date: string | null
+  created_at: string
+}
+
+export function hopGetSelfDates() {
+  return request<HopSelfDates>('/profile?action=self')
+}
+
+export function hopUpdateSelfDates(data: { birthday: string | null; anniversary: string | null }) {
+  return request<HopSelfDates>('/profile?action=self', { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function hopListFamilyMembers() {
+  return request<{ members: HopFamilyMember[] }>('/profile?action=family')
+}
+
+export function hopAddFamilyMember(data: {
+  relationship: string
+  name: string
+  birthday: string | null
+  specialMomentNote: string
+  specialMomentDate: string | null
+}) {
+  return request<{ member: HopFamilyMember }>('/profile?action=family', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function hopDeleteFamilyMember(id: string) {
+  return request<{ ok: true }>(`/profile?action=family&id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export type HopCertification = {
+  id: string
+  name: string
+  issuing_body: string
+  issued_at: string | null
+  expires_at: string | null
+  created_at: string
+}
+
+export function hopListCertifications() {
+  return request<{ certifications: HopCertification[] }>('/profile?action=certifications')
+}
+
+export function hopAddCertification(data: {
+  name: string
+  issuingBody: string
+  issuedAt: string | null
+  expiresAt: string | null
+}) {
+  return request<{ certification: HopCertification }>('/profile?action=certifications', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function hopDeleteCertification(id: string) {
+  return request<{ ok: true }>(`/profile?action=certifications&id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+}
+
+export type HopFeedSuggestion = {
+  id: string
+  kind: 'birthday_cake' | 'anniversary' | 'cert_renewal'
+  prompt: string
+  dueDate: string | null
+  options: { label: string; value: string }[]
+}
+
+export function hopGetSuggestionFeed() {
+  return request<{ suggestions: HopFeedSuggestion[] }>('/profile?action=feed')
+}
+
+// ── Daily wellness metrics (self-reported steps/sleep/mood) — separate from the wellness
+// check-in above; see hop_daily_metrics's schema comment.
+
+export type HopDailyMetricsEntry = {
+  id: string
+  log_date: string
+  steps: number | null
+  sleep_hours: number | null
+  mood: number | null
+  created_at: string
+}
+
+export function hopListDailyMetrics() {
+  return request<{ metrics: HopDailyMetricsEntry[]; loggedToday: boolean }>('/wellness?type=metrics')
+}
+
+export function hopLogDailyMetrics(data: { steps: number | null; sleepHours: number | null; mood: number | null }) {
+  return request<{ entry: HopDailyMetricsEntry }>('/wellness?type=metrics', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function hopCreateMoodCheckIn(data: { level: 'green' | 'yellow' | 'orange' | 'red'; note: string }) {
+  return request<{ checkIn: { id: string; level: string; note: string; created_at: string } }>(
+    '/wellness?type=mood',
+    { method: 'POST', body: JSON.stringify(data) },
+  )
+}
+
+// ── Daily health-task check-off — a fixed set (walk/stand/read/daily-question), 5 points each,
+// once per day. See api/hop/rewards.ts.
+
+export type HopDailyTask = {
+  key: string
+  label: string
+  icon: string
+  points: number
+  needsResponse: boolean
+  doneToday: boolean
+}
+
+export function hopGetDailyTasks() {
+  return request<{ tasks: HopDailyTask[] }>('/rewards?action=tasks')
+}
+
+export function hopCompleteDailyTask(taskKey: string, responseText = '') {
+  return request<{ entry: HopPointsLedgerEntry; balance: number }>('/rewards?action=complete-task', {
+    method: 'POST',
+    body: JSON.stringify({ taskKey, responseText }),
+  })
+}
+
+// ── Staff-only member notes (cross-request, never member-visible) — see hop_member_notes in
+// db/schema.sql and docs/hop/architecture.md, "Staff member notes". Callable via this file for
+// shared-file consistency, though the primary UI for this is on ConciergeHub (staff-portal).
+
+export type HopMemberNote = {
+  id: string
+  body: string
+  created_at: string
+  author_first_name: string
+  author_last_name: string
+}
+
+export function hopListMemberNotes(memberId: string) {
+  return request<{ notes: HopMemberNote[] }>(`/requests?action=notes&memberId=${encodeURIComponent(memberId)}`)
+}
+
+export function hopAddMemberNote(memberId: string, body: string) {
+  return request<{ note: HopMemberNote }>('/requests?action=notes', {
+    method: 'POST',
+    body: JSON.stringify({ memberId, body }),
+  })
+}
+
+export function hopGetMemberNotesCountToday() {
+  return request<{ count: number }>('/requests?action=notes-count')
 }

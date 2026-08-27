@@ -4,6 +4,7 @@ import { useTourVisibility } from './useTourVisibility'
 import { useHopAuth } from './useHopAuth'
 import { useHopTheme } from './useHopTheme'
 import { HopToastProvider } from './ToastContext'
+import { HopAiAssistant } from './HopAiAssistant'
 
 const NAV_ITEMS = [
   { to: '/hop/app', label: 'Dashboard', end: true, icon: '🏠' },
@@ -107,6 +108,7 @@ export function HopAppLayout() {
           <Outlet />
         </main>
         <OnboardingTour open={tour.open} onClose={tour.close} steps={MEMBER_TOUR_STEPS} />
+        <HopAiAssistant />
       </div>
     </HopToastProvider>
   )

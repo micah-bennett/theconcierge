@@ -10,7 +10,7 @@ export type HopUser = {
   firstName: string
   lastName: string
   phone: string
-  role: 'user' | 'admin' | 'concierge'
+  role: 'user' | 'admin' | 'concierge' | 'facility'
   status: 'active' | 'disabled'
 }
 
@@ -181,7 +181,7 @@ export async function getSessionUser(sql: Sql, request: Request): Promise<HopUse
     firstName: row.first_name,
     lastName: row.last_name,
     phone: row.phone,
-    role: row.role as 'user' | 'admin' | 'concierge',
+    role: row.role as 'user' | 'admin' | 'concierge' | 'facility',
     status: row.status as 'active' | 'disabled',
   }
 }
@@ -230,6 +230,23 @@ export async function requireStaff(sql: Sql, request: Request): Promise<HopUser 
   const user = await getSessionUser(sql, request)
   if (!user) return unauthorized()
   if (user.role !== 'admin' && user.role !== 'concierge') return forbidden()
+  return user
+}
+
+// A healthcare-facility-admin account — see "Facility portal" in docs/hop/architecture.md.
+export async function requireFacility(sql: Sql, request: Request): Promise<HopUser | Response> {
+  const user = await getSessionUser(sql, request)
+  if (!user) return unauthorized()
+  if (user.role !== 'facility') return forbidden()
+  return user
+}
+
+// Admin, concierge, or facility — for the one endpoint (retention logging) both ConciergeHub
+// staff and a facility's own account should be able to write to.
+export async function requireFacilityOrStaff(sql: Sql, request: Request): Promise<HopUser | Response> {
+  const user = await getSessionUser(sql, request)
+  if (!user) return unauthorized()
+  if (user.role !== 'admin' && user.role !== 'concierge' && user.role !== 'facility') return forbidden()
   return user
 }
 
@@ -288,7 +305,7 @@ export function toPublicUser(row: {
     firstName: row.first_name,
     lastName: row.last_name,
     phone: row.phone || '',
-    role: row.role as 'user' | 'admin' | 'concierge',
+    role: row.role as 'user' | 'admin' | 'concierge' | 'facility',
     status: 'active',
   }
 }

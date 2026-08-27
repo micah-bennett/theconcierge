@@ -350,3 +350,141 @@ CREATE TABLE IF NOT EXISTS hop_points_ledger (
 
 CREATE INDEX IF NOT EXISTS hop_points_ledger_user_id_idx
   ON hop_points_ledger (user_id, created_at DESC);
+
+-- ── HOP Phase 2 (2026-08-27): special dates, certifications, daily tasks, wellness metrics,
+-- staff messaging, member notes, Facility portal — see docs/hop/architecture.md.
+
+-- Self dates directly on hop_users (1:1, cheap); family members/moments as 1:many. Schema
+-- reused verbatim from the design already sketched in docs/hop/roadmap.md's Phase 3.
+ALTER TABLE hop_users ADD COLUMN IF NOT EXISTS birthday DATE;
+ALTER TABLE hop_users ADD COLUMN IF NOT EXISTS anniversary DATE;
+
+CREATE TABLE IF NOT EXISTS hop_family_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  relationship TEXT NOT NULL DEFAULT '',
+  name TEXT NOT NULL,
+  birthday DATE,
+  special_moment_note TEXT NOT NULL DEFAULT '',
+  special_moment_date DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hop_family_members_user_id_idx ON hop_family_members (user_id);
+
+-- Certifications a member wants to track, with an optional expiry date for the dashboard's
+-- in-app renewal nag (api/hop/profile.ts?action=certifications). No admin-editable cert
+-- catalog — a member types in whatever they hold.
+CREATE TABLE IF NOT EXISTS hop_certifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  issuing_body TEXT NOT NULL DEFAULT '',
+  issued_at DATE,
+  expires_at DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hop_certifications_user_id_idx ON hop_certifications (user_id);
+
+-- Self-reported daily health-task check-off (walk/stand/read/daily-question), one row per
+-- user/task/day — the unique index is the idempotency guard api/hop/rewards.ts relies on to
+-- reject a second same-day completion with a 409 rather than double-awarding points.
+CREATE TABLE IF NOT EXISTS hop_daily_tasks_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  task_key TEXT NOT NULL CHECK (task_key IN ('walk_10min', 'stand_10min', 'read_article', 'daily_question')),
+  response_text TEXT NOT NULL DEFAULT '',
+  log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS hop_daily_tasks_log_user_task_date_idx
+  ON hop_daily_tasks_log (user_id, task_key, log_date);
+
+-- 'task_complete' is the honest, new source label for the daily-task mechanism above — kept
+-- separate from the already-reserved 'checkin_streak' (a different, still-unbuilt earning rule)
+-- rather than overloading it.
+ALTER TABLE hop_points_ledger DROP CONSTRAINT IF EXISTS hop_points_ledger_source_check;
+ALTER TABLE hop_points_ledger ADD CONSTRAINT hop_points_ledger_source_check
+  CHECK (source IN ('admin_award', 'concierge_award', 'checkin_streak', 'profile_complete', 'redemption', 'wearable_challenge', 'task_complete'));
+
+-- Self-reported daily wellness metrics (steps/sleep/mood) — deliberately a separate table from
+-- hop_wellness_checkins, not new columns on it: that table's own header comment above warns
+-- against scope creep into scoring/analytics, and it serves a different purpose (a support
+-- request signal), not a self-quantification log. One row per user/day (upserted).
+CREATE TABLE IF NOT EXISTS hop_daily_metrics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  steps INT,
+  sleep_hours NUMERIC(4,1),
+  mood INT CHECK (mood IS NULL OR mood BETWEEN 1 AND 5),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS hop_daily_metrics_user_date_idx ON hop_daily_metrics (user_id, log_date);
+
+-- Peer-to-peer staff messaging (admin<->one specific concierge, concierge<->concierge) —
+-- deliberately a new table, not a further overload of hop_direct_messages above, whose own
+-- comment is explicit that "admin" there is a role, not a counterparty; that one-thread-per-
+-- member shape doesn't generalize to arbitrary peers. The LEAST/GREATEST composite index lets
+-- one query fetch a two-party thread regardless of who sent which message.
+CREATE TABLE IF NOT EXISTS hop_staff_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  sender_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  recipient_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hop_staff_messages_pair_idx
+  ON hop_staff_messages (LEAST(sender_id, recipient_id), GREATEST(sender_id, recipient_id), created_at);
+
+-- Persistent, cross-request, staff-only notes about a member (not tied to any one service
+-- request) — append-only, matching hop_service_request_status_history's existing convention
+-- (no edit/delete). Never shown to the member themselves.
+CREATE TABLE IF NOT EXISTS hop_member_notes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  member_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  author_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hop_member_notes_member_id_idx ON hop_member_notes (member_id, created_at);
+
+-- One-tap anonymized mood check-in for the Facility portal's aggregate morale/heatmap views —
+-- deliberately separate from hop_wellness_checkins (that table stays the fuller, individually
+-- readable self-report used for support requests; this one is written by any member but only
+-- ever read back in aggregate, never joined to a name — see api/hop/facility.ts).
+CREATE TABLE IF NOT EXISTS hop_mood_checkins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  level TEXT NOT NULL CHECK (level IN ('green', 'yellow', 'orange', 'red')),
+  note TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hop_mood_checkins_created_at_idx ON hop_mood_checkins (created_at DESC);
+CREATE INDEX IF NOT EXISTS hop_mood_checkins_user_id_idx ON hop_mood_checkins (user_id);
+
+-- A fourth role, 'facility' — a healthcare-facility-admin account. See "Facility portal" in
+-- docs/hop/architecture.md. department is a single nullable free-text column, no taxonomy table
+-- — the heatmap degrades to "Unspecified" if unused. No facilities/tenancy table exists yet;
+-- every facility.ts aggregate is site-wide, not scoped to one client — see architecture.md for
+-- why, and what a second facility client would require.
+ALTER TABLE hop_users DROP CONSTRAINT IF EXISTS hop_users_role_check;
+ALTER TABLE hop_users ADD CONSTRAINT hop_users_role_check
+  CHECK (role IN ('user', 'admin', 'concierge', 'facility'));
+
+ALTER TABLE hop_users ADD COLUMN IF NOT EXISTS department TEXT;
+
+-- Manually-logged retention/cost-savings entries for the Facility portal — deliberately no
+-- member_id, keeping this aggregate/non-identifying per the same hard rule as the mood
+-- check-ins above (never expose one member's identity in facility-facing analytics). This is a
+-- bookkeeping record of a judgment call a staff member made, not a computed/derived metric —
+-- see "Facility portal" in docs/hop/architecture.md.
+CREATE TABLE IF NOT EXISTS hop_retention_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  role_title TEXT NOT NULL,
+  estimated_cost INT NOT NULL CHECK (estimated_cost >= 0),
+  note TEXT NOT NULL DEFAULT '',
+  recorded_by UUID REFERENCES hop_users (id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hop_retention_events_created_at_idx ON hop_retention_events (created_at DESC);

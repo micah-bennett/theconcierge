@@ -6,6 +6,7 @@ import {
   hopListWellnessCheckIns,
   type HopWellnessCheckIn,
 } from '../../../hop/api'
+import { HopWellnessTrendsCard } from './HopWellnessTrendsCard'
 
 const FEELING_OPTIONS = [
   { value: 'doing_well', label: 'Doing well' },
@@ -199,6 +200,8 @@ export function HopWellnessPage() {
           local emergency number) right away.
         </div>
       </section>
+
+      <HopWellnessTrendsCard />
 
       <section className="hop-card">
         <h2>🕒 Your recent check-ins</h2>

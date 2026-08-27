@@ -126,6 +126,10 @@ export async function GET(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
 
+  const action = actionFromUrl(request)
+  if (action === 'notes') return handleGetNotes(sql, request)
+  if (action === 'notes-count') return handleNotesCount(sql, request)
+
   const user = await requireUser(sql, request)
   if (isResponse(user)) return user
 
@@ -272,6 +276,87 @@ async function handleRate(request: Request): Promise<Response> {
   }
 }
 
+// ── ?action=notes — staff-only, cross-request notes about a member ─────────────────────────
+// See hop_member_notes in db/schema.sql and docs/hop/architecture.md, "Staff member notes".
+// Append-only, never member-visible — lives on this file (not admin/users.ts) specifically
+// because concierges need read/write access too, and admin/users.ts is requireAdmin-only.
+
+async function handleGetNotes(sql: Sql, request: Request): Promise<Response> {
+  const staff = await requireStaff(sql, request)
+  if (isResponse(staff)) return staff
+
+  const memberId = new URL(request.url).searchParams.get('memberId') || ''
+  if (!/^[0-9a-f-]{36}$/i.test(memberId)) return json({ error: 'Invalid member id' }, 400)
+
+  const notes = await sql`
+    SELECT n.id, n.body, n.created_at, a.first_name AS author_first_name, a.last_name AS author_last_name
+    FROM hop_member_notes n
+    JOIN hop_users a ON a.id = n.author_id
+    WHERE n.member_id = ${memberId}
+    ORDER BY n.created_at DESC
+  `
+  return json({ notes })
+}
+
+function validateNoteBody(value: unknown): { memberId: string; body: string } {
+  if (!value || typeof value !== 'object') throw new Error('Invalid request body')
+  const source = value as Record<string, unknown>
+  const memberId = typeof source.memberId === 'string' ? source.memberId : ''
+  const body = typeof source.body === 'string' ? source.body.trim() : ''
+
+  if (!/^[0-9a-f-]{36}$/i.test(memberId)) throw new Error('Invalid member id')
+  if (!body) throw new Error('Enter a note')
+  if (body.length > 1000) throw new Error('Note is too long')
+
+  return { memberId, body }
+}
+
+// Site-wide, admin-only: "N notes added today by concierges" — the "alerts admin" signal for
+// this feature, deliberately a live count rather than a per-viewer read-receipt system (no new
+// table for that this cycle — see docs/hop/architecture.md).
+async function handleNotesCount(sql: Sql, request: Request): Promise<Response> {
+  const admin = await requireStaff(sql, request)
+  if (isResponse(admin)) return admin
+  if (admin.role !== 'admin') return json({ error: 'Not allowed' }, 403)
+
+  const rows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM hop_member_notes n
+    JOIN hop_users a ON a.id = n.author_id
+    WHERE a.role = 'concierge' AND n.created_at::date = CURRENT_DATE
+  `
+  return json({ count: (rows[0] as { count: number }).count })
+}
+
+async function handleAddNote(request: Request): Promise<Response> {
+  const sql = getSql()
+  if (!sql) return dbUnavailable()
+
+  const staff = await requireStaff(sql, request)
+  if (isResponse(staff)) return staff
+
+  try {
+    const data = validateNoteBody(await request.json())
+    const memberRows = await sql`SELECT id FROM hop_users WHERE id = ${data.memberId} AND role = 'user'`
+    if (memberRows.length === 0) return json({ error: 'Member not found' }, 404)
+
+    const rows = await sql`
+      INSERT INTO hop_member_notes (member_id, author_id, body)
+      VALUES (${data.memberId}, ${staff.id}, ${data.body})
+      RETURNING id, body, created_at
+    `
+    return json(
+      { note: { ...rows[0], author_first_name: staff.firstName, author_last_name: staff.lastName } },
+      201,
+    )
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not add note'
+    const status = /Invalid member id|Enter a note|too long/i.test(message) ? 400 : 500
+    if (status === 500) console.error('HOP member note add failed', error)
+    return json({ error: status === 400 ? message : 'Could not add note' }, status)
+  }
+}
+
 async function handleCreate(request: Request): Promise<Response> {
   const sql = getSql()
   if (!sql) return dbUnavailable()
@@ -296,7 +381,9 @@ async function handleCreate(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (actionFromUrl(request) === 'rate') return handleRate(request)
+  const action = actionFromUrl(request)
+  if (action === 'rate') return handleRate(request)
+  if (action === 'notes') return handleAddNote(request)
   return handleCreate(request)
 }
 

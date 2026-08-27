@@ -1,7 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useHopAuth } from '../../../hop/useHopAuth'
-import { hopGoogleCalendarEvents, hopListRequests, type HopCalendarEvent, type HopServiceRequest } from '../../../hop/api'
+import {
+  hopGoogleCalendarEvents,
+  hopListCertifications,
+  hopListRequests,
+  hopListWellnessCheckIns,
+  type HopCalendarEvent,
+  type HopServiceRequest,
+} from '../../../hop/api'
+import { DailyNagBanner } from '../../../hop/DailyNagBanner'
+import { HopMoodCheckinPrompt } from '../../../hop/HopMoodCheckinPrompt'
+import { HopDailyTasksCard } from './HopDailyTasksCard'
+
+const CERT_EXPIRY_WARNING_DAYS = 30
 
 const QUICK_REQUESTS = [
   { to: '/hop/app/requests?type=ride', icon: '🚗', label: 'Ride' },
@@ -49,11 +61,14 @@ function ActiveRequestTracker({ request }: { request: HopServiceRequest }) {
 
 export function HopDashboardPage() {
   const { user } = useHopAuth()
+  const navigate = useNavigate()
   const [events, setEvents] = useState<HopCalendarEvent[] | null>(null)
   const [connected, setConnected] = useState(false)
   const [loadingEvents, setLoadingEvents] = useState(true)
   const [eventsError, setEventsError] = useState(false)
   const [activeRequest, setActiveRequest] = useState<HopServiceRequest | null>(null)
+  const [checkedInToday, setCheckedInToday] = useState(true)
+  const [expiringCertName, setExpiringCertName] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -93,10 +108,53 @@ export function HopDashboardPage() {
     }
   }, [])
 
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    hopListWellnessCheckIns()
+      .then((result) => {
+        const doneToday = result.checkIns.some((c) => c.created_at.slice(0, 10) === today)
+        setCheckedInToday(doneToday)
+      })
+      .catch(() => setCheckedInToday(true))
+  }, [])
+
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const horizon = new Date()
+    horizon.setDate(horizon.getDate() + CERT_EXPIRY_WARNING_DAYS)
+    const horizonStr = horizon.toISOString().slice(0, 10)
+    hopListCertifications()
+      .then((result) => {
+        const soon = result.certifications.find(
+          (c) => c.expires_at && c.expires_at >= today && c.expires_at <= horizonStr,
+        )
+        setExpiringCertName(soon?.name ?? null)
+      })
+      .catch(() => setExpiringCertName(null))
+  }, [])
+
   return (
     <div className="hop-page-body">
       <h1 className="hop-page-title">Today</h1>
       <p className="hop-page-sub">Welcome back, {user?.firstName}. What do you need?</p>
+
+      <HopMoodCheckinPrompt />
+      {!checkedInToday && (
+        <DailyNagBanner
+          icon="❤️"
+          message="You haven't checked in today — how are you doing?"
+          actionLabel="Check in"
+          onAction={() => navigate('/hop/app/wellness')}
+        />
+      )}
+      {expiringCertName && (
+        <DailyNagBanner
+          icon="📜"
+          message={`Your ${expiringCertName} certification is expiring soon.`}
+          actionLabel="Renew on Profile"
+          onAction={() => navigate('/hop/app/profile')}
+        />
+      )}
 
       {activeRequest && <ActiveRequestTracker request={activeRequest} />}
 
@@ -108,6 +166,8 @@ export function HopDashboardPage() {
           </Link>
         ))}
       </div>
+
+      <HopDailyTasksCard />
 
       <section className="hop-card">
         <div className="hop-card__header">
