@@ -7,6 +7,7 @@ import { HopToastProvider } from './ToastContext'
 
 const NAV_ITEMS = [
   { to: '/hop/facility', label: 'Overview', end: true, icon: '📊' },
+  { to: '/hop/facility/feed', label: 'Feed', end: false, icon: '📣' },
   { to: '/hop/facility/heatmap', label: 'Heat map', end: false, icon: '🌡️' },
   { to: '/hop/facility/requests-stats', label: 'Request stats', end: false, icon: '📈' },
   { to: '/hop/facility/retention', label: 'Retention', end: false, icon: '💰' },
@@ -18,6 +19,11 @@ const FACILITY_TOUR_STEPS: TourStep[] = [
     icon: '👋',
     title: 'Welcome to your Facility dashboard',
     body: 'See the results of having a concierge in the building — request volume, morale trends, and cost savings, all in one place.',
+  },
+  {
+    icon: '📣',
+    title: 'The Feed',
+    body: 'A shared feed across the whole HOP team — a good way to see the human side behind the numbers on this dashboard.',
   },
   {
     icon: '🌡️',

@@ -6,6 +6,7 @@ import {
   hopAdminListUsers,
   type HopOnDutyStaff,
 } from '../../../hop/api'
+import { EmptyState } from '../../../hop/EmptyState'
 
 export function HopAdminDashboardPage() {
   const [counts, setCounts] = useState<{ users: number; openRequests: number; connectedIntegrations: number } | null>(
@@ -55,8 +56,16 @@ export function HopAdminDashboardPage() {
 
       <section className="hop-card">
         <h2>🟢 Working today</h2>
-        {onDuty === null && <p className="hop-muted">Loading…</p>}
-        {onDuty && onDuty.length === 0 && <p className="hop-muted">No one has clocked in yet today.</p>}
+        {onDuty === null && (
+          <>
+            <div className="hop-skeleton-bar hop-skeleton-bar--title" />
+            <div className="hop-skeleton-bar" />
+            <div className="hop-skeleton-bar" />
+          </>
+        )}
+        {onDuty && onDuty.length === 0 && (
+          <EmptyState icon="🌙" message="No one has clocked in yet today." />
+        )}
         {onDuty && onDuty.length > 0 && (
           <ul className="hop-timeline">
             {onDuty.map((staff) => (

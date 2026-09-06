@@ -7,8 +7,8 @@ import { HopToastProvider } from './ToastContext'
 
 const NAV_ITEMS = [
   { to: '/hop/admin', label: 'Overview', end: true, icon: '📊' },
-  { to: '/hop/admin/concierges', label: 'Team', end: false, icon: '🧑‍💼' },
-  { to: '/hop/admin/users', label: 'Users', end: false, icon: '👥' },
+  { to: '/hop/admin/feed', label: 'Feed', end: false, icon: '📣' },
+  { to: '/hop/admin/accounts', label: 'Accounts', end: false, icon: '🧑‍💼' },
   { to: '/hop/admin/requests', label: 'Requests', end: false, icon: '📋' },
   { to: '/hop/admin/messages', label: 'Messages', end: false, icon: '💬' },
   { to: '/hop/admin/wellness', label: 'Wellness', end: false, icon: '❤️' },
@@ -22,9 +22,14 @@ const ADMIN_TOUR_STEPS: TourStep[] = [
     body: 'Run dispatch from here: see who\'s working today, create concierge or member accounts, assign requests, and message members directly.',
   },
   {
+    icon: '📣',
+    title: 'The Feed',
+    body: 'A shared feed with every role — members, concierges, and other admins all post and react here. A good place to check what\'s going on across the team.',
+  },
+  {
     icon: '🧑‍💼',
-    title: 'Team',
-    body: 'Create concierge or member accounts — each gets an emailed invite with a permanent HOP number and a set-password link. Enable or disable concierges anytime.',
+    title: 'Accounts',
+    body: 'Create concierge, member, or Facility Admin accounts in one place — each gets an emailed invite with a permanent HOP number and a set-password link. Filter by role and enable or disable anyone from the same list.',
   },
   {
     icon: '📋',
@@ -34,7 +39,7 @@ const ADMIN_TOUR_STEPS: TourStep[] = [
   {
     icon: '💬',
     title: 'Messages',
-    body: 'Message any HOP member directly — not tied to a specific request. Start a new conversation from a member\'s row on the Users page.',
+    body: 'Message any HOP member directly — not tied to a specific request. Start a new conversation from a member\'s row on the Accounts page.',
   },
   {
     icon: '📊',

@@ -59,6 +59,43 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   is active-browser sharing, not background tracking — see "Live ride location" in
   `architecture.md` for exactly what that means and its real limitations.
 
+## 2026-09-06: HOP Feed, unified accounts page, function-budget consolidation, polish pass
+
+From a push to make the app feel like "a big application" — a shared social feed across all four
+roles, a smoother admin account-creation flow, and a visual/UX polish pass. See "Feed", "Unified
+accounts page", and "Deployments" in `architecture.md` for full technical shape.
+
+- **Feed** (`/hop/app/feed` on `main`; `/hop/admin/feed`, `/hop/concierge/feed`,
+  `/hop/facility/feed` on `staff-portal` — **not** on `main`'s frozen legacy admin): a shared,
+  LinkedIn/Facebook-style feed. Any of the four roles can post, react (Like/Celebrate/Support),
+  and set a one-line status visible on a "who's around" rail. 15s polling, same pattern as
+  request messages/ride location — no websockets. Pre-filled with sample posts/reactions/statuses
+  via an extended `scripts/seed-hop-concierge-hub.mjs`. This widens the scope
+  `docs/hop/roadmap.md` originally sketched (main-only) — the real requirement was a feed shared
+  by every role, so it ships identically on both branches.
+- **Unified accounts page** (`/hop/admin/accounts` on ConciergeHub, replacing the former separate
+  "Team" and "Users" pages): one create form (concierge/member/Facility Admin), one list,
+  filterable by role tab — no more losing track of a just-created Member account on a different
+  page. No new backend endpoint; merges the two existing list endpoints client-side.
+- **Function-budget consolidation**: `api/hop/ride-location.ts` merged into
+  `api/hop/requests.ts` as `?action=location-*` on both branches, freeing exactly the one slot
+  each project needed for `api/hop/social.ts`. Same request/response shapes, no behavior change.
+- **Toast-provider fix**: `main`'s frozen `HopAdminLayout.tsx` was missing `HopToastProvider`
+  (staff-portal's three admin/concierge/facility layouts already had it) — a real latent bug,
+  fixed opportunistically.
+- **Schema bug fix**: `db/schema.sql` had two sequential `hop_users_role_check` constraint
+  definitions — an intermediate 3-role version left over from before the `facility` role existed,
+  which broke re-running the migration against any DB that already had a `facility` row (violated
+  before ever reaching the correct, wider constraint further down). Removed the stale
+  intermediate version; only the final, most-permissive constraint should ever exist.
+- **Visual polish**: bigger/more touch-confident buttons app-wide, a new `HopAvatar.tsx` component
+  (first avatar pattern in this codebase), role badges, a warmer `--hop-gold`-accented empty-state
+  treatment, and skeleton-loader/empty-state/toast consistency extended to previously-plain pages
+  (`HopDashboardPage`, `HopMessagesPage` on `main`; `HopAdminDashboardPage`,
+  `HopAdminRequestsPage` on ConciergeHub) — deliberately not exhaustive of every remaining plain
+  page; see "Visual polish" in `architecture.md`'s Feed section for what's left for a follow-up
+  pass.
+
 ## 2026-08-27: HOP Phase 2 — Facility portal, member engagement, staff tools
 
 A large cycle from a detailed feature request covering all four HOP access levels. See "HOP

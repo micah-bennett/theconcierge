@@ -13,6 +13,8 @@ import {
 import { useHopAuth } from '../../../hop/useHopAuth'
 import { RequestMessageThread } from '../../../hop/requestMessages/RequestMessageThread'
 import { ContactMenu } from '../../../hop/ContactMenu'
+import { SkeletonCard } from '../../../hop/SkeletonCard'
+import { EmptyState } from '../../../hop/EmptyState'
 
 const LOCATION_PUSH_INTERVAL_MS = 20000
 
@@ -248,8 +250,17 @@ export function HopAdminRequestsPage() {
         ))}
       </div>
 
-      {loading && <p className="hop-muted">Loading…</p>}
-      {!loading && visibleRequests.length === 0 && <p className="hop-muted">Nothing here.</p>}
+      {loading && (
+        <>
+          <SkeletonCard lines={3} />
+          <SkeletonCard lines={3} />
+        </>
+      )}
+      {!loading && visibleRequests.length === 0 && (
+        <section className="hop-card">
+          <EmptyState icon="📋" message="Nothing in this view right now." />
+        </section>
+      )}
 
       {!loading &&
         visibleRequests.map((req) => (

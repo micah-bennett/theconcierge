@@ -46,6 +46,7 @@ function DutyToggle() {
 
 const NAV_ITEMS = [
   { to: '/hop/concierge', label: 'Overview', end: true, icon: '📊' },
+  { to: '/hop/concierge/feed', label: 'Feed', end: false, icon: '📣' },
   { to: '/hop/concierge/requests', label: 'My requests', end: false, icon: '📋' },
   { to: '/hop/concierge/calendar', label: 'Calendar', end: false, icon: '📅' },
   { to: '/hop/concierge/messages', label: 'Messages', end: false, icon: '💬' },
@@ -62,6 +63,11 @@ const CONCIERGE_TOUR_STEPS: TourStep[] = [
     icon: '✅',
     title: 'Accept, then work the request',
     body: 'When something new lands, accept it first — that\'s your acknowledgment that you\'ve got it. Then move it through status and add dispatch notes as you go.',
+  },
+  {
+    icon: '📣',
+    title: 'The Feed',
+    body: 'A shared feed with members, admins, and other concierges — post a shout-out, react, and set a quick status so everyone knows who\'s around.',
   },
   {
     icon: '📞',

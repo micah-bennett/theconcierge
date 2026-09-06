@@ -3,12 +3,11 @@ import { HopAdminLoginPage } from './pages/hop/HopAdminLoginPage'
 import { HopForgotPasswordPage } from './pages/hop/HopForgotPasswordPage'
 import { HopResetPasswordPage } from './pages/hop/HopResetPasswordPage'
 import { HopAdminDashboardPage } from './pages/hop/admin/HopAdminDashboardPage'
-import { HopAdminUsersPage } from './pages/hop/admin/HopAdminUsersPage'
+import { HopAdminAccountsPage } from './pages/hop/admin/HopAdminAccountsPage'
 import { HopAdminRequestsPage } from './pages/hop/admin/HopAdminRequestsPage'
 import { HopAdminMessagesPage } from './pages/hop/admin/HopAdminMessagesPage'
 import { HopAdminWellnessPage } from './pages/hop/admin/HopAdminWellnessPage'
 import { HopAdminIntegrationsPage } from './pages/hop/admin/HopAdminIntegrationsPage'
-import { HopAdminConciergesPage } from './pages/hop/admin/HopAdminConciergesPage'
 import { HopConciergeDashboardPage } from './pages/hop/concierge/HopConciergeDashboardPage'
 import { HopConciergeRequestsPage } from './pages/hop/concierge/HopConciergeRequestsPage'
 import { HopConciergeCalendarPage } from './pages/hop/concierge/HopConciergeCalendarPage'
@@ -19,6 +18,7 @@ import { HopFacilityHeatMapPage } from './pages/hop/facility/HopFacilityHeatMapP
 import { HopFacilityRequestStatsPage } from './pages/hop/facility/HopFacilityRequestStatsPage'
 import { HopFacilityRetentionPage } from './pages/hop/facility/HopFacilityRetentionPage'
 import { HopFacilityRequestsPage } from './pages/hop/facility/HopFacilityRequestsPage'
+import { HopFeedPage } from './hop/feed/HopFeedPage'
 import { HopAuthProvider } from './hop/AuthContext'
 import { HopThemeProvider } from './hop/ThemeContext'
 import { RequireAdmin, RequireConcierge, RequireFacility } from './hop/RequireAuth'
@@ -42,8 +42,8 @@ function AppRoutes() {
             <Route element={<RequireAdmin />}>
               <Route path="/hop/admin" element={<HopAdminLayout />}>
                 <Route index element={<HopAdminDashboardPage />} />
-                <Route path="users" element={<HopAdminUsersPage />} />
-                <Route path="concierges" element={<HopAdminConciergesPage />} />
+                <Route path="feed" element={<HopFeedPage />} />
+                <Route path="accounts" element={<HopAdminAccountsPage />} />
                 <Route path="requests" element={<HopAdminRequestsPage />} />
                 <Route path="messages" element={<HopAdminMessagesPage />} />
                 <Route path="wellness" element={<HopAdminWellnessPage />} />
@@ -53,6 +53,7 @@ function AppRoutes() {
             <Route element={<RequireConcierge />}>
               <Route path="/hop/concierge" element={<HopConciergeLayout />}>
                 <Route index element={<HopConciergeDashboardPage />} />
+                <Route path="feed" element={<HopFeedPage />} />
                 <Route path="requests" element={<HopConciergeRequestsPage />} />
                 <Route path="calendar" element={<HopConciergeCalendarPage />} />
                 <Route path="messages" element={<HopConciergeMessagesPage />} />
@@ -62,6 +63,7 @@ function AppRoutes() {
             <Route element={<RequireFacility />}>
               <Route path="/hop/facility" element={<HopFacilityLayout />}>
                 <Route index element={<HopFacilityDashboardPage />} />
+                <Route path="feed" element={<HopFeedPage />} />
                 <Route path="heatmap" element={<HopFacilityHeatMapPage />} />
                 <Route path="requests-stats" element={<HopFacilityRequestStatsPage />} />
                 <Route path="retention" element={<HopFacilityRetentionPage />} />
