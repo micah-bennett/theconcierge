@@ -9,8 +9,9 @@ const AUTO_DISMISS_MS = 4000
 
 // Lightweight toast/snackbar confirmations — replaces static inline "Your changes have been
 // saved" banners that sit in the layout until the next interaction clears them. CSS-only
-// slide-in/fade, no animation library. Mounted once per app shell (HopAppLayout/HopAdminLayout/
-// HopConciergeLayout).
+// slide-in/fade, no animation library. Mounted once per app shell — on `main`: HopAppLayout
+// and (since 2026-09) HopAdminLayout; on `staff-portal`: HopAdminLayout, HopConciergeLayout,
+// and HopFacilityLayout.
 export function HopToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
   const nextId = useRef(0)

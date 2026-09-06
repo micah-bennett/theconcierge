@@ -187,19 +187,24 @@ export function hopAdminListStaff() {
 
 export type HopRideLocation = { latitude: number; longitude: number; updatedAt: string }
 
+// Merged into api/hop/requests.ts (2026-09, function-budget consolidation) as
+// ?action=location-* — see "Deployments" in docs/hop/architecture.md. Same request/response
+// shapes as the former standalone api/hop/ride-location.ts.
 export function hopGetRideLocation(requestId: string) {
-  return request<{ location: HopRideLocation | null }>(`/ride-location?requestId=${encodeURIComponent(requestId)}`)
+  return request<{ location: HopRideLocation | null }>(
+    `/requests?action=location-get&requestId=${encodeURIComponent(requestId)}`,
+  )
 }
 
 export function hopUpdateRideLocation(requestId: string, latitude: number, longitude: number) {
-  return request<{ ok: true }>('/ride-location?action=update', {
+  return request<{ ok: true }>('/requests?action=location-update', {
     method: 'POST',
     body: JSON.stringify({ requestId, latitude, longitude }),
   })
 }
 
 export function hopStopRideLocationSharing(requestId: string) {
-  return request<{ ok: true }>('/ride-location?action=stop', {
+  return request<{ ok: true }>('/requests?action=location-stop', {
     method: 'POST',
     body: JSON.stringify({ requestId }),
   })
@@ -594,4 +599,65 @@ export function hopAddMemberNote(memberId: string, body: string) {
 
 export function hopGetMemberNotesCountToday() {
   return request<{ count: number }>('/requests?action=notes-count')
+}
+
+// ── HOP Feed — a shared, LinkedIn/Facebook-style internal feed for all four roles. See
+// hop_social_posts/hop_social_reactions/hop_user_status in db/schema.sql, api/hop/social.ts,
+// and "Feed" in docs/hop/architecture.md. Identical on both branches (main and staff-portal).
+
+export type HopSocialAuthor = { id: string; firstName: string; lastName: string; hopNumber: string; role: string }
+export type HopSocialPost = {
+  id: string
+  body: string
+  created_at: string
+  author: HopSocialAuthor
+  reactions: Record<string, number>
+  myReaction: string | null
+}
+export type HopReactionType = 'like' | 'celebrate' | 'support'
+
+export function hopListSocialFeed(before?: string) {
+  return request<{ posts: HopSocialPost[] }>(
+    `/social?action=posts${before ? `&before=${encodeURIComponent(before)}` : ''}`,
+  )
+}
+
+export function hopCreateSocialPost(body: string) {
+  return request<{ post: HopSocialPost }>('/social?action=posts', { method: 'POST', body: JSON.stringify({ body }) })
+}
+
+export function hopReactToPost(postId: string, reaction: HopReactionType) {
+  return request<{ reactions: Record<string, number>; myReaction: string }>('/social?action=react', {
+    method: 'POST',
+    body: JSON.stringify({ postId, reaction }),
+  })
+}
+
+export function hopRemoveReaction(postId: string) {
+  return request<{ reactions: Record<string, number>; myReaction: null }>(
+    `/social?action=react&postId=${encodeURIComponent(postId)}`,
+    { method: 'DELETE' },
+  )
+}
+
+export type HopUserStatusEntry = {
+  user_id: string
+  status_type: string
+  status_note: string
+  updated_at: string
+  first_name: string
+  last_name: string
+  hop_number: string
+  role: string
+}
+
+export function hopListUserStatuses() {
+  return request<{ statuses: HopUserStatusEntry[] }>('/social?action=status')
+}
+
+export function hopSetMyStatus(statusType: string, statusNote: string) {
+  return request<{ status: HopUserStatusEntry }>('/social?action=status', {
+    method: 'PATCH',
+    body: JSON.stringify({ statusType, statusNote }),
+  })
 }

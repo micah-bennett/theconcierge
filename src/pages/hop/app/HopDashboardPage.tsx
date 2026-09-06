@@ -12,6 +12,7 @@ import {
 import { DailyNagBanner } from '../../../hop/DailyNagBanner'
 import { HopMoodCheckinPrompt } from '../../../hop/HopMoodCheckinPrompt'
 import { HopDailyTasksCard } from './HopDailyTasksCard'
+import { EmptyState } from '../../../hop/EmptyState'
 
 const CERT_EXPIRY_WARNING_DAYS = 30
 
@@ -174,17 +175,22 @@ export function HopDashboardPage() {
           <h2>📅 Upcoming on your calendar</h2>
           {!connected && !eventsError && <Link to="/hop/app/integrations">Connect Google Calendar →</Link>}
         </div>
-        {loadingEvents && <p className="hop-muted">Loading…</p>}
+        {loadingEvents && (
+          <>
+            <div className="hop-skeleton-bar hop-skeleton-bar--title" />
+            <div className="hop-skeleton-bar" />
+          </>
+        )}
         {!loadingEvents && eventsError && (
           <p className="hop-muted">
             Could not load your calendar. <Link to="/hop/app/integrations">Reconnect Google Calendar</Link>.
           </p>
         )}
         {!loadingEvents && !eventsError && !connected && (
-          <p className="hop-muted">Connect your calendar to see upcoming events here.</p>
+          <EmptyState icon="📅" message="Connect your calendar to see upcoming events here." />
         )}
         {!loadingEvents && !eventsError && connected && events && events.length === 0 && (
-          <p className="hop-muted">Nothing on your calendar right now.</p>
+          <EmptyState icon="🌤️" message="Nothing on your calendar right now." />
         )}
         {!loadingEvents && !eventsError && connected && events && events.length > 0 && (
           <ul className="hop-event-list">

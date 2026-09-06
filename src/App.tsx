@@ -21,6 +21,7 @@ import { HopAdminLoginPage } from './pages/hop/HopAdminLoginPage'
 import { HopForgotPasswordPage } from './pages/hop/HopForgotPasswordPage'
 import { HopResetPasswordPage } from './pages/hop/HopResetPasswordPage'
 import { HopDashboardPage } from './pages/hop/app/HopDashboardPage'
+import { HopFeedPage } from './hop/feed/HopFeedPage'
 import { HopRequestsPage } from './pages/hop/app/HopRequestsPage'
 import { HopFamilyCarePage } from './pages/hop/app/HopFamilyCarePage'
 import { HopWellnessPage } from './pages/hop/app/HopWellnessPage'
@@ -116,6 +117,7 @@ function AppRoutes() {
             <Route element={<RequireAuth />}>
               <Route path="/hop/app" element={<HopAppLayout />}>
                 <Route index element={<HopDashboardPage />} />
+                <Route path="feed" element={<HopFeedPage />} />
                 <Route path="requests" element={<HopRequestsPage />} />
                 <Route path="family-care" element={<HopFamilyCarePage />} />
                 <Route path="wellness" element={<HopWellnessPage />} />

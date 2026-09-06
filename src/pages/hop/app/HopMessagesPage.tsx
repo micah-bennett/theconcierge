@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { hopListMyMessages, hopSendMessage, type HopDirectMessage } from '../../../hop/api'
 import { useHopAuth } from '../../../hop/useHopAuth'
+import { SkeletonCard } from '../../../hop/SkeletonCard'
+import { EmptyState } from '../../../hop/EmptyState'
 
 // A single thread between this member and "HOP Admin" (a role, not one specific person — any
 // admin can read/reply). Not tied to a service request — see hop_direct_messages in
@@ -63,13 +65,15 @@ export function HopMessagesPage() {
       <h1 className="hop-page-title">Messages</h1>
       <p className="hop-page-sub">A direct line to HOP Admin — for anything that isn't tied to a specific request.</p>
 
-      <section className="hop-card">
-        {!loaded ? (
-          <p className="hop-muted">Loading…</p>
-        ) : (
+      {!loaded ? (
+        <SkeletonCard lines={2} />
+      ) : (
+        <section className="hop-card">
           <div className="hop-message-thread" style={{ marginTop: 0, paddingTop: 0, borderTop: 'none' }}>
             <div className="hop-message-thread__list" ref={listRef}>
-              {messages.length === 0 && <p className="hop-muted">No messages yet — say hello.</p>}
+              {messages.length === 0 && (
+                <EmptyState icon="💬" message="No messages yet — say hello." />
+              )}
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -101,8 +105,8 @@ export function HopMessagesPage() {
               </button>
             </form>
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   )
 }

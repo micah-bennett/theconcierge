@@ -3463,7 +3463,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.85rem 1.85rem;
+  /* Bumped from 0.85rem/1.85rem (2026-09 friendliness pass) — bigger, more touch-confident
+     without changing the button's identity; still clears the ~44px touch-target minimum on the
+     Capacitor iOS build. */
+  padding: 0.95rem 2.05rem;
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: clamp(0.85rem, 1.3vw, 0.95rem);
   font-weight: 700;

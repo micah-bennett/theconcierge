@@ -219,9 +219,13 @@ CREATE INDEX IF NOT EXISTS hop_wellness_checkins_created_at_idx
 -- Concierges fulfill requests they're assigned to (via the existing hop_service_requests
 -- .handled_by column); admins manage concierge accounts. Not a self-serve signup role — see
 -- docs/hop/architecture.md ("ConciergeHub") and api/hop/admin/concierges.ts.
-ALTER TABLE hop_users DROP CONSTRAINT IF EXISTS hop_users_role_check;
-ALTER TABLE hop_users ADD CONSTRAINT hop_users_role_check
-  CHECK (role IN ('user', 'admin', 'concierge'));
+-- NOTE: the role CHECK constraint itself is defined once, further down (search
+-- hop_users_role_check), where it already includes every role added since — including this one.
+-- An intermediate 3-role-only version of this ALTER used to live here; it was removed (2026-09)
+-- because re-running this file top-to-bottom against a DB that already had a 'facility' row
+-- (added by a later cycle) violated it before ever reaching the wider constraint below,
+-- breaking this file's own "safe to run more than once" guarantee. Don't reintroduce a
+-- superseded intermediate CHECK — only the final, most-permissive version should ever exist.
 
 -- Concierge profile — bio/showcase content a concierge builds about themselves. One row per
 -- concierge account, created lazily on first save (an admin-invited concierge with no profile
@@ -488,3 +492,42 @@ CREATE TABLE IF NOT EXISTS hop_retention_events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS hop_retention_events_created_at_idx ON hop_retention_events (created_at DESC);
+
+-- HOP Feed (2026-09) — a lightweight, LinkedIn/Facebook-style internal feed shared by all four
+-- roles (member/admin/concierge/facility), see "Feed" in docs/hop/architecture.md and
+-- api/hop/social.ts. Deliberately simple: no comments/replies, no media attachments, no
+-- visibility scoping — every post is visible to every logged-in HOP account, matching the
+-- "one shared water cooler" intent, unlike hop_member_notes/hop_mood_checkins above which are
+-- both deliberately role-scoped in the other direction.
+CREATE TABLE IF NOT EXISTS hop_social_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  author_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hop_social_posts_created_at_idx ON hop_social_posts (created_at DESC);
+
+-- One reaction per (post, user) — re-reacting with a different type overwrites the row via
+-- ON CONFLICT DO UPDATE in api/hop/social.ts, it doesn't add a second row. `reaction` is free
+-- text, not a CHECK-constrained enum, deliberately: the frontend only ever sends 'like'/
+-- 'celebrate'/'support' today (enforced app-side in api/hop/social.ts), but leaving the column
+-- open avoids a migration the next time a reaction type is added or renamed.
+CREATE TABLE IF NOT EXISTS hop_social_reactions (
+  post_id UUID NOT NULL REFERENCES hop_social_posts (id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
+  reaction TEXT NOT NULL DEFAULT 'like',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (post_id, user_id)
+);
+
+-- A one-line "what's going on with me" status, one row per user (upserted) — surfaced on the
+-- Feed's "who's around" rail. Deliberately separate from hop_duty_log (on/off duty) and
+-- hop_wellness_checkins (a private self-report) — this is a public, always-on status line, not
+-- a shift toggle or a support signal.
+CREATE TABLE IF NOT EXISTS hop_user_status (
+  user_id UUID PRIMARY KEY REFERENCES hop_users (id) ON DELETE CASCADE,
+  status_type TEXT NOT NULL DEFAULT 'available'
+    CHECK (status_type IN ('available', 'on_vacation', 'sick_leave', 'moved_department', 'other')),
+  status_note TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

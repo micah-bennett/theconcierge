@@ -143,80 +143,54 @@ already at 12/12.
 
 ---
 
-## Still unbuilt — internal social feed + rewards redemption
+## Shipped since this file was written — internal social feed (2026-09)
 
-A lightweight internal social feed (posts/reactions/coworker status) and the rewards ledger's
-redemption flow. Both explicitly deferred by the user's own decision in the 2026-08-27 cycle, not
-forgotten — see "HOP Phase 2" in `architecture.md`.
+The internal social feed sketched below **shipped 2026-09-06** — see "Feed" in `architecture.md`
+for the as-built shape. Two things came out differently than originally planned here, worth
+noting for the next agent who reads this section's history: (1) it ships on **both** `main` and
+`staff-portal`, not `main`-only as this doc originally scoped it — the real requirement was a
+feed shared by every role (member/admin/concierge/facility), which the "no family/social surface
+planned for ConciergeHub" reasoning below didn't anticipate; (2) the page is `HopFeedPage.tsx`
+(under `src/hop/feed/`), not the `HopSocialPage.tsx` name floated below. The schema/API sketch
+below is kept as historical record of the plan that shipped, not as a spec to re-implement.
 
-### Function budget — read this before starting either piece
+## Still unbuilt — rewards redemption
 
-Both `main` and `staff-portal` are now **12/12, fully maxed** (see "Deployments" in
-`architecture.md`). Redemption needs no new file (extends the already-built `api/hop/rewards.ts`
-with `POST ?action=redeem`). The social feed needs one new file (`api/hop/social.ts`, `main`
-only — no family/social surface is planned for ConciergeHub). Free a slot on `main` first:
+The rewards ledger's redemption flow — explicitly deferred by the user's own decision in the
+2026-08-27 cycle, not forgotten. See "Points ledger" in `architecture.md`.
 
-- **Merge `api/hop/ride-location.ts` → `api/hop/requests.ts`** as `?action=location-*` (GET/POST,
-  same visibility rules as today). This is the next available lever on `main`, already flagged in
-  `architecture.md`'s "Deployments" section. **Shared file — apply on both branches** if
-  `staff-portal` also needs a slot freed later (it doesn't yet, since nothing currently proposed
-  needs a new `staff-portal` file).
+### Function budget
 
-### Schema (social feed only — everything else in the original design is already built)
-
-```sql
-CREATE TABLE IF NOT EXISTS hop_social_posts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  author_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
-  body TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS hop_social_posts_created_at_idx ON hop_social_posts (created_at DESC);
-
-CREATE TABLE IF NOT EXISTS hop_social_reactions (
-  post_id UUID NOT NULL REFERENCES hop_social_posts (id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES hop_users (id) ON DELETE CASCADE,
-  reaction TEXT NOT NULL DEFAULT 'like',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (post_id, user_id)
-);
-
-CREATE TABLE IF NOT EXISTS hop_user_status (
-  user_id UUID PRIMARY KEY REFERENCES hop_users (id) ON DELETE CASCADE,
-  status_type TEXT NOT NULL DEFAULT 'available'
-    CHECK (status_type IN ('available', 'on_vacation', 'sick_leave', 'moved_department', 'other')),
-  status_note TEXT NOT NULL DEFAULT '',
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-```
+Both `main` and `staff-portal` are **12/12, fully maxed** (see "Deployments" in
+`architecture.md`) — but redemption needs **no new file**, since it extends the already-built
+`api/hop/rewards.ts` with `POST ?action=redeem`. (The function-budget lever once described here —
+merging `api/hop/ride-location.ts` into `api/hop/requests.ts` — was already spent enabling the
+Feed above; if a *future* feature needs another freed slot, `request-messages.ts` → `requests.ts`
+as `?action=messages` is the next available lever, already flagged in `architecture.md`.)
 
 ### API
 
-- **Redemption**: extend `api/hop/rewards.ts` (shared, both branches) with
-  `POST ?action=redeem` — deducts points, creates a `hop_service_requests` row, links
-  `request_id`. No new file. Also wire the still-unwritten `checkin_streak`/`profile_complete`
-  automatic earning rules (`profile_complete` is actually already wired as of 2026-08-27 — see
-  "HOP Phase 2" in `architecture.md` — only `checkin_streak`/`wearable_challenge` remain
-  genuinely unwired, and `wearable_challenge` has no real trigger until wearable OAuth exists).
-- **Social feed**: new `api/hop/social.ts` (`main` only) — `?action=posts` (GET feed, POST new
-  post); `?action=react` (POST/DELETE on `hop_social_reactions`); `?action=status` (GET/PATCH own
-  `hop_user_status`, GET all for a coworker directory view).
+Extend `api/hop/rewards.ts` (shared, both branches) with `POST ?action=redeem` — deducts points,
+creates a `hop_service_requests` row, links `request_id`. Also wire the still-unwritten
+`checkin_streak`/`wearable_challenge` automatic earning rules (`profile_complete` is already
+wired as of 2026-08-27 — see "HOP Phase 2" in `architecture.md`; `wearable_challenge` has no real
+trigger until wearable OAuth exists).
 
 ### Frontend
 
-- `HopRewardsCard.tsx` (already built, on `HopProfilePage.tsx`) gains a "redeem toward a request"
-  flow calling the new `?action=redeem`, routing into the existing request-tracking UI after
-  redeeming. Revisit whether this still fits as a card or has earned a standalone
-  `HopRewardsPage.tsx`/nav item once redemption makes the page's content meaningfully bigger.
-  Staff-side: extend the existing "Award points" action (`HopAdminUsersPage.tsx`) to a
-  concierge-facing surface too, if wanted — deliberately not built in the 2026-08-27 cycle (see
-  "HOP Phase 2" in `architecture.md`'s Concierge section for why).
-- New `HopSocialPage.tsx` (`main` only) — post composer/feed/reactions, plus a status picker.
+`HopRewardsCard.tsx` (already built, on `HopProfilePage.tsx`) gains a "redeem toward a request"
+flow calling the new `?action=redeem`, routing into the existing request-tracking UI after
+redeeming. Revisit whether this still fits as a card or has earned a standalone
+`HopRewardsPage.tsx`/nav item once redemption makes the page's content meaningfully bigger.
+Staff-side: extend the existing "Award points" action (now on `HopAdminAccountsPage.tsx` — see
+"Unified accounts page" in `architecture.md`) to a concierge-facing surface too, if wanted —
+deliberately not built in the 2026-08-27 cycle (see "HOP Phase 2" in `architecture.md`'s
+Concierge section for why).
 
 ### Cross-branch sync notes
 
-`api/hop/rewards.ts` is shared — edit once, sync both ways. `api/hop/social.ts` and its frontend
-page are `main`-only, expected permanent divergence. `db/schema.sql` is one shared edit.
+`api/hop/rewards.ts` is shared — edit once, sync both ways. `db/schema.sql` is one shared edit
+(no new tables needed — `hop_points_ledger` already exists).
 
 ---
 

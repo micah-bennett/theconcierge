@@ -650,6 +650,45 @@
   color: #b45309;
 }
 
+/* Feed "who's around" status pills (hop_user_status.status_type) — reuse the same 3-color
+   language as request statuses above rather than inventing a 4th color system. */
+.hop-status--available {
+  background: rgba(74, 222, 128, 0.18);
+  color: #86efac;
+}
+
+.hop-status--on_vacation,
+.hop-status--other {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fde68a;
+}
+
+.hop-status--sick_leave {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fca5a5;
+}
+
+.hop-status--moved_department {
+  background: var(--hop-overlay-strong);
+  color: var(--hop-muted);
+}
+
+[data-hop-theme='light'] .hop-status--available {
+  background: rgba(22, 163, 74, 0.14);
+  color: #15803d;
+}
+
+[data-hop-theme='light'] .hop-status--on_vacation,
+[data-hop-theme='light'] .hop-status--other {
+  background: rgba(217, 119, 6, 0.14);
+  color: #b45309;
+}
+
+[data-hop-theme='light'] .hop-status--sick_leave {
+  background: rgba(220, 38, 38, 0.14);
+  color: #b91c1c;
+}
+
 /* ── Integrations ───────────────────────────── */
 .hop-integration-grid {
   display: grid;
@@ -695,7 +734,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.6rem 1.1rem;
+  /* Bumped from 0.6rem/1.1rem (2026-09 friendliness pass), matching .hop-btn-primary's bump. */
+  padding: 0.7rem 1.3rem;
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 600;
@@ -725,7 +765,7 @@
 }
 
 /* `.hop-btn-ghost` is defined in App.css for the public /hop marketing hero (hardcoded white,
-   since that page is always dark) — reused inside the app shell (e.g. HopAdminUsersPage's
+   since that page is always dark) — reused inside the app shell (e.g. HopAdminAccountsPage's
    row actions), which also supports light mode, so it needs theme-aware colors here instead of
    silently going white-on-white in light mode. */
 .hop-shell .hop-btn-ghost,
@@ -759,7 +799,7 @@
   margin: 0.25rem 0;
 }
 
-/* Inline award-points form, opened under a Users-table row (HopAdminUsersPage.tsx) */
+/* Inline award-points form, opened under an accounts-table row (HopAdminAccountsPage.tsx) */
 .hop-award-form {
   display: flex;
   flex-wrap: wrap;
@@ -974,6 +1014,19 @@
   background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
   border-color: transparent;
   color: #fff;
+}
+
+/* Small count badge inside a tab (e.g. the unified accounts page's per-role counts). */
+.hop-tab__count {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--hop-radius-pill);
+  background: var(--hop-overlay-strong);
+  font-size: 0.72rem;
+}
+
+.hop-tab--active .hop-tab__count {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* ── Dispatch cards (admin requests) ────────── */
@@ -1543,7 +1596,16 @@
 }
 
 .hop-empty-state__icon {
-  font-size: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--hop-radius-pill);
+  font-size: 1.4rem;
+  /* A soft, warm circular backdrop (2026-09 friendliness pass) — previously bare emoji text,
+     which read as a stray character rather than an intentional illustration slot. */
+  background: rgba(245, 185, 66, 0.16);
 }
 
 /* Nag banner — a recurring (component-state-only dismiss, not localStorage) reminder shown at
@@ -1867,4 +1929,243 @@
   .hop-quick-grid.hop-page-body > .hop-quick-card {
     animation: none;
   }
+}
+
+/* ── HOP avatars (2026-09) — colored circle + initials, deterministic per user id (see
+   HopAvatar.tsx). First avatar pattern in this codebase; reused by the Feed and the unified
+   accounts page. Background color comes from an inline hsl() (never color-mix() — banned in
+   this file, breaks the Capacitor iOS WKWebView target), so only sizing/type live here. */
+.hop-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--hop-radius-pill);
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hop-avatar--sm {
+  width: 1.9rem;
+  height: 1.9rem;
+  font-size: 0.72rem;
+}
+
+.hop-avatar--md {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 0.85rem;
+}
+
+.hop-avatar--lg {
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1.05rem;
+}
+
+/* ── Role badges — a small colored pill next to a name, used on Feed post cards and the
+   unified accounts page. Distinct hues per role rather than reusing .hop-status's red/amber/
+   green semantics, since a role isn't a health/success signal. */
+.hop-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.55rem;
+  border-radius: var(--hop-radius-pill);
+  font-size: 0.7rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.hop-role-badge--user {
+  background: rgba(109, 110, 245, 0.16);
+  color: var(--hop-link);
+}
+
+.hop-role-badge--admin {
+  background: rgba(245, 185, 66, 0.18);
+  color: var(--hop-gold);
+}
+
+.hop-role-badge--concierge {
+  background: rgba(34, 211, 238, 0.16);
+  color: var(--hop-cyan);
+}
+
+.hop-role-badge--facility {
+  background: rgba(155, 92, 247, 0.18);
+  color: var(--hop-violet);
+}
+
+/* ── HOP Feed (2026-09) ──────────────────────────────────────────────────────────────────── */
+.hop-feed-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .hop-feed-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hop-feed-layout__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.hop-feed-composer textarea {
+  resize: vertical;
+}
+
+.hop-feed-composer__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.hop-feed-composer__hint {
+  font-size: 0.8rem;
+}
+
+.hop-feed-post__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hop-feed-post__author {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.hop-feed-post__name {
+  font-weight: 700;
+  color: var(--hop-text);
+}
+
+.hop-feed-post__time {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.hop-feed-post__body {
+  margin: 0;
+  color: var(--hop-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.hop-feed-post__reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hop-feed-reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--hop-radius-pill);
+  border: 1px solid var(--hop-border);
+  background: var(--hop-overlay);
+  color: var(--hop-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.hop-feed-reaction-btn:hover {
+  border-color: var(--hop-border-hover);
+  transform: translateY(-1px);
+}
+
+.hop-feed-reaction-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+/* The active reaction leans on the gold accent for warmth — a deliberately different treatment
+   from the indigo/violet primary-action color, so "you reacted to this" reads as a friendly
+   highlight rather than another primary button. */
+.hop-feed-reaction-btn--active {
+  background: rgba(245, 185, 66, 0.18);
+  border-color: rgba(245, 185, 66, 0.45);
+  color: var(--hop-gold);
+}
+
+.hop-feed-reaction-btn__count {
+  font-weight: 700;
+}
+
+.hop-feed-layout__rail {
+  min-width: 0;
+}
+
+.hop-feed-status-rail {
+  position: sticky;
+  top: 1.5rem;
+  gap: 1.1rem;
+}
+
+.hop-feed-status-rail__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--hop-text);
+}
+
+.hop-feed-status-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hop-feed-status-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hop-feed-status-list__empty {
+  font-size: 0.85rem;
+}
+
+.hop-feed-status-list__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hop-feed-status-list__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.hop-feed-status-list__name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--hop-text);
+}
+
+.hop-feed-status-list__note {
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

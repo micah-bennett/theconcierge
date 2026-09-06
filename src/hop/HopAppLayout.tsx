@@ -8,6 +8,7 @@ import { HopAiAssistant } from './HopAiAssistant'
 
 const NAV_ITEMS = [
   { to: '/hop/app', label: 'Dashboard', end: true, icon: '🏠' },
+  { to: '/hop/app/feed', label: 'Feed', end: false, icon: '📣' },
   { to: '/hop/app/requests', label: 'Requests', end: false, icon: '📋' },
   { to: '/hop/app/family-care', label: 'Family Care', end: false, icon: '👨‍👩‍👧' },
   { to: '/hop/app/wellness', label: 'Wellness', end: false, icon: '❤️' },
@@ -21,6 +22,11 @@ const MEMBER_TOUR_STEPS: TourStep[] = [
     icon: '👋',
     title: 'Welcome to HOP',
     body: 'One place for anything you need during your shift — rides, meals, errands, wellness support, and family logistics. Ask once, a concierge takes it from there.',
+  },
+  {
+    icon: '📣',
+    title: 'The Feed',
+    body: 'One shared feed for everyone on HOP — post a shout-out, react to what others share, and set a quick status so the team knows who\'s around.',
   },
   {
     icon: '📋',
