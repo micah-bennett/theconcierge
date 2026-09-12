@@ -75,10 +75,11 @@ the full technical shape.
   into a responsive block grid (new `.hop-block-grid`/`.hop-block` primitives) instead of one
   full-width vertical stack of cards — same data/sub-components, just laid out differently. No
   other page was restructured this pass.
-- **Not done yet (Phase 2, explicitly deferred)**: the same treatment for
-  `HopConciergeLayout.tsx`/`HopFacilityLayout.tsx` and every admin/concierge/facility content page
-  beyond the shell — those are still on the pre-redesign single-column layout. Don't assume the
-  ConciergeHub side (`staff-portal`) has been touched by this pass; it hasn't.
+- **Phase 2 (same day)**: the same shell/icon/block-grid system was ported to `staff-portal`
+  (admin/concierge/facility) — see "ConciergeHub redesign, Phase 2 of 2" in `architecture.md`.
+  Each portal's Overview/dashboard page got the block-grid treatment; other content pages
+  (Requests, Accounts, Wellness, Heat map, Retention, etc.) are unchanged. Admin/concierge/facility
+  now also each get a distinct accent tint (indigo/cyan/gold) on top of the shared shape language.
 
 ## 2026-09-06: HOP Feed, unified accounts page, function-budget consolidation, polish pass
 

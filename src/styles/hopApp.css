@@ -1335,6 +1335,33 @@
   margin-top: 0.15rem;
 }
 
+/* ── Per-role accent (2026-redesign, Phase 2) ─────
+   `.hop-shell--admin`/`--concierge`/`--facility` were inert modifier classes on each role's root
+   shell div before this — reusing the same three tokens (just reordering which one leads the
+   gradient) rather than inventing a new palette per role keeps every portal visually part of one
+   family while still giving a quick, subconscious "which portal am I in" cue. Admin keeps the
+   default indigo-led gradient (it's the "home base" surface); concierge leans cyan (the
+   in-the-field, task-execution role); facility leans gold (the reporting/insights role, matching
+   --hop-gold's existing "highlights" reservation). Reads whatever --hop-indigo/-violet/-cyan
+   already resolve to at this point in the cascade, so it automatically respects the ConciergeHub
+   brand override above rather than hardcoding a second set of hex values. */
+.hop-shell--concierge .hop-shell__nav-link--active {
+  background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 100%);
+}
+
+.hop-shell--concierge .hop-shell__brand-mark {
+  background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 55%, var(--hop-violet) 100%);
+}
+
+.hop-shell--facility .hop-shell__nav-link--active {
+  background: linear-gradient(135deg, var(--hop-gold) 0%, #f97316 100%);
+  box-shadow: 0 0 0 1px rgba(245, 185, 66, 0.35), 0 14px 36px -14px rgba(245, 185, 66, 0.45);
+}
+
+.hop-shell--facility .hop-shell__brand-mark {
+  background: linear-gradient(135deg, var(--hop-gold) 0%, #f97316 60%, var(--hop-violet) 100%);
+}
+
 /* ── Phase 1: contact actions, ratings, messaging, duty status (2026-07-23) ── */
 
 .hop-btn-row {

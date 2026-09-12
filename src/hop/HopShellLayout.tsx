@@ -7,7 +7,14 @@ import { useHopTheme } from './useHopTheme'
 import { HopToastProvider } from './ToastContext'
 import { HopIcon, type HopIconKey } from './icons'
 
-export type HopNavItem = { to: string; label: string; end?: boolean; icon: HopIconKey }
+export type HopNavItem = {
+  to: string
+  label: string
+  end?: boolean
+  icon: HopIconKey
+  /** Optional unread-style count pill next to the label (e.g. concierge's Messages badge). */
+  badge?: number
+}
 export type HopNavGroup = { label?: string; items: readonly HopNavItem[] }
 
 type Props = {
@@ -133,6 +140,7 @@ export function HopShellLayout({
                       <HopIcon name={item.icon} size={18} />
                     </span>
                     {item.label}
+                    {!!item.badge && <span className="hop-unread-badge">{item.badge}</span>}
                   </NavLink>
                 ))}
               </div>

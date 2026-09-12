@@ -703,9 +703,9 @@ exhaustively. Still plain (left for a follow-up pass, not silently dropped):
 A push to make HOP's authenticated app feel like a top-tier consumer product rather than a stack
 of plain cards — grouped navigation, a real icon system, and dashboard/profile content organized
 into a responsive block grid instead of a single vertical column. Scoped to the **member app**
-(`main`, `/hop/app/*`) first; admin/concierge/facility (partly `staff-portal`) get the same system
-in a follow-up second pass — see "Not yet ported" below. Purely frontend (React + `hopApp.css`); no
-new `api/**` file, so it has zero effect on either deployment's 12-function cap.
+(`main`, `/hop/app/*`) first; admin/concierge/facility (`staff-portal`) got the same system in
+Phase 2, immediately below. Purely frontend (React + `hopApp.css`); no new `api/**` file, so it has
+zero effect on either deployment's 12-function cap.
 
 - **Icons**: added `lucide-react`. `src/hop/hopIconMap.ts` holds one lookup object
   (`HOP_ICONS: Record<HopIconKey, LucideIcon>`) and `src/hop/icons.tsx` exports the `<HopIcon
@@ -744,13 +744,51 @@ new `api/**` file, so it has zero effect on either deployment's 12-function cap.
   untouched (still used by `HopFamilyCarePage.tsx`'s choice-card grid, out of scope this pass) —
   the icon-chip classes are additive, not a replacement.
 
-**Not yet ported** (Phase 2, tracked but not started): `HopConciergeLayout.tsx`,
-`HopFacilityLayout.tsx` (both `staff-portal`), and every content page for admin/concierge/facility
-beyond the shell (`HopAdminDashboardPage.tsx`, etc.) — those still render the pre-redesign single-
-column card stack. `HopShellLayout.tsx`/`icons.tsx`/`hopIconMap.ts` are shared files (same
-sync-across-branches convention as `api/hop/**`) — a real port needs to copy or merge them into
-the `staff-portal` worktree, then move `HopConciergeLayout.tsx`/`HopFacilityLayout.tsx` onto
-`HopShellLayout` the same way `HopAppLayout.tsx`/`HopAdminLayout.tsx` were.
+Phase 2 (below) ported this to `staff-portal` in the same pass this doc entry was written.
+
+## ConciergeHub redesign, Phase 2 of 2 (2026-09-12)
+
+Ports Phase 1's system onto `staff-portal` (admin/concierge/facility) — same shared shell, icons,
+and block grid, no new design language. Done in the `../theconcierge-staff-portal` worktree.
+
+- **Shared files copied over**: `HopShellLayout.tsx`, `icons.tsx`, `hopIconMap.ts`, and the updated
+  `hopApp.css` are now byte-identical on both branches (same convention as `api/hop/**`). Added
+  `lucide-react` to `staff-portal`'s `package.json` too.
+  `hopIconMap.ts` gained 5 keys only ConciergeHub's nav uses (`accounts`, `calendar`, `heatmap`,
+  `requestStats`, `retention`) — added to **both** branches' copies of the file so it stays one
+  shared file rather than drifting, even though `main` doesn't reference them today.
+  `HopShellLayout.tsx` also gained an optional `badge?: number` field on `HopNavItem` (a small,
+  backward-compatible addition — unused unless a nav item passes it) to carry concierge's Messages
+  unread-count pill, which the old per-role file rendered inline.
+- **`HopAdminLayout.tsx`, `HopConciergeLayout.tsx`, `HopFacilityLayout.tsx`** (`staff-portal`) now
+  render `HopShellLayout` the same way `main`'s two layouts do. Each got the same grouped-nav
+  treatment as Phase 1 (e.g. concierge: Overview; **Community** — Feed, Messages; **My work** — My
+  requests, Calendar; **Account** — Profile). `HopConciergeLayout.tsx` keeps its `DutyToggle`
+  component, now passed via `HopShellLayout`'s `extraSidebarSlot` prop instead of being inlined
+  in the JSX directly.
+- **Per-role accent** (new, not in Phase 1): the `.hop-shell--admin`/`--concierge`/`--facility`
+  modifier classes on each layout's root — inert since they were added, flagged in Phase 1's own
+  exploration as "presumably left for exactly this kind of per-role theming" — now do something.
+  `.hop-shell--concierge` reorders the existing indigo/violet/cyan tokens to lead with cyan
+  (a "field/in-the-moment" role); `.hop-shell--facility` leads with `--hop-gold` (an
+  "insights/reporting" role, matching gold's existing reserved-for-highlights convention). Admin
+  keeps the default indigo-led gradient unchanged. Implemented purely by reading the existing
+  `var(--hop-indigo/-violet/-cyan/-gold)` tokens in a different order/combination — no new hex
+  values, and it composes correctly with the existing `.hop-shell--concierge-hub` brand override
+  (ConciergeHub's own indigo/violet/cyan retint) since custom properties resolve at the point of
+  use, not where the rule is declared.
+- **Dashboard blocks**: `HopAdminDashboardPage.tsx`, `HopConciergeDashboardPage.tsx`,
+  `HopFacilityDashboardPage.tsx` each wrap their below-the-KPI-tiles section(s) in the same
+  `.hop-block-grid`/`.hop-block` primitive from Phase 1 (`.hop-stat-grid`'s KPI tiles are
+  untouched — that's a distinct, already-existing grid). Facility's two sections ("Today's
+  morale", "Working today") now sit side by side instead of stacked full-width.
+- **Not done this pass**: no content page beyond each role's Overview/dashboard was restructured
+  (Requests, Accounts, Wellness, Heat map, Retention, etc. are unchanged) — matching Phase 1's own
+  scope decision to prove the pattern on one flagship page per role rather than rewrite everything
+  at once.
+
+Verified in the `staff-portal` worktree: `tsc -b`, `npm run build`, `npm run lint` all clean (same
+pre-existing, unrelated `HopAvatar.tsx` lint error as `main`).
 
 ## Deployments
 
