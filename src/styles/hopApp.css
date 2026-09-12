@@ -249,11 +249,32 @@
   flex-shrink: 0;
 }
 
+.hop-shell__sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .hop-shell__nav {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 1.1rem;
   flex: 1;
+}
+
+.hop-shell__nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.hop-shell__nav-group-label {
+  padding: 0.3rem 0.75rem 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hop-hint);
 }
 
 .hop-shell__nav-link {
@@ -270,9 +291,10 @@
 }
 
 .hop-shell__nav-link__icon {
-  font-size: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 1.3rem;
-  text-align: center;
   flex-shrink: 0;
 }
 
@@ -522,6 +544,98 @@
 .hop-quick-card:nth-child(6) .hop-quick-card__icon {
   background: linear-gradient(135deg, var(--hop-violet) 0%, #f472b6 100%);
   box-shadow: 0 6px 16px -6px rgba(155, 92, 247, 0.7);
+}
+
+/* ── Icon chip (generalized 2026-redesign) ─────
+   The gradient-circle icon treatment above was originally hand-tuned per nth-child position on
+   .hop-quick-card only. This is the same visual language pulled out into a standalone, reusable
+   primitive — any block/card that needs a tinted icon badge uses this instead of a new one-off
+   rule. .hop-quick-card/.hop-quick-card__icon above are untouched (Family Care's choice-card grid
+   still reads them) — new surfaces (dashboard/profile blocks) use .hop-icon-chip going forward. */
+.hop-icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.hop-icon-chip--sm {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+/* Precomputed rgba()/gradients throughout this block, not color-mix() — see the note on
+   .hop-shell__brand-mark above re: Capacitor iOS 15 support. */
+.hop-icon-chip--indigo {
+  background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
+  box-shadow: 0 6px 16px -6px rgba(109, 110, 245, 0.7);
+}
+
+.hop-icon-chip--cyan {
+  background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 100%);
+  box-shadow: 0 6px 16px -6px rgba(34, 211, 238, 0.7);
+}
+
+.hop-icon-chip--gold {
+  background: linear-gradient(135deg, var(--hop-gold) 0%, #f97316 100%);
+  box-shadow: 0 6px 16px -6px rgba(245, 185, 66, 0.7);
+}
+
+.hop-icon-chip--pink {
+  background: linear-gradient(135deg, #f472b6 0%, var(--hop-violet) 100%);
+  box-shadow: 0 6px 16px -6px rgba(244, 114, 182, 0.7);
+}
+
+.hop-icon-chip--green {
+  background: linear-gradient(135deg, #34d399 0%, var(--hop-cyan) 100%);
+  box-shadow: 0 6px 16px -6px rgba(52, 211, 153, 0.7);
+}
+
+.hop-icon-chip--violet {
+  background: linear-gradient(135deg, var(--hop-violet) 0%, #f472b6 100%);
+  box-shadow: 0 6px 16px -6px rgba(155, 92, 247, 0.7);
+}
+
+/* ── Block grid (2026-redesign) ─────────────────
+   Feature "blocks" laid out in a responsive grid instead of a full-width vertical stack of
+   .hop-card sections — used on the dashboard and profile page. Each .hop-block is a .hop-card
+   variant; anything that should span the full grid width (a form with its own internal 2-col
+   layout, a wide banner) gets .hop-block--wide. */
+.hop-block-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.hop-block-grid .hop-block--wide {
+  grid-column: 1 / -1;
+}
+
+.hop-block {
+  height: 100%;
+}
+
+.hop-block__head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.hop-block__head h2 {
+  margin: 0;
+}
+
+.hop-block__eyebrow {
+  margin: 0 0 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hop-hint);
 }
 
 /* ── Events / tables ────────────────────────── */
@@ -1367,32 +1481,86 @@
   display: inline-block;
 }
 
+/* Below 720px the sidebar becomes a real off-canvas drawer (slide-in overlay + backdrop, JS-driven
+   open/close state in HopShellLayout.tsx) instead of the old approach of reflowing it into a
+   horizontal wrapped top bar — with 6-8 nav items across 4 roles, a wrapped row got cramped and
+   didn't scale. A slim sticky top bar (brand + hamburger) replaces the old inline sidebar-as-topbar
+   on small screens. */
 @media (max-width: 720px) {
-  .hop-shell {
-    flex-direction: column;
+  .hop-shell__mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.1rem;
+    background: var(--hop-panel);
+    border-bottom: 1px solid var(--hop-border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .hop-shell__mobile-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: var(--hop-radius-sm);
+    border: 1px solid var(--hop-border);
+    background: var(--hop-overlay);
+    color: var(--hop-text);
+  }
+
+  .hop-shell__mobile-menu-btn:active {
+    transform: scale(0.94);
+  }
+
+  .hop-shell__backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 29;
   }
 
   .hop-shell__sidebar {
-    width: auto;
-    flex-direction: row;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(82vw, 300px);
+    z-index: 30;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    border-right: 1px solid var(--hop-border);
+    border-bottom: none;
+    overflow-y: auto;
+  }
+
+  .hop-shell__sidebar--open {
+    transform: translateX(0);
+  }
+
+  .hop-shell__mobile-close {
+    display: inline-flex;
     align-items: center;
-    border-right: none;
-    border-bottom: 1px solid var(--hop-border);
-  }
-
-  .hop-shell__nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .hop-shell__user {
-    border-top: none;
-    padding-top: 0;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--hop-radius-sm);
+    border: 1px solid var(--hop-border);
+    background: var(--hop-overlay);
+    color: var(--hop-text);
   }
 
   .hop-field-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Desktop/tablet default: the mobile top bar, its menu button, the drawer's own close button, and
+   the backdrop only ever exist for the sub-720px drawer above. */
+.hop-shell__mobile-bar,
+.hop-shell__mobile-close {
+  display: none;
 }
 
 /* ── Onboarding tour (2026-07-24) ─────────────────────────────────────────

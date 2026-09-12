@@ -698,6 +698,60 @@ exhaustively. Still plain (left for a follow-up pass, not silently dropped):
 `HopAdminWellnessPage.tsx`, `HopAdminIntegrationsPage.tsx`, `HopFamilyCarePage.tsx`,
 `HopIntegrationsPage.tsx`, `HopWellnessPage.tsx`.
 
+## Member app visual/UX redesign, Phase 1 of 2 (2026-09-12)
+
+A push to make HOP's authenticated app feel like a top-tier consumer product rather than a stack
+of plain cards — grouped navigation, a real icon system, and dashboard/profile content organized
+into a responsive block grid instead of a single vertical column. Scoped to the **member app**
+(`main`, `/hop/app/*`) first; admin/concierge/facility (partly `staff-portal`) get the same system
+in a follow-up second pass — see "Not yet ported" below. Purely frontend (React + `hopApp.css`); no
+new `api/**` file, so it has zero effect on either deployment's 12-function cap.
+
+- **Icons**: added `lucide-react`. `src/hop/hopIconMap.ts` holds one lookup object
+  (`HOP_ICONS: Record<HopIconKey, LucideIcon>`) and `src/hop/icons.tsx` exports the `<HopIcon
+  name="..."/>` component that reads it — split across two files for the same
+  `react-refresh/only-export-components` reason `OnboardingTour.tsx`/`useTourVisibility.ts` are
+  split (a component file can't also export a plain object/type). `NAV_ITEMS`/`QUICK_REQUESTS`-
+  style arrays now carry a `HopIconKey` string (e.g. `'dashboard'`, `'ride'`) instead of a raw emoji
+  character. Emoji are kept everywhere they're content rather than chrome (tour illustrations,
+  reaction buttons, the mood picker, nag-banner icons) — nothing there changed.
+- **Shared shell**: `src/hop/HopShellLayout.tsx` is a new generic layout (props: `brandLabel`,
+  `navGroups`, `tourSteps`, `tourKey`, `loginRedirect`, optional `roleClass`/`extraSidebarSlot`/
+  `afterContent`) that both `HopAppLayout.tsx` and `HopAdminLayout.tsx` now render instead of each
+  carrying its own near-duplicate sidebar/nav/user-row JSX. Member nav is now grouped (Dashboard;
+  **Community** — Feed, Messages; **Care** — Requests, Family Care, Wellness; **Account** —
+  Integrations, Profile) instead of one flat 8-item list; admin's nav is grouped similarly. This is
+  what makes porting `HopConciergeLayout.tsx`/`HopFacilityLayout.tsx` (`staff-portal`) onto the same
+  component in Phase 2 a small diff rather than a rewrite.
+- **Real mobile nav**: below 720px the sidebar is now an off-canvas drawer (slide-in + backdrop,
+  `useState` open/close in `HopShellLayout.tsx`, closes on route change) behind a slim sticky
+  top bar (hamburger + brand), replacing the previous pure-CSS approach of reflowing the sidebar
+  into a horizontal wrapped top bar in place. The old single `@media (max-width: 720px)` block in
+  `hopApp.css` was replaced accordingly (`.hop-shell__mobile-bar`/`__mobile-menu-btn`/`__backdrop`/
+  `__sidebar--open`/`__mobile-close`, new); `.hop-field-row`'s 1-column collapse at the same
+  breakpoint is unchanged.
+- **Block grid**: new `.hop-block-grid`/`.hop-block`/`.hop-block--wide`/`.hop-block__head`/
+  `__eyebrow` primitives in `hopApp.css` — a responsive `auto-fit` grid of `.hop-card`-based
+  "blocks" instead of a full-width vertical stack. `HopDashboardPage.tsx` and `HopProfilePage.tsx`
+  were restructured onto this (same data/logic and same sub-components — `HopMoodCheckinPrompt`,
+  `DailyNagBanner`, `HopDailyTasksCard`, `HopSpecialDatesCard`, etc. — just composed into grid
+  cells; nag banners stay full-width above the grid since they're banners, not blocks). No other
+  page was restructured this pass.
+- **Icon chip**: the old `.hop-quick-card__icon` + six `:nth-child` gradient rules (one hand-tuned
+  accent per quick-request tile) are generalized into a reusable `.hop-icon-chip` + `--indigo/
+  -cyan/-gold/-pink/-green/-violet` tone modifiers, used by the dashboard's quick-request tiles and
+  by new block headers alike. `.hop-quick-card`/`.hop-quick-card__icon` themselves were left
+  untouched (still used by `HopFamilyCarePage.tsx`'s choice-card grid, out of scope this pass) —
+  the icon-chip classes are additive, not a replacement.
+
+**Not yet ported** (Phase 2, tracked but not started): `HopConciergeLayout.tsx`,
+`HopFacilityLayout.tsx` (both `staff-portal`), and every content page for admin/concierge/facility
+beyond the shell (`HopAdminDashboardPage.tsx`, etc.) — those still render the pre-redesign single-
+column card stack. `HopShellLayout.tsx`/`icons.tsx`/`hopIconMap.ts` are shared files (same
+sync-across-branches convention as `api/hop/**`) — a real port needs to copy or merge them into
+the `staff-portal` worktree, then move `HopConciergeLayout.tsx`/`HopFacilityLayout.tsx` onto
+`HopShellLayout` the same way `HopAppLayout.tsx`/`HopAdminLayout.tsx` were.
+
 ## Deployments
 
 There are **two** Vercel projects sharing this one GitHub repo and this one Neon database. Don't

@@ -1,20 +1,34 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { OnboardingTour, type TourStep } from './OnboardingTour'
-import { useTourVisibility } from './useTourVisibility'
-import { useHopAuth } from './useHopAuth'
-import { useHopTheme } from './useHopTheme'
-import { HopToastProvider } from './ToastContext'
+import type { TourStep } from './OnboardingTour'
+import { HopShellLayout, type HopNavGroup } from './HopShellLayout'
 import { HopAiAssistant } from './HopAiAssistant'
 
-const NAV_ITEMS = [
-  { to: '/hop/app', label: 'Dashboard', end: true, icon: '🏠' },
-  { to: '/hop/app/feed', label: 'Feed', end: false, icon: '📣' },
-  { to: '/hop/app/requests', label: 'Requests', end: false, icon: '📋' },
-  { to: '/hop/app/family-care', label: 'Family Care', end: false, icon: '👨‍👩‍👧' },
-  { to: '/hop/app/wellness', label: 'Wellness', end: false, icon: '❤️' },
-  { to: '/hop/app/messages', label: 'Messages', end: false, icon: '💬' },
-  { to: '/hop/app/integrations', label: 'Integrations', end: false, icon: '🔗' },
-  { to: '/hop/app/profile', label: 'Profile', end: false, icon: '🪪' },
+// Grouped nav — was one flat 8-item list; grouping related features together is part of the
+// redesign (see docs/hop/architecture.md's redesign entry) and generalizes the same way to the
+// other three roles' shells.
+const NAV_GROUPS: readonly HopNavGroup[] = [
+  { items: [{ to: '/hop/app', label: 'Dashboard', end: true, icon: 'dashboard' }] },
+  {
+    label: 'Community',
+    items: [
+      { to: '/hop/app/feed', label: 'Feed', icon: 'feed' },
+      { to: '/hop/app/messages', label: 'Messages', icon: 'messages' },
+    ],
+  },
+  {
+    label: 'Care',
+    items: [
+      { to: '/hop/app/requests', label: 'Requests', icon: 'requests' },
+      { to: '/hop/app/family-care', label: 'Family Care', icon: 'familyCare' },
+      { to: '/hop/app/wellness', label: 'Wellness', icon: 'wellness' },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { to: '/hop/app/integrations', label: 'Integrations', icon: 'integrations' },
+      { to: '/hop/app/profile', label: 'Profile', icon: 'profile' },
+    ],
+  },
 ] as const
 
 const MEMBER_TOUR_STEPS: TourStep[] = [
@@ -51,71 +65,14 @@ const MEMBER_TOUR_STEPS: TourStep[] = [
 ]
 
 export function HopAppLayout() {
-  const { user, logout } = useHopAuth()
-  const { theme, toggleTheme } = useHopTheme()
-  const navigate = useNavigate()
-  const tour = useTourVisibility('hop-tour-member')
-
-  async function handleLogout() {
-    await logout()
-    navigate('/hop/login', { replace: true })
-  }
-
   return (
-    <HopToastProvider>
-      <div className="hop-shell">
-        <aside className="hop-shell__sidebar">
-          <div className="hop-shell__brand">
-            <span className="hop-shell__brand-mark">✦</span>
-            <span>HOP</span>
-          </div>
-          <nav className="hop-shell__nav">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) => `hop-shell__nav-link${isActive ? ' hop-shell__nav-link--active' : ''}`}
-              >
-                <span className="hop-shell__nav-link__icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="hop-shell__user">
-            <span className="hop-shell__user-name">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <div className="hop-shell__utility-row">
-              <button type="button" className="hop-shell__utility-btn" onClick={tour.reopen}>
-                🧭 Quick tour
-              </button>
-              <button
-                type="button"
-                className="hop-shell__utility-btn"
-                onClick={toggleTheme}
-                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
-              </button>
-              <button
-                type="button"
-                className="hop-shell__utility-btn hop-shell__logout"
-                onClick={handleLogout}
-              >
-                🚪 Log out
-              </button>
-            </div>
-          </div>
-        </aside>
-        <main className="hop-shell__content">
-          <Outlet />
-        </main>
-        <OnboardingTour open={tour.open} onClose={tour.close} steps={MEMBER_TOUR_STEPS} />
-        <HopAiAssistant />
-      </div>
-    </HopToastProvider>
+    <HopShellLayout
+      brandLabel="HOP"
+      navGroups={NAV_GROUPS}
+      tourSteps={MEMBER_TOUR_STEPS}
+      tourKey="hop-tour-member"
+      loginRedirect="/hop/login"
+      afterContent={<HopAiAssistant />}
+    />
   )
 }
