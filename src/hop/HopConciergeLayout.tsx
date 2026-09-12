@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { hopConciergeGetDutyStatus, hopConciergeSetDutyStatus, hopListStaffThreads } from './api'
-import { OnboardingTour, type TourStep } from './OnboardingTour'
-import { useTourVisibility } from './useTourVisibility'
-import { useHopAuth } from './useHopAuth'
-import { useHopTheme } from './useHopTheme'
-import { HopToastProvider } from './ToastContext'
+import type { TourStep } from './OnboardingTour'
+import { HopShellLayout, type HopNavGroup } from './HopShellLayout'
 
 // Self-toggle on/off duty — feeds the admin's "working today" roster. See hop_duty_log in
 // db/schema.sql and docs/hop/architecture.md ("Phase 1 quick wins").
@@ -44,15 +40,6 @@ function DutyToggle() {
   )
 }
 
-const NAV_ITEMS = [
-  { to: '/hop/concierge', label: 'Overview', end: true, icon: '📊' },
-  { to: '/hop/concierge/feed', label: 'Feed', end: false, icon: '📣' },
-  { to: '/hop/concierge/requests', label: 'My requests', end: false, icon: '📋' },
-  { to: '/hop/concierge/calendar', label: 'Calendar', end: false, icon: '📅' },
-  { to: '/hop/concierge/messages', label: 'Messages', end: false, icon: '💬' },
-  { to: '/hop/concierge/profile', label: 'Profile', end: false, icon: '👤' },
-] as const
-
 const CONCIERGE_TOUR_STEPS: TourStep[] = [
   {
     icon: '👋',
@@ -87,10 +74,6 @@ const CONCIERGE_TOUR_STEPS: TourStep[] = [
 ]
 
 export function HopConciergeLayout() {
-  const { user, logout } = useHopAuth()
-  const { theme, toggleTheme } = useHopTheme()
-  const navigate = useNavigate()
-  const tour = useTourVisibility('hop-tour-concierge')
   const [unreadStaffCount, setUnreadStaffCount] = useState(0)
 
   useEffect(() => {
@@ -99,69 +82,34 @@ export function HopConciergeLayout() {
       .catch(() => setUnreadStaffCount(0))
   }, [])
 
-  async function handleLogout() {
-    await logout()
-    navigate('/hop/admin/login', { replace: true })
-  }
+  const navGroups: readonly HopNavGroup[] = [
+    { items: [{ to: '/hop/concierge', label: 'Overview', end: true, icon: 'overview' }] },
+    {
+      label: 'Community',
+      items: [
+        { to: '/hop/concierge/feed', label: 'Feed', icon: 'feed' },
+        { to: '/hop/concierge/messages', label: 'Messages', icon: 'messages', badge: unreadStaffCount },
+      ],
+    },
+    {
+      label: 'My work',
+      items: [
+        { to: '/hop/concierge/requests', label: 'My requests', icon: 'requests' },
+        { to: '/hop/concierge/calendar', label: 'Calendar', icon: 'calendar' },
+      ],
+    },
+    { label: 'Account', items: [{ to: '/hop/concierge/profile', label: 'Profile', icon: 'profile' }] },
+  ]
 
   return (
-    <HopToastProvider>
-      <div className="hop-shell hop-shell--concierge">
-        <aside className="hop-shell__sidebar">
-          <div className="hop-shell__brand">
-            <span className="hop-shell__brand-mark">✦</span>
-            <span>HOP ConciergeHub</span>
-          </div>
-          <nav className="hop-shell__nav">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) => `hop-shell__nav-link${isActive ? ' hop-shell__nav-link--active' : ''}`}
-              >
-                <span className="hop-shell__nav-link__icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                {item.label}
-                {item.to === '/hop/concierge/messages' && unreadStaffCount > 0 && (
-                  <span className="hop-unread-badge">{unreadStaffCount}</span>
-                )}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="hop-shell__user">
-            <span className="hop-shell__user-name">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <DutyToggle />
-            <div className="hop-shell__utility-row">
-              <button type="button" className="hop-shell__utility-btn" onClick={tour.reopen}>
-                🧭 Quick tour
-              </button>
-              <button
-                type="button"
-                className="hop-shell__utility-btn"
-                onClick={toggleTheme}
-                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
-              </button>
-              <button
-                type="button"
-                className="hop-shell__utility-btn hop-shell__logout"
-                onClick={handleLogout}
-              >
-                🚪 Log out
-              </button>
-            </div>
-          </div>
-        </aside>
-        <main className="hop-shell__content">
-          <Outlet />
-        </main>
-        <OnboardingTour open={tour.open} onClose={tour.close} steps={CONCIERGE_TOUR_STEPS} />
-      </div>
-    </HopToastProvider>
+    <HopShellLayout
+      brandLabel="HOP ConciergeHub"
+      navGroups={navGroups}
+      tourSteps={CONCIERGE_TOUR_STEPS}
+      tourKey="hop-tour-concierge"
+      loginRedirect="/hop/admin/login"
+      roleClass="hop-shell--concierge"
+      extraSidebarSlot={<DutyToggle />}
+    />
   )
 }

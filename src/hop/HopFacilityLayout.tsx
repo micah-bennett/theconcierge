@@ -1,17 +1,21 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { OnboardingTour, type TourStep } from './OnboardingTour'
-import { useTourVisibility } from './useTourVisibility'
-import { useHopAuth } from './useHopAuth'
-import { useHopTheme } from './useHopTheme'
-import { HopToastProvider } from './ToastContext'
+import type { TourStep } from './OnboardingTour'
+import { HopShellLayout, type HopNavGroup } from './HopShellLayout'
 
-const NAV_ITEMS = [
-  { to: '/hop/facility', label: 'Overview', end: true, icon: '📊' },
-  { to: '/hop/facility/feed', label: 'Feed', end: false, icon: '📣' },
-  { to: '/hop/facility/heatmap', label: 'Heat map', end: false, icon: '🌡️' },
-  { to: '/hop/facility/requests-stats', label: 'Request stats', end: false, icon: '📈' },
-  { to: '/hop/facility/retention', label: 'Retention', end: false, icon: '💰' },
-  { to: '/hop/facility/my-requests', label: 'My requests', end: false, icon: '📋' },
+const NAV_GROUPS: readonly HopNavGroup[] = [
+  { items: [{ to: '/hop/facility', label: 'Overview', end: true, icon: 'overview' }] },
+  { label: 'Community', items: [{ to: '/hop/facility/feed', label: 'Feed', icon: 'feed' }] },
+  {
+    label: 'Insights',
+    items: [
+      { to: '/hop/facility/heatmap', label: 'Heat map', icon: 'heatmap' },
+      { to: '/hop/facility/requests-stats', label: 'Request stats', icon: 'requestStats' },
+      { to: '/hop/facility/retention', label: 'Retention', icon: 'retention' },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [{ to: '/hop/facility/my-requests', label: 'My requests', icon: 'requests' }],
+  },
 ] as const
 
 const FACILITY_TOUR_STEPS: TourStep[] = [
@@ -48,70 +52,14 @@ const FACILITY_TOUR_STEPS: TourStep[] = [
 ]
 
 export function HopFacilityLayout() {
-  const { user, logout } = useHopAuth()
-  const { theme, toggleTheme } = useHopTheme()
-  const navigate = useNavigate()
-  const tour = useTourVisibility('hop-tour-facility')
-
-  async function handleLogout() {
-    await logout()
-    navigate('/hop/admin/login', { replace: true })
-  }
-
   return (
-    <HopToastProvider>
-      <div className="hop-shell hop-shell--facility">
-        <aside className="hop-shell__sidebar">
-          <div className="hop-shell__brand">
-            <span className="hop-shell__brand-mark">✦</span>
-            <span>HOP Facility</span>
-          </div>
-          <nav className="hop-shell__nav">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) => `hop-shell__nav-link${isActive ? ' hop-shell__nav-link--active' : ''}`}
-              >
-                <span className="hop-shell__nav-link__icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="hop-shell__user">
-            <span className="hop-shell__user-name">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <div className="hop-shell__utility-row">
-              <button type="button" className="hop-shell__utility-btn" onClick={tour.reopen}>
-                🧭 Quick tour
-              </button>
-              <button
-                type="button"
-                className="hop-shell__utility-btn"
-                onClick={toggleTheme}
-                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
-              </button>
-              <button
-                type="button"
-                className="hop-shell__utility-btn hop-shell__logout"
-                onClick={handleLogout}
-              >
-                🚪 Log out
-              </button>
-            </div>
-          </div>
-        </aside>
-        <main className="hop-shell__content">
-          <Outlet />
-        </main>
-        <OnboardingTour open={tour.open} onClose={tour.close} steps={FACILITY_TOUR_STEPS} />
-      </div>
-    </HopToastProvider>
+    <HopShellLayout
+      brandLabel="HOP Facility"
+      navGroups={NAV_GROUPS}
+      tourSteps={FACILITY_TOUR_STEPS}
+      tourKey="hop-tour-facility"
+      loginRedirect="/hop/admin/login"
+      roleClass="hop-shell--facility"
+    />
   )
 }

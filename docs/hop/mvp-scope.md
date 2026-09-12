@@ -59,6 +59,28 @@ doesn't assume more exists than does. Update this file whenever scope changes.
   is active-browser sharing, not background tracking — see "Live ride location" in
   `architecture.md` for exactly what that means and its real limitations.
 
+## 2026-09-12: Member app visual/UX redesign, Phase 1 of 2
+
+From a push for HOP's post-login experience to feel like a top-tier consumer app rather than a
+stack of plain cards. See "Member app visual/UX redesign, Phase 1 of 2" in `architecture.md` for
+the full technical shape.
+
+- Member nav (`/hop/app/*`) is now grouped (Community / Care / Account) with real `lucide-react`
+  SVG icons instead of a flat emoji-icon list; admin's nav (`/hop/admin/*`) picked up the same
+  grouping. Both now render through a new shared `HopShellLayout.tsx` instead of each owning a
+  near-duplicate copy of the sidebar/nav/user-row markup.
+- Below 720px, the sidebar is a real off-canvas drawer (hamburger + slide-in overlay) instead of
+  the old reflow-to-horizontal-top-bar.
+- The Dashboard (`HopDashboardPage.tsx`) and Profile (`HopProfilePage.tsx`) pages are restructured
+  into a responsive block grid (new `.hop-block-grid`/`.hop-block` primitives) instead of one
+  full-width vertical stack of cards — same data/sub-components, just laid out differently. No
+  other page was restructured this pass.
+- **Phase 2 (same day)**: the same shell/icon/block-grid system was ported to `staff-portal`
+  (admin/concierge/facility) — see "ConciergeHub redesign, Phase 2 of 2" in `architecture.md`.
+  Each portal's Overview/dashboard page got the block-grid treatment; other content pages
+  (Requests, Accounts, Wellness, Heat map, Retention, etc.) are unchanged. Admin/concierge/facility
+  now also each get a distinct accent tint (indigo/cyan/gold) on top of the shared shape language.
+
 ## 2026-09-06: HOP Feed, unified accounts page, function-budget consolidation, polish pass
 
 From a push to make the app feel like "a big application" — a shared social feed across all four

@@ -58,40 +58,42 @@ export function HopFacilityDashboardPage() {
             </div>
           </div>
 
-          <section className="hop-card">
-            <h2>💚 Today's morale</h2>
-            {morale.length === 0 && <p className="hop-muted">No mood check-ins yet today.</p>}
-            {morale.length > 0 && (
-              <ul className="hop-history-list">
-                {morale.map((m) => (
-                  <li key={m.level} className="hop-history-list__item">
-                    <span className="hop-history-list__type">{MORALE_LABEL[m.level] || m.level}</span>
-                    <span className="hop-muted">{m.percent}%</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="hop-muted" style={{ marginTop: '0.5rem' }}>
-              Aggregate only — no individual member is ever identified in this view.
-            </p>
-          </section>
+          <div className="hop-block-grid">
+            <section className="hop-card hop-block">
+              <h2>💚 Today's morale</h2>
+              {morale.length === 0 && <p className="hop-muted">No mood check-ins yet today.</p>}
+              {morale.length > 0 && (
+                <ul className="hop-history-list">
+                  {morale.map((m) => (
+                    <li key={m.level} className="hop-history-list__item">
+                      <span className="hop-history-list__type">{MORALE_LABEL[m.level] || m.level}</span>
+                      <span className="hop-muted">{m.percent}%</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="hop-muted" style={{ marginTop: '0.5rem' }}>
+                Aggregate only — no individual member is ever identified in this view.
+              </p>
+            </section>
 
-          <section className="hop-card">
-            <h2>🧑‍💼 Working today</h2>
-            {onDuty.length === 0 && <p className="hop-muted">No one currently clocked in.</p>}
-            {onDuty.length > 0 && (
-              <ul className="hop-history-list">
-                {onDuty.map((s) => (
-                  <li key={s.id} className="hop-history-list__item">
-                    <span className="hop-history-list__type">
-                      {s.first_name} {s.last_name}
-                    </span>
-                    <span className="hop-muted">{s.role === 'concierge' ? 'Concierge' : 'Admin'}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+            <section className="hop-card hop-block">
+              <h2>🧑‍💼 Working today</h2>
+              {onDuty.length === 0 && <p className="hop-muted">No one currently clocked in.</p>}
+              {onDuty.length > 0 && (
+                <ul className="hop-history-list">
+                  {onDuty.map((s) => (
+                    <li key={s.id} className="hop-history-list__item">
+                      <span className="hop-history-list__type">
+                        {s.first_name} {s.last_name}
+                      </span>
+                      <span className="hop-muted">{s.role === 'concierge' ? 'Concierge' : 'Admin'}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
         </>
       )}
     </div>

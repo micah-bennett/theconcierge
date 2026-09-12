@@ -42,12 +42,14 @@ export function HopConciergeDashboardPage() {
       </div>
 
       {counts && counts.assigned === 0 && (
-        <section className="hop-card">
-          <p className="hop-muted">
-            Nothing assigned to you yet — new requests will show up on{' '}
-            <a href="/hop/concierge/requests">My requests</a> the moment an admin assigns one.
-          </p>
-        </section>
+        <div className="hop-block-grid">
+          <section className="hop-card hop-block hop-block--wide">
+            <p className="hop-muted">
+              Nothing assigned to you yet — new requests will show up on{' '}
+              <a href="/hop/concierge/requests">My requests</a> the moment an admin assigns one.
+            </p>
+          </section>
+        </div>
       )}
     </div>
   )

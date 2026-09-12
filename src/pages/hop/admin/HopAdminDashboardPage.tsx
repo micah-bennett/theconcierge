@@ -54,34 +54,36 @@ export function HopAdminDashboardPage() {
         </div>
       </div>
 
-      <section className="hop-card">
-        <h2>🟢 Working today</h2>
-        {onDuty === null && (
-          <>
-            <div className="hop-skeleton-bar hop-skeleton-bar--title" />
-            <div className="hop-skeleton-bar" />
-            <div className="hop-skeleton-bar" />
-          </>
-        )}
-        {onDuty && onDuty.length === 0 && (
-          <EmptyState icon="🌙" message="No one has clocked in yet today." />
-        )}
-        {onDuty && onDuty.length > 0 && (
-          <ul className="hop-timeline">
-            {onDuty.map((staff) => (
-              <li key={staff.id}>
-                <div className="hop-timeline__top">
-                  <strong>
-                    {staff.first_name} {staff.last_name}
-                  </strong>
-                  <span className="hop-muted">{staff.role === 'concierge' ? 'Concierge' : 'Admin'}</span>
-                </div>
-                <span className="hop-muted">Since {new Date(staff.clock_in_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="hop-block-grid">
+        <section className="hop-card hop-block hop-block--wide">
+          <h2>🟢 Working today</h2>
+          {onDuty === null && (
+            <>
+              <div className="hop-skeleton-bar hop-skeleton-bar--title" />
+              <div className="hop-skeleton-bar" />
+              <div className="hop-skeleton-bar" />
+            </>
+          )}
+          {onDuty && onDuty.length === 0 && (
+            <EmptyState icon="🌙" message="No one has clocked in yet today." />
+          )}
+          {onDuty && onDuty.length > 0 && (
+            <ul className="hop-timeline">
+              {onDuty.map((staff) => (
+                <li key={staff.id}>
+                  <div className="hop-timeline__top">
+                    <strong>
+                      {staff.first_name} {staff.last_name}
+                    </strong>
+                    <span className="hop-muted">{staff.role === 'concierge' ? 'Concierge' : 'Admin'}</span>
+                  </div>
+                  <span className="hop-muted">Since {new Date(staff.clock_in_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   )
 }
