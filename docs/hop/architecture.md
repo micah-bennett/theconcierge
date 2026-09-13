@@ -698,6 +698,98 @@ exhaustively. Still plain (left for a follow-up pass, not silently dropped):
 `HopAdminWellnessPage.tsx`, `HopAdminIntegrationsPage.tsx`, `HopFamilyCarePage.tsx`,
 `HopIntegrationsPage.tsx`, `HopWellnessPage.tsx`.
 
+## Member app visual/UX redesign, Phase 1 of 2 (2026-09-12)
+
+A push to make HOP's authenticated app feel like a top-tier consumer product rather than a stack
+of plain cards — grouped navigation, a real icon system, and dashboard/profile content organized
+into a responsive block grid instead of a single vertical column. Scoped to the **member app**
+(`main`, `/hop/app/*`) first; admin/concierge/facility (`staff-portal`) got the same system in
+Phase 2, immediately below. Purely frontend (React + `hopApp.css`); no new `api/**` file, so it has
+zero effect on either deployment's 12-function cap.
+
+- **Icons**: added `lucide-react`. `src/hop/hopIconMap.ts` holds one lookup object
+  (`HOP_ICONS: Record<HopIconKey, LucideIcon>`) and `src/hop/icons.tsx` exports the `<HopIcon
+  name="..."/>` component that reads it — split across two files for the same
+  `react-refresh/only-export-components` reason `OnboardingTour.tsx`/`useTourVisibility.ts` are
+  split (a component file can't also export a plain object/type). `NAV_ITEMS`/`QUICK_REQUESTS`-
+  style arrays now carry a `HopIconKey` string (e.g. `'dashboard'`, `'ride'`) instead of a raw emoji
+  character. Emoji are kept everywhere they're content rather than chrome (tour illustrations,
+  reaction buttons, the mood picker, nag-banner icons) — nothing there changed.
+- **Shared shell**: `src/hop/HopShellLayout.tsx` is a new generic layout (props: `brandLabel`,
+  `navGroups`, `tourSteps`, `tourKey`, `loginRedirect`, optional `roleClass`/`extraSidebarSlot`/
+  `afterContent`) that both `HopAppLayout.tsx` and `HopAdminLayout.tsx` now render instead of each
+  carrying its own near-duplicate sidebar/nav/user-row JSX. Member nav is now grouped (Dashboard;
+  **Community** — Feed, Messages; **Care** — Requests, Family Care, Wellness; **Account** —
+  Integrations, Profile) instead of one flat 8-item list; admin's nav is grouped similarly. This is
+  what makes porting `HopConciergeLayout.tsx`/`HopFacilityLayout.tsx` (`staff-portal`) onto the same
+  component in Phase 2 a small diff rather than a rewrite.
+- **Real mobile nav**: below 720px the sidebar is now an off-canvas drawer (slide-in + backdrop,
+  `useState` open/close in `HopShellLayout.tsx`, closes on route change) behind a slim sticky
+  top bar (hamburger + brand), replacing the previous pure-CSS approach of reflowing the sidebar
+  into a horizontal wrapped top bar in place. The old single `@media (max-width: 720px)` block in
+  `hopApp.css` was replaced accordingly (`.hop-shell__mobile-bar`/`__mobile-menu-btn`/`__backdrop`/
+  `__sidebar--open`/`__mobile-close`, new); `.hop-field-row`'s 1-column collapse at the same
+  breakpoint is unchanged.
+- **Block grid**: new `.hop-block-grid`/`.hop-block`/`.hop-block--wide`/`.hop-block__head`/
+  `__eyebrow` primitives in `hopApp.css` — a responsive `auto-fit` grid of `.hop-card`-based
+  "blocks" instead of a full-width vertical stack. `HopDashboardPage.tsx` and `HopProfilePage.tsx`
+  were restructured onto this (same data/logic and same sub-components — `HopMoodCheckinPrompt`,
+  `DailyNagBanner`, `HopDailyTasksCard`, `HopSpecialDatesCard`, etc. — just composed into grid
+  cells; nag banners stay full-width above the grid since they're banners, not blocks). No other
+  page was restructured this pass.
+- **Icon chip**: the old `.hop-quick-card__icon` + six `:nth-child` gradient rules (one hand-tuned
+  accent per quick-request tile) are generalized into a reusable `.hop-icon-chip` + `--indigo/
+  -cyan/-gold/-pink/-green/-violet` tone modifiers, used by the dashboard's quick-request tiles and
+  by new block headers alike. `.hop-quick-card`/`.hop-quick-card__icon` themselves were left
+  untouched (still used by `HopFamilyCarePage.tsx`'s choice-card grid, out of scope this pass) —
+  the icon-chip classes are additive, not a replacement.
+
+Phase 2 (below) ported this to `staff-portal` in the same pass this doc entry was written.
+
+## ConciergeHub redesign, Phase 2 of 2 (2026-09-12)
+
+Ports Phase 1's system onto `staff-portal` (admin/concierge/facility) — same shared shell, icons,
+and block grid, no new design language. Done in the `../theconcierge-staff-portal` worktree.
+
+- **Shared files copied over**: `HopShellLayout.tsx`, `icons.tsx`, `hopIconMap.ts`, and the updated
+  `hopApp.css` are now byte-identical on both branches (same convention as `api/hop/**`). Added
+  `lucide-react` to `staff-portal`'s `package.json` too.
+  `hopIconMap.ts` gained 5 keys only ConciergeHub's nav uses (`accounts`, `calendar`, `heatmap`,
+  `requestStats`, `retention`) — added to **both** branches' copies of the file so it stays one
+  shared file rather than drifting, even though `main` doesn't reference them today.
+  `HopShellLayout.tsx` also gained an optional `badge?: number` field on `HopNavItem` (a small,
+  backward-compatible addition — unused unless a nav item passes it) to carry concierge's Messages
+  unread-count pill, which the old per-role file rendered inline.
+- **`HopAdminLayout.tsx`, `HopConciergeLayout.tsx`, `HopFacilityLayout.tsx`** (`staff-portal`) now
+  render `HopShellLayout` the same way `main`'s two layouts do. Each got the same grouped-nav
+  treatment as Phase 1 (e.g. concierge: Overview; **Community** — Feed, Messages; **My work** — My
+  requests, Calendar; **Account** — Profile). `HopConciergeLayout.tsx` keeps its `DutyToggle`
+  component, now passed via `HopShellLayout`'s `extraSidebarSlot` prop instead of being inlined
+  in the JSX directly.
+- **Per-role accent** (new, not in Phase 1): the `.hop-shell--admin`/`--concierge`/`--facility`
+  modifier classes on each layout's root — inert since they were added, flagged in Phase 1's own
+  exploration as "presumably left for exactly this kind of per-role theming" — now do something.
+  `.hop-shell--concierge` reorders the existing indigo/violet/cyan tokens to lead with cyan
+  (a "field/in-the-moment" role); `.hop-shell--facility` leads with `--hop-gold` (an
+  "insights/reporting" role, matching gold's existing reserved-for-highlights convention). Admin
+  keeps the default indigo-led gradient unchanged. Implemented purely by reading the existing
+  `var(--hop-indigo/-violet/-cyan/-gold)` tokens in a different order/combination — no new hex
+  values, and it composes correctly with the existing `.hop-shell--concierge-hub` brand override
+  (ConciergeHub's own indigo/violet/cyan retint) since custom properties resolve at the point of
+  use, not where the rule is declared.
+- **Dashboard blocks**: `HopAdminDashboardPage.tsx`, `HopConciergeDashboardPage.tsx`,
+  `HopFacilityDashboardPage.tsx` each wrap their below-the-KPI-tiles section(s) in the same
+  `.hop-block-grid`/`.hop-block` primitive from Phase 1 (`.hop-stat-grid`'s KPI tiles are
+  untouched — that's a distinct, already-existing grid). Facility's two sections ("Today's
+  morale", "Working today") now sit side by side instead of stacked full-width.
+- **Not done this pass**: no content page beyond each role's Overview/dashboard was restructured
+  (Requests, Accounts, Wellness, Heat map, Retention, etc. are unchanged) — matching Phase 1's own
+  scope decision to prove the pattern on one flagship page per role rather than rewrite everything
+  at once.
+
+Verified in the `staff-portal` worktree: `tsc -b`, `npm run build`, `npm run lint` all clean (same
+pre-existing, unrelated `HopAvatar.tsx` lint error as `main`).
+
 ## Deployments
 
 There are **two** Vercel projects sharing this one GitHub repo and this one Neon database. Don't

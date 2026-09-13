@@ -13,16 +13,17 @@ import { DailyNagBanner } from '../../../hop/DailyNagBanner'
 import { HopMoodCheckinPrompt } from '../../../hop/HopMoodCheckinPrompt'
 import { HopDailyTasksCard } from './HopDailyTasksCard'
 import { EmptyState } from '../../../hop/EmptyState'
+import { HopIcon, type HopIconKey } from '../../../hop/icons'
 
 const CERT_EXPIRY_WARNING_DAYS = 30
 
-const QUICK_REQUESTS = [
-  { to: '/hop/app/requests?type=ride', icon: '🚗', label: 'Ride' },
-  { to: '/hop/app/requests?type=meal', icon: '🍴', label: 'Meals' },
-  { to: '/hop/app/requests?type=errand', icon: '📦', label: 'Errands' },
-  { to: '/hop/app/requests?type=wellness', icon: '❤️', label: 'Wellness' },
-  { to: '/hop/app/family-care', icon: '🏠', label: 'Family Care' },
-  { to: '/hop/app/requests?type=other', icon: '🤖', label: 'Other' },
+const QUICK_REQUESTS: readonly { to: string; icon: HopIconKey; tone: string; label: string }[] = [
+  { to: '/hop/app/requests?type=ride', icon: 'ride', tone: 'indigo', label: 'Ride' },
+  { to: '/hop/app/requests?type=meal', icon: 'meal', tone: 'cyan', label: 'Meals' },
+  { to: '/hop/app/requests?type=errand', icon: 'errand', tone: 'gold', label: 'Errands' },
+  { to: '/hop/app/requests?type=wellness', icon: 'wellness', tone: 'pink', label: 'Wellness' },
+  { to: '/hop/app/family-care', icon: 'familyCare', tone: 'green', label: 'Family Care' },
+  { to: '/hop/app/requests?type=other', icon: 'other', tone: 'violet', label: 'Other' },
 ] as const
 
 const SERVICE_TYPE_LABEL: Record<string, string> = {
@@ -47,7 +48,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 function ActiveRequestTracker({ request }: { request: HopServiceRequest }) {
   return (
-    <section className="hop-card hop-tracker-card">
+    <section className="hop-card hop-tracker-card hop-block hop-block--wide">
       <div className="hop-card__header">
         <h2>🚦 Active request — {SERVICE_TYPE_LABEL[request.service_type] || request.service_type}</h2>
         <span className={`hop-status hop-status--${request.status}`}>
@@ -157,52 +158,69 @@ export function HopDashboardPage() {
         />
       )}
 
-      {activeRequest && <ActiveRequestTracker request={activeRequest} />}
+      <div className="hop-block-grid">
+        {activeRequest && <ActiveRequestTracker request={activeRequest} />}
 
-      <div className="hop-quick-grid">
-        {QUICK_REQUESTS.map((item) => (
-          <Link key={item.to} to={item.to} className="hop-quick-card">
-            <span className="hop-quick-card__icon">{item.icon}</span>
-            <span>{item.label}</span>
-          </Link>
-        ))}
-      </div>
-
-      <HopDailyTasksCard />
-
-      <section className="hop-card">
-        <div className="hop-card__header">
-          <h2>📅 Upcoming on your calendar</h2>
-          {!connected && !eventsError && <Link to="/hop/app/integrations">Connect Google Calendar →</Link>}
-        </div>
-        {loadingEvents && (
-          <>
-            <div className="hop-skeleton-bar hop-skeleton-bar--title" />
-            <div className="hop-skeleton-bar" />
-          </>
-        )}
-        {!loadingEvents && eventsError && (
-          <p className="hop-muted">
-            Could not load your calendar. <Link to="/hop/app/integrations">Reconnect Google Calendar</Link>.
-          </p>
-        )}
-        {!loadingEvents && !eventsError && !connected && (
-          <EmptyState icon="📅" message="Connect your calendar to see upcoming events here." />
-        )}
-        {!loadingEvents && !eventsError && connected && events && events.length === 0 && (
-          <EmptyState icon="🌤️" message="Nothing on your calendar right now." />
-        )}
-        {!loadingEvents && !eventsError && connected && events && events.length > 0 && (
-          <ul className="hop-event-list">
-            {events.map((event) => (
-              <li key={event.id}>
-                <span className="hop-event-list__title">{event.summary}</span>
-                {event.start && <span className="hop-event-list__time">{new Date(event.start).toLocaleString()}</span>}
-              </li>
+        <section className="hop-card hop-block hop-block--wide">
+          <div className="hop-block__head">
+            <span className="hop-icon-chip hop-icon-chip--indigo">
+              <HopIcon name="requests" size={20} />
+            </span>
+            <div>
+              <p className="hop-block__eyebrow">Quick request</p>
+              <h2>What do you need?</h2>
+            </div>
+          </div>
+          <div className="hop-quick-grid">
+            {QUICK_REQUESTS.map((item) => (
+              <Link key={item.to} to={item.to} className="hop-quick-card">
+                <span className={`hop-icon-chip hop-icon-chip--${item.tone}`}>
+                  <HopIcon name={item.icon} size={22} />
+                </span>
+                <span>{item.label}</span>
+              </Link>
             ))}
-          </ul>
-        )}
-      </section>
+          </div>
+        </section>
+
+        <HopDailyTasksCard />
+
+        <section className="hop-card hop-block">
+          <div className="hop-card__header">
+            <h2>📅 Upcoming on your calendar</h2>
+            {!connected && !eventsError && <Link to="/hop/app/integrations">Connect Google Calendar →</Link>}
+          </div>
+          {loadingEvents && (
+            <>
+              <div className="hop-skeleton-bar hop-skeleton-bar--title" />
+              <div className="hop-skeleton-bar" />
+            </>
+          )}
+          {!loadingEvents && eventsError && (
+            <p className="hop-muted">
+              Could not load your calendar. <Link to="/hop/app/integrations">Reconnect Google Calendar</Link>.
+            </p>
+          )}
+          {!loadingEvents && !eventsError && !connected && (
+            <EmptyState icon="📅" message="Connect your calendar to see upcoming events here." />
+          )}
+          {!loadingEvents && !eventsError && connected && events && events.length === 0 && (
+            <EmptyState icon="🌤️" message="Nothing on your calendar right now." />
+          )}
+          {!loadingEvents && !eventsError && connected && events && events.length > 0 && (
+            <ul className="hop-event-list">
+              {events.map((event) => (
+                <li key={event.id}>
+                  <span className="hop-event-list__title">{event.summary}</span>
+                  {event.start && (
+                    <span className="hop-event-list__time">{new Date(event.start).toLocaleString()}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   )
 }
