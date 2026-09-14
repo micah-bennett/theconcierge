@@ -91,12 +91,12 @@ npm run hop:backfill-numbers
   It'll prompt you for an email, password, first/last name.
 
 - **Concierge, member, or Facility Admin accounts, created by you** — created in-app, not the
-  command line. Log in as an admin on **theconcierge-staff.vercel.app**, go to the **Team** tab,
-  choose "Concierge," "Member," or "Facility Admin" as the account type, and add it. If
+  command line. Log in as an admin on **theconcierge-staff.vercel.app**, go to the **Accounts**
+  tab, choose "Concierge," "Member," or "Facility Admin" as the account type, and add it. If
   `RESEND_API_KEY` is set up, they get an emailed invite with a link to set their own password.
-  If not, you'll see a temporary password on screen to hand them directly. A member account
-  created this way shows up on the **Users** tab, not Team (Team only lists concierges and
-  Facility Admins) — that's normal, not a bug.
+  If not, you'll see a temporary password on screen to hand them directly. (This used to be two
+  separate tabs, "Team" and "Users" — as of the 2026-09 redesign it's one "Accounts" page,
+  filterable by role.)
 - **What a Facility Admin account is for**: it's for someone on the hospital/client side (not
   your own staff) who wants to see the value HOP is creating — how many requests are being made,
   a wellness/morale heat map, and a place to log cost-savings estimates. They sign in at
