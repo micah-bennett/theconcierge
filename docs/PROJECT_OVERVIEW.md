@@ -27,6 +27,33 @@ dashboard instead (see `docs/hop/mvp-scope.md` for exactly what that looks like 
 re-propose moving that content back to the public homepage** unless explicitly asked — that
 exact idea was tried and reversed.
 
+**2026-09 — team-forward rebrand (public marketing site only).** Leadership repositioned the
+brand away from centring the owner: *"pull away from making me the face … when we hyper focus on
+me it makes it small and singular"*, and asked to separate the brand from HVCS. What changed:
+
+- The homepage hero was a full-body **solo portrait of the owner** (`hero-home.png`). It is now
+  full-bleed team photography (`public/hero-team-*.webp`, source in `design/`). `hero-home.png`
+  and `hero-concierge.png` are retired — still on disk, referenced by nothing. The owner is still
+  present: he is the centre figure in both team photos.
+- A shared `TeamBand` component (`src/components/TeamBand.tsx`) now appears on the homepage and
+  every inner marketing page. **This is the point of the rebrand** — don't strip it out.
+- The **HVCS** tab and its outbound `hvconcierge.com` link were removed from the header. The
+  parent entity is now named in exactly one place: the footer legal line. This was a deliberate
+  brand decision, not an oversight — don't "restore" the nav link.
+- The site gained an actual brand system (navy + champagne `--tc-*` tokens), a real mobile nav
+  drawer, a four-column footer, Open Graph tags and per-route titles. See
+  `docs/design-system.md` §1a–1d.
+- `.hop-page`'s ~760 lines moved out of `App.css` into `src/styles/hopMarketing.css`, and that
+  page's **chrome** (ground, surface, section rhythm, hairlines, radii, eyebrow) moved onto the
+  `--tc-*` scale. Its indigo/violet **accent** is kept on purpose — see `docs/design-system.md`
+  §1c.
+- **Personal Services** got a real hero (Playfair display title, champagne eyebrow) and card
+  headings of its own instead of borrowing Plans' uppercase label and pill classes, plus a
+  three-up grid. The old "spotlight" card was folded into the hero lead.
+
+This is a visual/brand change to the **public marketing site only** — it did not move any HOP
+content onto the public pages, and the authenticated HOP app was not touched.
+
 ## Stack
 
 - **Frontend**: Vite + React 19 + TypeScript, `react-router-dom` v7, no CSS framework (hand-written
@@ -75,7 +102,11 @@ deep-linking into nested routes on the web deployment" for why both exist.
   `docs/design-system.md` for the visual conventions; the pages are otherwise plain React
   components with no special architecture — read the component code directly.
 - **Fonts/colors/buttons, on any page**: `docs/design-system.md` is the single source of truth.
-  Two independent design systems coexist (public site vs. HOP app) — don't cross-contaminate them.
+  Three independent design systems coexist (public marketing site, the `/hop` marketing page, and
+  the authenticated HOP app) — don't cross-contaminate them.
+- **Re-generating the brand photography**: originals live in `design/`; run
+  `node scripts/optimize-brand-photos.mjs` to rebuild the `public/*.webp` derivatives and the OG
+  card. It is deliberately not part of `npm run build`.
 - **Deploying**: `docs/vercel-setup.md`.
 - **Non-engineer backend tasks** (env vars, migrations, creating accounts, deploying):
   `docs/hop/backend-guide.md`.

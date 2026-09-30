@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
+import { Clock, MapPin, Phone, ShieldCheck } from 'lucide-react'
 import { COMPANY_CONTACT, SOCIAL_LINKS, type SocialPlatform } from '../site/contact'
+import { TeamBand } from '../components/TeamBand'
 
 function SocialIcon({ platform }: { platform: SocialPlatform }) {
   switch (platform) {
@@ -33,67 +35,107 @@ function SocialIcon({ platform }: { platform: SocialPlatform }) {
   }
 }
 
+/** Only facts already established elsewhere on the site — no invented SLAs. */
+const CONTACT_FACTS = [
+  {
+    Icon: MapPin,
+    title: 'Service area',
+    body: 'The Hudson Valley, New York — and the airports, hospitals and offices around it.',
+  },
+  {
+    Icon: Clock,
+    title: 'Availability',
+    body: '24/7 VIP availability, with same-day capability for urgent requests.',
+  },
+  {
+    Icon: ShieldCheck,
+    title: 'Discretion',
+    body: 'Every request is handled confidentially, with HIPAA-aware processes for healthcare work.',
+  },
+] as const
+
 export function ContactPage() {
   return (
-    <section className="slide slide--contact" aria-labelledby="contact-page-heading">
-      <div className="contact-page">
-        <header className="contact-page__intro motion-reveal">
-          <p className="contact-page__eyebrow">Hudson Valley, NY</p>
-          <h1 className="contact-page__title" id="contact-page-heading">
-            Contact
-          </h1>
-          <p className="contact-page__lead">
-            Call or connect on social — we respond quickly and discreetly. Prefer a callback? Submit a
-            request and our team will reach out.
-          </p>
-        </header>
+    <>
+      <section className="slide slide--contact" aria-labelledby="contact-page-heading">
+        <div className="contact-page">
+          <header className="contact-page__intro motion-reveal">
+            <p className="contact-page__eyebrow">Hudson Valley, NY</p>
+            <h1 className="contact-page__title" id="contact-page-heading">
+              Talk to the team
+            </h1>
+            <p className="contact-page__lead">
+              Call us and you will reach a person, not a queue. Prefer we come to you? Send a
+              request and a member of the team will follow up.
+            </p>
+          </header>
 
-        <div className="contact-page__channels">
-          <a className="contact-phone-card" href={`tel:${COMPANY_CONTACT.phoneTel}`}>
-            <span className="contact-phone-card__label">Call us</span>
-            <span className="contact-phone-card__number">{COMPANY_CONTACT.phoneDisplay}</span>
-            <span className="contact-phone-card__hint">Tap to call</span>
-          </a>
+          <div className="contact-page__channels">
+            <a className="contact-phone-card" href={`tel:${COMPANY_CONTACT.phoneTel}`}>
+              <span className="contact-phone-card__label">
+                <Phone size={15} strokeWidth={2} aria-hidden /> Call us
+              </span>
+              <span className="contact-phone-card__number">{COMPANY_CONTACT.phoneDisplay}</span>
+              <span className="contact-phone-card__hint">Tap to call</span>
+            </a>
 
-          <Link className="contact-action contact-action--gold contact-action--solo" to="/request">
-            <span className="contact-action__label">Request service</span>
-            <span className="contact-action__value">We&apos;ll call you back</span>
-          </Link>
-        </div>
+            <Link className="contact-action contact-action--gold contact-action--solo" to="/request">
+              <span className="contact-action__label">Request service</span>
+              <span className="contact-action__value">We&apos;ll call you back</span>
+            </Link>
+          </div>
 
-        <section className="contact-social" aria-labelledby="contact-social-heading">
-          <h2 className="contact-social__title" id="contact-social-heading">
-            Follow us
-          </h2>
-          <p className="contact-social__lead">
-            Stay connected for service updates, tips, and Hudson Valley concierge news.
-          </p>
-          <ul className="contact-social__grid">
-            {SOCIAL_LINKS.map((item) => (
-              <li key={item.id}>
-                <a
-                  className={`contact-social-card contact-social-card--${item.id}`}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span className="contact-social-card__icon">
-                    <SocialIcon platform={item.id} />
-                  </span>
-                  <span className="contact-social-card__body">
-                    <span className="contact-social-card__platform">{item.label}</span>
-                    <span className="contact-social-card__handle">{item.handle}</span>
-                    <span className="contact-social-card__blurb">{item.blurb}</span>
-                  </span>
-                  <span className="contact-social-card__arrow" aria-hidden>
-                    ↗
-                  </span>
-                </a>
+          <ul className="contact-facts" aria-label="What to expect">
+            {CONTACT_FACTS.map((fact) => (
+              <li key={fact.title} className="contact-facts__item motion-reveal">
+                <span className="contact-facts__icon">
+                  <fact.Icon size={20} strokeWidth={1.5} aria-hidden />
+                </span>
+                <h2 className="contact-facts__title">{fact.title}</h2>
+                <p className="contact-facts__body">{fact.body}</p>
               </li>
             ))}
           </ul>
-        </section>
-      </div>
-    </section>
+
+          <section className="contact-social" aria-labelledby="contact-social-heading">
+            <h2 className="contact-social__title" id="contact-social-heading">
+              Follow us
+            </h2>
+            <p className="contact-social__lead">
+              Stay connected for service updates, tips, and Hudson Valley concierge news.
+            </p>
+            <ul className="contact-social__grid">
+              {SOCIAL_LINKS.map((item) => (
+                <li key={item.id}>
+                  <a
+                    className={`contact-social-card contact-social-card--${item.id}`}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span className="contact-social-card__icon">
+                      <SocialIcon platform={item.id} />
+                    </span>
+                    <span className="contact-social-card__body">
+                      <span className="contact-social-card__platform">{item.label}</span>
+                      <span className="contact-social-card__handle">{item.handle}</span>
+                      <span className="contact-social-card__blurb">{item.blurb}</span>
+                    </span>
+                    <span className="contact-social-card__arrow" aria-hidden>
+                      ↗
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </section>
+
+      <TeamBand
+        heading="Who picks up the phone"
+        lead="Your request is routed to whoever on the team is best placed to handle it — transportation, healthcare logistics, errands or executive support."
+      />
+    </>
   )
 }

@@ -33,10 +33,11 @@
   }
 }
 
-/* Wrapped mobile header is taller than 6rem; JS sets exact px — this reduces overlap before measure */
+/* Mobile header is a single brand+burger row; JS sets the exact px — this just
+   reduces overlap before the first measure. */
 @media (max-width: 720px) {
   :root {
-    --site-header-h: 7.5rem;
+    --site-header-h: 4.5rem;
   }
 }
 

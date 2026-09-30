@@ -20,6 +20,95 @@
   --motion-lift: -3px;
 }
 
+/* ============================================================
+   Brand system — navy + champagne  (2026-09 team-forward rebrand)
+   ============================================================
+   Every token is `--tc-` prefixed so it cannot collide with the four other
+   custom-property sets in the tree: --canvas-* and --motion-* (above), --hop-*
+   (.hop-page / .hop-shell), --form-* (.request-modal__card), and the generic
+   scaffold set in index.css (which already owns a bare `--text`).
+
+   ADOPTION IS ADDITIVE. Only rules rewritten by the rebrand consume these;
+   untouched legacy rules keep their hard-coded values. Don't sweep the whole
+   file — it's 3k+ lines, desktop-first, with no test coverage.
+
+   NO color-mix() BELOW THIS LINE. The Capacitor iOS target is 15.0 and
+   WKWebView only gained color-mix() in 16.2 — champagne tints are precomputed
+   rgba() on purpose. (See the fallback note on `.site` below.) */
+:root {
+  /* Ground — deepened toward true navy; the legacy canvas is near-black */
+  --tc-ink-900: #070b14; /* page base           */
+  --tc-ink-800: #0b1220; /* navy sections       */
+  --tc-ink-700: #111a2e; /* raised surface/card */
+  --tc-ink-600: #1a2540; /* border / hover fill */
+
+  /* Accent — the brand colour the site never actually had. Pulled from the
+     team photography: camel blazers, brass, marble. */
+  --tc-champagne-300: #e4cfa3;
+  --tc-champagne-400: #d4b483; /* primary accent  */
+  --tc-champagne-500: #b8935f; /* pressed / rules */
+  --tc-champagne-a12: rgba(212, 180, 131, 0.12);
+  --tc-champagne-a24: rgba(212, 180, 131, 0.24);
+  --tc-champagne-a40: rgba(212, 180, 131, 0.4);
+
+  /* Text */
+  --tc-text-100: #f4f2ee; /* headings */
+  --tc-text-300: #c8c6c1; /* body     */
+  --tc-text-500: rgba(255, 255, 255, 0.58); /* muted */
+
+  /* Hairlines */
+  --tc-line: rgba(255, 255, 255, 0.1);
+  --tc-line-strong: rgba(255, 255, 255, 0.18);
+
+  /* Type scale — fluid, matching the file's existing clamp() convention */
+  --tc-fs-display: clamp(2.75rem, 6vw, 5rem);
+  --tc-fs-h1: clamp(2.25rem, 4.5vw, 3.5rem);
+  --tc-fs-h2: clamp(1.75rem, 3.2vw, 2.5rem);
+  --tc-fs-h3: clamp(1.15rem, 1.8vw, 1.4rem);
+  --tc-fs-body: clamp(1rem, 1.15vw, 1.0625rem);
+  --tc-fs-eyebrow: clamp(0.6875rem, 0.9vw, 0.75rem);
+  --tc-track-eyebrow: 0.32em;
+  --tc-font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+
+  /* Space / layout */
+  --tc-section-y: clamp(4rem, 9vw, 8rem);
+  --tc-gutter: clamp(1.25rem, 4vw, 2.5rem);
+  --tc-container: 94rem; /* matches the existing home sections  */
+  --tc-container-narrow: 58rem; /* matches the existing plans sections */
+
+  /* Radius / elevation */
+  --tc-r-sm: 8px;
+  --tc-r-md: 14px;
+  --tc-r-lg: 20px;
+  --tc-r-pill: 999px;
+  --tc-e-1: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --tc-e-2: 0 10px 30px rgba(0, 0, 0, 0.34);
+  --tc-e-3: 0 24px 60px rgba(0, 0, 0, 0.44);
+}
+
+/* Layout primitives — the file previously had no container class, so every
+   section re-declared the same max-width/padding by hand. New sections use
+   these; legacy sections were left alone. */
+.tc-wrap {
+  width: 100%;
+  max-width: var(--tc-container);
+  margin-inline: auto;
+  padding-inline: var(--tc-gutter);
+}
+
+.tc-wrap--narrow {
+  max-width: var(--tc-container-narrow);
+}
+
+.tc-eyebrow {
+  margin: 0;
+  font-size: var(--tc-fs-eyebrow);
+  font-weight: 600;
+  letter-spacing: var(--tc-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--tc-champagne-400);
+}
+
 .site {
   display: flex;
   flex-direction: column;
@@ -29,6 +118,10 @@
   isolation: isolate;
   color: #e8e6e3;
   font-family: 'DM Sans', system-ui, sans-serif;
+  /* Fallback first: WKWebView only supports color-mix() from 16.2, and the
+     Capacitor iOS target is 15.0 — without this the declaration below is
+     dropped there and .site has no background-color at all. */
+  background-color: var(--canvas-base);
   background-color: color-mix(in srgb, var(--canvas-base) calc(var(--canvas-enabled) * 100%), var(--canvas-flat));
   background-image: var(--canvas-gradient);
   background-attachment: fixed;
@@ -78,23 +171,43 @@
   align-items: center;
   gap: 1rem;
   padding: 1.1rem clamp(1rem, 4vw, 2.5rem);
+  animation: motion-header-in 0.75s var(--motion-ease) both;
+  /* NOTE: the scrolled/unscrolled states below must never change height or
+     padding — App.tsx keeps a ResizeObserver on this element and publishes its
+     height as --site-header-h, which .slides padding-top and every
+     scroll-margin-top rule depend on. Colour and shadow only. */
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background 0.4s var(--motion-ease-soft),
+    border-color 0.4s var(--motion-ease-soft),
+    box-shadow 0.4s var(--motion-ease-soft),
+    backdrop-filter 0.4s var(--motion-ease-soft);
+}
+
+/* Floating over the homepage hero photo: no plate, just a scrim so the links
+   stay legible against the image. */
+.site-header--over-hero:not(.site-header--solid) {
+  background: linear-gradient(180deg, rgba(7, 11, 20, 0.55) 0%, rgba(7, 11, 20, 0) 100%);
+}
+
+.site-header--solid {
   background: var(--canvas-header);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  animation: motion-header-in 0.75s var(--motion-ease) both;
+  border-bottom-color: var(--tc-line);
+  box-shadow: var(--tc-e-1);
 }
 
 .site-header__brand {
   display: inline-flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: clamp(0.3rem, 0.75vw, 0.45rem);
+  gap: clamp(0.5rem, 1.2vw, 0.8rem);
   margin-left: clamp(0.75rem, 2vw, 1.5rem);
   text-decoration: none;
   color: #ffffff;
   justify-self: start;
-  max-width: min(14rem, 78vw);
   transition:
     opacity 0.35s var(--motion-ease-soft),
     transform 0.35s var(--motion-ease-soft);
@@ -106,24 +219,156 @@
 }
 
 .site-header__brand-logo {
-  width: clamp(2.2rem, 4.5vw, 3rem);
-  height: clamp(2.2rem, 4.5vw, 3rem);
+  width: clamp(2.2rem, 4.5vw, 2.85rem);
+  height: clamp(2.2rem, 4.5vw, 2.85rem);
   object-fit: contain;
   flex-shrink: 0;
   display: block;
 }
 
+.site-header__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
 .site-header__brand-name {
   margin: 0;
   font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: clamp(0.6rem, 1.1vw, 0.78rem);
+  font-size: clamp(0.66rem, 1.1vw, 0.82rem);
   font-weight: 700;
   letter-spacing: 0.22em;
   line-height: 1.1;
-  text-align: center;
   text-transform: uppercase;
   white-space: nowrap;
   color: #ffffff;
+}
+
+/* The tagline off the brand wall in the team photography. Hidden on small
+   screens where it would wrap or crowd the burger. */
+.site-header__brand-tag {
+  font-size: 0.5625rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--tc-champagne-400);
+}
+
+@media (max-width: 1080px) {
+  .site-header__brand-tag {
+    display: none;
+  }
+}
+
+/* ——— Mobile menu toggle + drawer ——— */
+
+.site-header__burger {
+  display: none; /* flex at <=720px */
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem; /* clears the 44px touch-target minimum */
+  padding: 0;
+  color: #ffffff;
+  background: transparent;
+  border: 1px solid var(--tc-line-strong);
+  border-radius: var(--tc-r-sm);
+  cursor: pointer;
+  transition:
+    background 0.3s var(--motion-ease-soft),
+    border-color 0.3s var(--motion-ease-soft);
+}
+
+.site-header__burger:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--tc-champagne-a40);
+}
+
+.site-drawer {
+  position: fixed;
+  inset: var(--site-header-h) 0 0;
+  z-index: 99; /* under the header, which stays interactive */
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: clamp(1.25rem, 5vw, 2rem) var(--tc-gutter) calc(var(--tc-gutter) + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: var(--tc-ink-900);
+  border-top: 1px solid var(--tc-line);
+}
+
+/* `display: flex` above outranks the UA stylesheet's `[hidden] { display: none }`,
+   so the closed drawer needs this or it renders over the page. */
+.site-drawer[hidden] {
+  display: none;
+}
+
+/* Belt and braces: the burger is the only way to open the drawer and it's
+   hidden above 720px, but never let the panel paint at desktop widths. */
+@media (min-width: 721px) {
+  .site-drawer {
+    display: none;
+  }
+}
+
+/* Entrance only. The drawer uses the `hidden` attribute when closed (so it
+   leaves the tab order and the a11y tree outright, which the focus trap
+   depends on) — and keyframes still run when display flips off `none`, so we
+   get an animated open without an animatable closed state. */
+.site-drawer--open {
+  animation: drawer-in 0.28s var(--motion-ease) both;
+}
+
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.site-drawer__nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-drawer__link {
+  padding: 1.05rem 0.25rem;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--tc-text-100);
+  border-bottom: 1px solid var(--tc-line);
+}
+
+.site-drawer__link--active {
+  color: var(--tc-champagne-400);
+}
+
+.site-drawer__cta {
+  margin-top: 1.25rem;
+  padding: 1.05rem 1.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #14110a;
+  background: #ffffff;
+  border-radius: var(--tc-r-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-drawer--open {
+    animation: none;
+  }
 }
 
 .site-header__nav {
@@ -183,22 +428,9 @@
 }
 
 .site-header__nav--tabs a.site-header__nav-tab--active {
-  color: #faf8f3;
-  border-bottom-color: rgba(255, 255, 255, 0.85);
+  color: var(--tc-text-100);
+  border-bottom-color: var(--tc-champagne-400);
   opacity: 1;
-}
-
-.site-header__nav-tab--external:hover {
-  color: #ffffff;
-}
-
-.site-header__nav-tab--external::after {
-  content: '▾';
-  font-size: 0.75em;
-  margin-left: 0.15em;
-  opacity: 0.85;
-  text-decoration: none;
-  vertical-align: baseline;
 }
 
 .site-header__actions {
@@ -245,87 +477,54 @@
 
 @media (max-width: 720px) {
   :root {
-    --site-header-h: 7.5rem;
+    --site-header-h: 4.5rem;
   }
 
-  /* Flex column + explicit order — avoids grid placement quirks; nav then CTA */
+  /* Single row: brand left, actions right. The six-item horizontally-scrolling
+     tab row this replaced was unusable at this width. */
   .site-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
-    padding: 0.5rem clamp(0.75rem, 3vw, 1rem) 0.45rem;
-    text-align: center;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    padding: 0.7rem clamp(0.75rem, 3vw, 1rem);
   }
 
   .site-header__brand {
-    order: 1;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
     margin-left: 0;
-    max-width: 100%;
-    gap: 0.15rem;
   }
 
   .site-header__brand-logo {
-    width: clamp(1.8rem, 7vw, 2.4rem);
-    height: clamp(1.8rem, 7vw, 2.4rem);
+    width: clamp(1.9rem, 7vw, 2.4rem);
+    height: clamp(1.9rem, 7vw, 2.4rem);
   }
 
   .site-header__brand-name {
-    font-size: clamp(0.52rem, 2.2vw, 0.65rem);
+    font-size: clamp(0.58rem, 2.4vw, 0.7rem);
     letter-spacing: 0.18em;
   }
 
+  /* Desktop tab row gives way to the drawer. */
   .site-header__nav {
-    order: 2;
-    width: 100%;
-    max-width: 100%;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    justify-content: flex-start;
-    gap: 0;
-    margin-top: 0.5rem;
-    padding: 0 clamp(0.35rem, 2vw, 0.65rem) 0.05rem;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .site-header__nav::-webkit-scrollbar {
     display: none;
   }
 
-  .site-header__nav--tabs {
-    gap: 0 clamp(0.35rem, 1.8vw, 0.6rem);
-    padding-bottom: 0.05rem;
-  }
-
-  .site-header__nav-tab {
-    flex-shrink: 0;
-    padding: 0.1rem 0.4rem 0.22rem;
-    letter-spacing: 0.1em;
-    font-size: 0.62rem;
-    white-space: nowrap;
-  }
-
-  .site-header__nav-tab--long {
-    white-space: nowrap;
-    max-width: none;
-    font-size: 0.58rem;
-    letter-spacing: 0.07em;
-  }
-
   .site-header__actions {
-    order: 3;
-    justify-content: center;
-    margin-top: 0;
+    gap: 0.5rem;
+  }
+
+  .site-header__burger {
+    display: inline-flex;
   }
 
   .site-header__request {
-    padding: 0.4rem 0.85rem;
+    padding: 0.62rem 0.95rem;
     font-size: 0.58rem;
+  }
+}
+
+/* Below this the inline CTA and the drawer CTA are redundant — keep the burger. */
+@media (max-width: 420px) {
+  .site-header__request {
+    display: none;
   }
 }
 
@@ -364,77 +563,52 @@
   min-height: calc(100dvh - var(--site-header-h));
 }
 
-.home-hero--split {
-  display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.12fr);
-  align-items: start;
-  gap: clamp(2rem, 4.5vw, 3.5rem);
+/* ——— Homepage hero — full-bleed team photography ———
+   The hero is pulled up under the fixed header (which is transparent over it,
+   see .site-header--over-hero) by cancelling the .slides padding-top on this
+   page only, then re-adding it as internal padding. */
+.slide--home {
+  margin-top: calc(var(--site-header-h) * -1);
+}
+
+.home-hero--full {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
   width: 100%;
-  max-width: 94rem;
-  margin: 0 auto;
-  padding: clamp(0.5rem, 1.5vw, 1.1rem) clamp(1.25rem, 4vw, 3rem) clamp(1.25rem, 2.5vw, 2rem);
-  box-sizing: border-box;
-  min-height: auto;
-  position: relative;
-}
-
-@keyframes home-glow-drift {
-  from {
-    opacity: 0.13;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  to {
-    opacity: 0.22;
-    transform: translate(-50%, -50%) scale(1.24);
-  }
-}
-
-.home-hero--split::before {
-  content: '';
-  position: absolute;
-  left: 23%;
-  top: 48%;
-  transform: translate(-50%, -50%);
-  width: min(44vw, 580px);
-  height: min(44vw, 580px);
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(60, 80, 160, 0.28) 0%,
-    rgba(30, 48, 100, 0.12) 45%,
-    transparent 70%
-  );
-  filter: blur(72px);
-  pointer-events: none;
-  z-index: 0;
-  animation: home-glow-drift 12s ease-in-out alternate infinite;
-}
-
-.home-hero__media {
-  position: relative;
-  z-index: 1;
-  border-radius: 12px;
+  min-height: min(92svh, 900px);
+  padding-top: var(--site-header-h);
   overflow: hidden;
-  background: linear-gradient(145deg, rgba(28, 36, 52, 0.6) 0%, #0a0a0c 100%);
-  box-shadow:
-    0 4px 0 1px rgba(255, 255, 255, 0.1),
-    0 24px 60px rgba(0, 0, 0, 0.5);
-  aspect-ratio: 3 / 4;
-  max-height: min(72vh, 760px);
-  justify-self: center;
-  width: 100%;
+  isolation: isolate;
 }
 
+/* Absolutely positioned so the photo is the backdrop — but still a real <img>,
+   not a CSS background: the parallax hook needs an element to transform, and
+   only an <img> gets srcset + fetchpriority for the LCP. */
+.home-hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Legibility scrim. Two layers: a vertical one to seat the headline and fade
+   into the page below, and a horizontal one so left-aligned copy always has
+   enough contrast regardless of how the photo crops. */
 .home-hero__media::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    transparent 55%,
-    rgba(0, 0, 0, 0.25) 100%
-  );
+  background:
+    linear-gradient(
+      180deg,
+      rgba(7, 11, 20, 0.7) 0%,
+      rgba(7, 11, 20, 0.2) 34%,
+      rgba(7, 11, 20, 0.72) 82%,
+      var(--tc-ink-900) 100%
+    ),
+    linear-gradient(90deg, rgba(7, 11, 20, 0.86) 0%, rgba(7, 11, 20, 0.3) 58%, rgba(7, 11, 20, 0.05) 100%);
 }
 
 .home-hero__img {
@@ -442,10 +616,19 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 22%;
-  filter: contrast(1.05) brightness(1.03) saturate(1.04);
+  object-position: center 28%;
+  filter: contrast(1.04) saturate(1.03);
   will-change: transform;
   transition: transform 0.12s linear;
+}
+
+.home-hero__inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--tc-container);
+  margin-inline: auto;
+  padding: var(--tc-gutter) var(--tc-gutter) clamp(2.75rem, 6vw, 4.5rem);
 }
 
 .home-hero__content {
@@ -453,10 +636,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0;
+  max-width: 44rem;
   min-width: 0;
-  padding: clamp(0.15rem, 0.6vw, 0.35rem) 0 0;
-  position: relative;
-  z-index: 1;
 }
 
 .home-hero__eyebrow {
@@ -464,17 +645,17 @@
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: clamp(0.5rem, 0.88vw, 0.6rem);
   font-weight: 500;
-  letter-spacing: 0.3em;
+  letter-spacing: var(--tc-track-eyebrow);
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--tc-champagne-400);
 }
 
 .home-hero__headline {
   margin: 0 0 clamp(1.1rem, 2.4vw, 1.45rem);
   font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  font-size: var(--tc-fs-display);
   font-weight: 600;
-  line-height: 1.06;
+  line-height: 1.02;
   letter-spacing: -0.015em;
   color: #ffffff;
   text-wrap: balance;
@@ -491,33 +672,20 @@
 }
 
 .home-hero__action {
-  --hero-cta-inset-x: 2.15rem;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: clamp(0.85rem, 1.8vw, 1rem);
-  width: fit-content;
+  --hero-cta-inset-x: clamp(1.4rem, 2.6vw, 2.05rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
   max-width: 100%;
-  margin-top: clamp(1.15rem, 2.4vw, 1.5rem);
-}
-
-.home-hero__punch {
-  margin: 0;
-  padding-left: var(--hero-cta-inset-x);
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: clamp(1.05rem, 2vw, 1.3rem);
-  font-weight: 600;
-  font-style: normal;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: left;
-  color: #ffffff;
+  margin-top: clamp(1.4rem, 2.8vw, 1.9rem);
 }
 
 .home-hero__cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.55rem;
   padding: 1.05rem var(--hero-cta-inset-x);
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: clamp(0.7rem, 1.35vw, 0.82rem);
@@ -548,42 +716,44 @@
     0 18px 48px rgba(255, 255, 255, 0.18);
 }
 
+/* A single wrapping chip row reads better over photography than the two
+   bulleted columns this replaced. */
 .home-hero__highlights {
-  margin: 0.65rem 0 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 2rem;
-  max-width: 30rem;
-}
-
-.home-hero__highlights-col {
-  margin: 0;
+  margin: clamp(1.5rem, 3vw, 2.1rem) 0 0;
   padding: 0;
   list-style: none;
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.7rem;
 }
 
-.home-hero__highlights-col li {
-  position: relative;
-  padding-left: 1.05rem;
-  font-size: clamp(0.74rem, 1.25vw, 0.84rem);
-  letter-spacing: 0.04em;
-  color: #ffffff;
-  line-height: 1.5;
+.home-hero__highlights li {
+  padding: 0.4rem 0.85rem;
+  font-size: clamp(0.7rem, 1.15vw, 0.78rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  color: var(--tc-text-100);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--tc-champagne-a24);
+  border-radius: var(--tc-r-pill);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-.home-hero__highlights-col li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.5em;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ffffff, #ffffff);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+.home-hero__cta--ghost {
+  color: var(--tc-text-100);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--tc-champagne-a40);
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.home-hero__cta--ghost:hover {
+  background: var(--tc-champagne-a12);
+  border-color: var(--tc-champagne-400);
+  box-shadow: none;
 }
 
 .home-audiences {
@@ -947,9 +1117,9 @@
   padding: 0 clamp(1.25rem, 4vw, 3rem);
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: clamp(1.5rem, 3vw, 2rem);
-  align-items: center;
+  align-items: start;
 }
 
 .home-stats__item {
@@ -958,7 +1128,20 @@
   align-items: center;
   text-align: center;
   gap: 0.4rem;
-  padding: 0 clamp(1rem, 2vw, 1.5rem);
+  padding: 0 clamp(0.75rem, 1.6vw, 1.25rem);
+}
+
+.home-stats__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 0.35rem;
+  color: var(--tc-champagne-400);
+  background: var(--tc-champagne-a12);
+  border: 1px solid var(--tc-champagne-a24);
+  border-radius: var(--tc-r-pill);
 }
 
 .home-stats__item + .home-stats__item {
@@ -968,10 +1151,10 @@
 .home-stats__headline {
   margin: 0;
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.1rem, 1.9vw, 1.45rem);
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 600;
-  line-height: 1.25;
-  color: #ffffff;
+  line-height: 1.3;
+  color: var(--tc-text-100);
   text-wrap: balance;
 }
 
@@ -1055,21 +1238,6 @@
   text-align: left;
 }
 
-.site-header__nav-tab--long {
-  letter-spacing: 0.12em;
-  font-size: clamp(0.58rem, 1.15vw, 0.68rem);
-  white-space: nowrap;
-}
-
-@media (max-width: 520px) {
-  .site-header__nav-tab--long {
-    white-space: normal;
-    text-align: center;
-    max-width: 6.5rem;
-    line-height: 1.35;
-  }
-}
-
 /* Personal services page */
 .slide--services {
   justify-content: flex-start;
@@ -1086,73 +1254,51 @@
 
 .services-page__hero {
   text-align: center;
-  margin-bottom: clamp(2rem, 4vw, 3rem);
+  margin: 0 auto clamp(2.5rem, 5vw, 3.5rem);
+  max-width: 50rem;
+}
+
+.services-page__title {
+  margin: 0.7rem 0 0;
+  font-family: var(--tc-font-display);
+  font-size: var(--tc-fs-h1);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  color: var(--tc-text-100);
+  text-wrap: balance;
+}
+
+.services-page__lead {
+  margin: 1.1rem auto 0;
   max-width: 42rem;
-  margin-left: auto;
-  margin-right: auto;
+  font-size: var(--tc-fs-body);
+  line-height: 1.7;
+  color: var(--tc-text-300);
 }
 
 .services-page__what-label {
-  margin: 0 0 1rem;
+  margin: 0 0 clamp(1.25rem, 2.5vw, 1.75rem);
   font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.58rem;
+  font-size: var(--tc-fs-eyebrow);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tc-track-eyebrow);
   text-transform: uppercase;
   text-align: center;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.services-page__spotlight {
-  margin: 0 auto 2.5rem;
-  max-width: 48rem;
-  padding: clamp(1.25rem, 3vw, 1.75rem) clamp(1.25rem, 3vw, 2rem);
-  text-align: center;
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.04) 45%,
-    rgba(12, 12, 14, 0.6) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 14px;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 16px 48px rgba(0, 0, 0, 0.4);
-  transition:
-    border-color 0.4s var(--motion-ease-soft),
-    box-shadow 0.4s var(--motion-ease-soft),
-    transform 0.4s var(--motion-ease-soft);
-}
-
-.services-page__spotlight:hover {
-  transform: translateY(var(--motion-lift));
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.12),
-    0 20px 52px rgba(0, 0, 0, 0.45);
-}
-
-.services-page__spotlight-heading {
-  display: flex;
-  justify-content: center;
-  margin: 0 0 0.75rem;
-}
-
-.services-page__spotlight-heading .plans__title-line {
-  text-align: center;
-}
-
-.services-page__spotlight-desc {
-  margin: 0 auto;
-  max-width: 40rem;
-  text-align: center;
+  color: var(--tc-champagne-400);
 }
 
 .services-page__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(1rem, 2.5vw, 1.35rem);
   align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+  .services-page__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .services-card {
@@ -1161,8 +1307,8 @@
   margin: 0;
   padding: clamp(1.1rem, 2.5vw, 1.45rem) clamp(1rem, 2.2vw, 1.35rem);
   background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  border: 1px solid var(--tc-line);
+  border-radius: var(--tc-r-md);
   transition:
     border-color 0.4s var(--motion-ease-soft),
     background 0.4s var(--motion-ease-soft),
@@ -1172,9 +1318,32 @@
 
 .services-card:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  border-color: var(--tc-champagne-a40);
+  box-shadow: var(--tc-e-2);
   transform: translateY(var(--motion-lift));
+}
+
+/* Real headings. These were previously .plans__title-line — a boxed uppercase
+   pill borrowed from the Plans tiers, which read as a tag, not a title. */
+.services-card__title {
+  margin: 0 0 0.6rem;
+  font-family: var(--tc-font-display);
+  font-size: var(--tc-fs-h3);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-align: center;
+  color: var(--tc-text-100);
+  text-wrap: balance;
+}
+
+.services-card__includes {
+  margin: 1.1rem 0 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: var(--tc-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--tc-champagne-400);
 }
 
 .services-card__icon-wrap {
@@ -1203,42 +1372,8 @@
   filter: drop-shadow(0 3px 14px rgba(255, 255, 255, 0.28));
 }
 
-.services-card .plans__title {
-  margin: 0 0 0.55rem;
-  align-items: center;
-  text-align: center;
-  width: 100%;
-}
-
-.services-card .plans__title-line {
-  align-self: center;
-  text-align: center;
-}
-
 .services-card .plans__list {
   margin-bottom: 0;
-}
-
-/* Personal services — larger readable type */
-.slide--services .plans-page__title {
-  font-size: clamp(1.18rem, 2.45vw, 1.48rem);
-  letter-spacing: 0.22em;
-  text-indent: 0.22em;
-  margin-bottom: 1.15rem;
-}
-
-.slide--services .plans-page__title::after {
-  width: min(16rem, 70%);
-}
-
-.slide--services .plans-page__lead {
-  font-size: clamp(1rem, 2.05vw, 1.18rem);
-  line-height: 1.62;
-  max-width: 44rem;
-}
-
-.slide--services .services-page__hero {
-  max-width: 46rem;
 }
 
 .slide--services .services-page__what-label {
@@ -1246,20 +1381,9 @@
   letter-spacing: 0.1em;
 }
 
-.slide--services .plans__title-line {
-  font-size: clamp(0.72rem, 1.08vw, 0.88rem);
-  padding: 0.5rem 1.1rem;
-  line-height: 1.4;
-}
-
 .slide--services .plans__desc {
   font-size: clamp(0.9rem, 1.52vw, 1.05rem);
   line-height: 1.55;
-}
-
-.slide--services .plans__includes-label {
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
 }
 
 .slide--services .plans__list {
@@ -1698,26 +1822,33 @@
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
 }
 
+/* Champagne is reserved for the top tier so the hierarchy reads at a glance —
+   the three tiers were previously distinguished only by shades of white. */
 .plans__tier--vip {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--tc-champagne-a40);
   background: linear-gradient(
     168deg,
-    rgba(255, 255, 255, 0.14) 0%,
-    rgba(35, 32, 26, 0.65) 38%,
+    rgba(212, 180, 131, 0.16) 0%,
+    rgba(35, 32, 26, 0.68) 38%,
     rgba(8, 8, 8, 0.98) 100%
   );
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(212, 180, 131, 0.14),
     0 16px 48px rgba(0, 0, 0, 0.5);
   padding: 1.15rem 1rem 1.2rem;
 }
 
 .plans__tier--vip:hover {
-  border-color: rgba(255, 255, 255, 0.65);
+  border-color: var(--tc-champagne-400);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 0 0 1px rgba(212, 180, 131, 0.28),
     0 20px 56px rgba(0, 0, 0, 0.55);
+}
+
+.plans__tier--vip .plans__graphic,
+.plans__title-line-vip {
+  color: var(--tc-champagne-400);
 }
 
 .plans__graphic {
@@ -1828,23 +1959,18 @@
     padding-bottom: clamp(1.25rem, 4vw, 2rem);
   }
 
-  .home-hero--split {
-    grid-template-columns: 1fr;
-    gap: clamp(1.35rem, 4vw, 2rem);
-    min-height: auto;
-    padding: clamp(1rem, 3vw, 1.5rem) clamp(0.85rem, 3vw, 1.25rem);
+  .home-hero--full {
+    min-height: min(78svh, 640px);
   }
 
-  .home-hero__media {
-    aspect-ratio: 4 / 5;
-    max-height: min(52svh, 520px);
-    max-width: min(100%, 420px);
-    margin-inline: auto;
+  /* Portrait viewports crop the group shot badly from the centre — bias toward
+     the faces. */
+  .home-hero__img {
+    object-position: center 22%;
   }
 
   .home-hero__content {
-    text-align: center;
-    align-items: center;
+    max-width: 100%;
   }
 
   .home-hero__eyebrow {
@@ -1861,15 +1987,8 @@
     font-size: clamp(1rem, 4.1vw, 1.12rem);
   }
 
-  .home-hero__action {
-    align-self: center;
-  }
-
   .home-hero__highlights {
-    margin-inline: auto;
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-    max-width: 20rem;
+    gap: 0.4rem 0.65rem;
   }
 
   .plans {
@@ -1913,32 +2032,12 @@
     padding-inline: clamp(0.25rem, 2vw, 0.75rem);
   }
 
-  .slide--services .plans-page__title {
-    font-size: clamp(1.08rem, 4.2vw, 1.32rem);
-    letter-spacing: 0.18em;
-    text-indent: 0.18em;
-  }
-
-  .slide--services .plans-page__lead {
-    font-size: clamp(1rem, 3.6vw, 1.16rem);
-  }
-
   .slide--services .services-page__what-label {
     font-size: clamp(0.7rem, 2.8vw, 0.8rem);
   }
 
-  .slide--services .plans__title-line {
-    font-size: clamp(0.76rem, 2.6vw, 0.9rem);
-    padding: 0.48rem clamp(0.85rem, 3vw, 1.05rem);
-  }
-
-  .slide--services .plans__desc,
-  .slide--services .services-page__spotlight-desc {
+  .slide--services .plans__desc {
     font-size: clamp(0.94rem, 3.2vw, 1.08rem);
-  }
-
-  .slide--services .plans__includes-label {
-    font-size: clamp(0.68rem, 2.4vw, 0.76rem);
   }
 
   .slide--services .plans__list {
@@ -2037,72 +2136,133 @@
   border-bottom-color: rgba(255, 255, 255, 0.55);
 }
 
-/* Site footer — phone + social on every page */
+/* ——— Site footer ———
+   Rebuilt from a single row (phone + 3 social links) into a real four-column
+   footer. The thin version was the strongest "this isn't an established
+   company" signal on the site. */
 .site-footer {
   flex-shrink: 0;
-  padding: 1rem clamp(1rem, 4vw, 2.5rem) max(1.25rem, env(safe-area-inset-bottom));
-  background: transparent;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--tc-section-y) clamp(1rem, 4vw, 2.5rem) 0;
+  background: var(--tc-ink-900);
+  border-top: 1px solid var(--tc-line);
 }
 
 .site-footer__inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.65rem 1.25rem;
-  max-width: 52rem;
-  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  gap: clamp(2rem, 5vw, 3.5rem);
+  width: 100%;
+  max-width: var(--tc-container);
+  margin-inline: auto;
+}
+
+.site-footer__mark {
+  display: block;
+  width: 2.6rem;
+  height: 2.6rem;
+  object-fit: contain;
+}
+
+.site-footer__name {
+  margin: 0.85rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tc-text-100);
+}
+
+.site-footer__tagline {
+  margin: 0.4rem 0 0;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tc-champagne-400);
 }
 
 .site-footer__phone {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1.4rem;
+  font-size: 1.05rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #ffffff;
+  letter-spacing: 0.02em;
+  color: var(--tc-text-100);
   text-decoration: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+  transition: color 0.3s var(--motion-ease-soft);
 }
 
 .site-footer__phone:hover {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--tc-champagne-400);
 }
 
-.site-footer__contact-link {
-  font-size: 0.68rem;
+.site-footer__col-title {
+  margin: 0 0 1rem;
+  font-size: var(--tc-fs-eyebrow);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--tc-track-eyebrow);
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.95);
-  text-decoration: none;
+  color: var(--tc-text-500);
 }
 
-.site-footer__contact-link:hover,
-.site-footer__contact-link--active {
-  color: #ffffff;
-}
-
-.site-footer__social {
+.site-footer__list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.85rem;
+  flex-direction: column;
+  gap: 0.65rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.site-footer__social-link {
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+.site-footer__link {
+  font-size: 0.9rem;
+  color: var(--tc-text-300);
   text-decoration: none;
+  transition: color 0.3s var(--motion-ease-soft);
 }
 
-.site-footer__social-link:hover {
-  color: #ffffff;
+.site-footer__link:hover {
+  color: var(--tc-champagne-400);
+}
+
+.site-footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 1.5rem;
+  width: 100%;
+  max-width: var(--tc-container);
+  margin: var(--tc-section-y) auto 0;
+  /* Generous bottom padding keeps the last line clear of the fixed
+     "Ask Concierge" chat FAB, which parks in this exact corner. */
+  padding: 1.5rem 0 max(5.5rem, calc(4rem + env(safe-area-inset-bottom)));
+  border-top: 1px solid var(--tc-line);
+}
+
+.site-footer__legal p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--tc-text-500);
+}
+
+@media (max-width: 860px) {
+  .site-footer__inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .site-footer__inner {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .site-footer__legal {
+    justify-content: flex-start;
+  }
 }
 
 /* Contact page */
@@ -2281,14 +2441,16 @@
   border-color: rgba(255, 255, 255, 0.18);
 }
 
+/* This modifier has always been named --gold but rendered plain white — the
+   brand had no accent colour to render. Now it does. */
 .contact-action--gold {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.12) 100%);
-  border-color: rgba(255, 255, 255, 0.35);
+  background: linear-gradient(180deg, rgba(212, 180, 131, 0.2) 0%, rgba(212, 180, 131, 0.1) 100%);
+  border-color: var(--tc-champagne-a40);
 }
 
 .contact-action--gold:hover {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.18) 100%);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(180deg, rgba(212, 180, 131, 0.3) 0%, rgba(212, 180, 131, 0.16) 100%);
+  border-color: var(--tc-champagne-400);
 }
 
 .contact-action--solo {
@@ -3348,116 +3510,52 @@
   .site-header__brand:hover,
   .services-card:hover,
   .plans__tier:hover,
-  .services-page__spotlight:hover,
   .hop-service-card:hover,
   .hop-btn-primary:hover {
     transform: none;
   }
 }
 
+/* ——— Homepage new sections — responsive ——— */
+
+@media (max-width: 900px) {
+  /* How It Works: single column */
+  .home-how__steps {
+    grid-template-columns: 1fr;
+    max-width: 32rem;
+    margin-inline: auto;
+  }
+
+  /* Service cards: 2×2 grid */
+  .home-services__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Service cards: single column on small phones */
+@media (max-width: 480px) {
+  .home-services__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reduced motion: disable card hover lifts */
+@media (prefers-reduced-motion: reduce) {
+  .home-how__step:hover,
+  .home-services__card-link:hover {
+    transform: none;
+  }
+}
+
 /* ============================================================
-   HOP — Healthcare Concierge page  (dark-navy / indigo-cyan)
-   ============================================================ */
-
-/* Local palette */
-.hop-page {
-  --hop-bg: #0d0f1a;
-  --hop-card: #13141f;
-  --hop-indigo: #6366f1;
-  --hop-cyan: #06b6d4;
-  --hop-violet: #8b5cf6;
-}
-
-/* ── Page shell ──────────────────────────────── */
-.hop-page {
-  width: 100%;
-  background: var(--hop-bg);
-  color: #ffffff;
-  font-family: 'DM Sans', system-ui, sans-serif;
-}
-
-.hop-section {
-  padding: clamp(3.5rem, 7vw, 6rem) clamp(1.25rem, 5vw, 3rem);
-}
-
-.hop-section--hero {
-  padding-top: clamp(3rem, 6vw, 5rem);
-  background:
-    radial-gradient(ellipse 90% 55% at 50% -5%, rgba(99, 102, 241, 0.25) 0%, transparent 70%),
-    var(--hop-bg);
-  text-align: center;
-}
-
-.hop-inner {
-  width: 100%;
-  max-width: 70rem;
-  margin: 0 auto;
-  box-sizing: border-box;
-}
-
-/* ── Ticker pill ─────────────────────────────── */
-.hop-ticker {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.35rem 1.1rem;
-  font-size: clamp(0.68rem, 1.05vw, 0.78rem);
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.78);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  margin-bottom: clamp(1.5rem, 3vw, 2rem);
-}
-
-.hop-ticker__dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--hop-cyan);
-  flex-shrink: 0;
-}
-
-/* ── Hero heading ────────────────────────────── */
-.hop-h1 {
-  margin: 0 0 clamp(1rem, 2vw, 1.35rem);
-  font-size: clamp(2.4rem, 6vw, 4.5rem);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.025em;
-  color: #ffffff;
-  text-wrap: balance;
-}
-
-.hop-h1__gradient {
-  font-style: normal;
-  display: block;
-  background: linear-gradient(90deg, var(--hop-indigo) 0%, var(--hop-cyan) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hop-hero__sub {
-  margin: 0 auto clamp(1.5rem, 3vw, 2rem);
-  max-width: 44rem;
-  font-size: clamp(0.92rem, 1.6vw, 1.05rem);
-  font-weight: 400;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.72);
-  text-wrap: balance;
-}
-
-/* ── Hero CTAs ───────────────────────────────── */
-.hop-hero__ctas {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.85rem;
-  margin-bottom: clamp(2rem, 4vw, 3rem);
-}
+   HOP shared buttons — GLOBAL ON PURPOSE, DO NOT MOVE
+   ============================================================
+   These live in App.css, not hopMarketing.css or hopApp.css, because BOTH
+   consume them: the public /hop marketing hero and ~20 files across the
+   authenticated HOP app (login, signup, admin, feed, messages, requests...).
+   Moving them into either stylesheet unstyles the other. The --hop-* vars they
+   reference are resolved from whichever ancestor scope applies: `.hop-page`
+   (hopMarketing.css) or `.hop-shell`/`.hop-auth-page` (hopApp.css). */
 
 .hop-btn-primary {
   display: inline-flex;
@@ -3529,640 +3627,213 @@
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.hop-hero__ctas--secondary {
-  margin-top: -1.4rem;
-  gap: 1.4rem;
-}
-
-.hop-link-inline {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
-  text-decoration: none;
-  transition: color 0.3s var(--motion-ease-soft);
-}
-
-.hop-link-inline:hover {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-/* ── Hero stat cards ─────────────────────────── */
-.hop-hero__stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(0.75rem, 1.8vw, 1.1rem);
-  margin-bottom: clamp(1.75rem, 3.5vw, 2.5rem);
-}
-
-.hop-hero__stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  padding: clamp(1rem, 2.5vw, 1.4rem) clamp(0.85rem, 2vw, 1.2rem);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 14px;
-  text-align: center;
-}
-
-.hop-hero__stat-val {
-  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.hop-hero__stat-label {
-  font-size: clamp(0.72rem, 1.1vw, 0.82rem);
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1.4;
-}
-
-.hop-hero__stat-source {
-  font-size: clamp(0.62rem, 0.9vw, 0.7rem);
-  color: rgba(255, 255, 255, 0.38);
-}
-
-/* ── Ask HOP bar ─────────────────────────────── */
-.hop-ask {
-  max-width: 44rem;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.hop-ask__bar {
-  display: flex;
-  align-items: center;
+/* ============================================================
+   Team band — the shared "there is a team behind this" section
+   ============================================================
+   Rendered by src/components/TeamBand.tsx on the homepage and every inner
+   marketing page. This is the brand's answer to leading with a solo portrait. */
+.team-band {
   width: 100%;
-  gap: 0.75rem;
-  padding: 0.6rem 0.6rem 0.6rem 1.1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+  padding: var(--tc-section-y) 0;
+  box-sizing: border-box;
+  background: var(--tc-ink-800);
+  border-top: 1px solid var(--tc-line);
+  border-bottom: 1px solid var(--tc-line);
 }
 
-.hop-ask__ico {
-  font-size: 1rem;
-  flex-shrink: 0;
-  color: var(--hop-indigo);
-}
-
-.hop-ask__placeholder {
-  flex: 1;
-  font-size: clamp(0.82rem, 1.3vw, 0.92rem);
-  color: rgba(255, 255, 255, 0.38);
-  text-align: left;
-}
-
-.hop-ask__btn {
-  display: inline-flex;
+.team-band__inner {
+  width: 100%;
+  max-width: var(--tc-container);
+  margin-inline: auto;
+  padding-inline: var(--tc-gutter);
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1.15rem;
-  font-size: clamp(0.78rem, 1.1vw, 0.86rem);
-  font-weight: 700;
-  text-decoration: none;
-  color: #ffffff;
-  background: var(--hop-indigo);
-  border-radius: 8px;
-  flex-shrink: 0;
-  transition: filter 0.25s ease;
+  gap: clamp(2rem, 5vw, 4rem);
 }
 
-.hop-ask__btn:hover {
-  filter: brightness(1.12);
+.team-band__media {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--tc-r-lg);
+  border: 1px solid var(--tc-line);
+  box-shadow: var(--tc-e-3);
 }
 
-.hop-ask__chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
+.team-band__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  aspect-ratio: 16 / 9;
 }
 
-.hop-ask__chip {
-  padding: 0.3rem 0.9rem;
-  font-size: clamp(0.7rem, 1vw, 0.78rem);
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.68);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-}
-
-/* ── Section typography ──────────────────────── */
-.hop-eyebrow {
-  margin: 0 0 0.65rem;
-  font-size: clamp(0.62rem, 0.95vw, 0.72rem);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #f87171;
-  text-align: center;
-}
-
-.hop-h2 {
-  margin: 0 0 clamp(0.65rem, 1.2vw, 0.85rem);
-  font-size: clamp(1.8rem, 3.8vw, 2.75rem);
-  font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: -0.02em;
-  color: #ffffff;
-  text-align: center;
+.team-band__title {
+  margin: 0.7rem 0 0;
+  font-family: var(--tc-font-display);
+  font-size: var(--tc-fs-h2);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--tc-text-100);
   text-wrap: balance;
 }
 
-.hop-sub {
-  margin: 0 auto clamp(2rem, 4vw, 3rem);
-  max-width: 40rem;
-  font-size: clamp(0.88rem, 1.4vw, 1rem);
-  color: rgba(255, 255, 255, 0.58);
-  text-align: center;
-  line-height: 1.65;
+.team-band__lead {
+  margin: 1rem 0 0;
+  font-size: var(--tc-fs-body);
+  line-height: 1.7;
+  color: var(--tc-text-300);
+  max-width: 34rem;
 }
 
-/* ── Charts row ──────────────────────────────── */
-.hop-charts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(0.85rem, 2vw, 1.25rem);
-  margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
-}
-
-.hop-chart-card {
-  background: var(--hop-card);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: clamp(1.25rem, 2.8vw, 1.75rem);
-}
-
-.hop-chart-card__hd {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  margin-bottom: clamp(1rem, 2vw, 1.4rem);
-}
-
-.hop-chart-card__hd strong {
-  font-size: clamp(0.88rem, 1.3vw, 1rem);
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.hop-chart-card__hd span {
-  font-size: clamp(0.7rem, 1vw, 0.78rem);
-  color: rgba(255, 255, 255, 0.45);
-}
-
-/* Donut chart */
-.hop-donut-row {
-  display: flex;
-  align-items: center;
-  gap: clamp(1rem, 2.5vw, 1.75rem);
-}
-
-.hop-donut {
-  width: clamp(90px, 22vw, 140px);
-  height: clamp(90px, 22vw, 140px);
-  flex-shrink: 0;
-}
-
-.hop-donut-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  flex: 1;
-}
-
-.hop-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.hop-legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.hop-legend-name {
-  flex: 1;
-  font-size: clamp(0.76rem, 1.1vw, 0.86rem);
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.hop-legend-val {
-  font-size: clamp(0.76rem, 1.1vw, 0.86rem);
-  font-weight: 700;
-}
-
-.hop-legend-badge {
-  display: inline-block;
-  margin-top: 0.35rem;
-  padding: 0.28rem 0.75rem;
-  font-size: clamp(0.68rem, 1vw, 0.76rem);
-  font-weight: 600;
-  color: #fca5a5;
-  background: rgba(248, 113, 113, 0.12);
-  border: 1px solid rgba(248, 113, 113, 0.28);
-  border-radius: 999px;
-}
-
-/* Bar chart */
-.hop-bar-chart {
-  display: flex;
-  gap: 0.65rem;
-  align-items: stretch;
-  height: clamp(120px, 18vw, 180px);
-}
-
-.hop-bar-chart__y {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-  flex-shrink: 0;
-}
-
-.hop-bar-chart__y span {
-  font-size: clamp(0.55rem, 0.85vw, 0.64rem);
-  color: rgba(255, 255, 255, 0.35);
-  line-height: 1;
-}
-
-.hop-bar-chart__cols {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.45rem;
-  flex: 1;
-}
-
-.hop-bar-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.35rem;
-  flex: 1;
-  height: 100%;
-}
-
-.hop-bar-col__fill {
-  width: 100%;
-  border-radius: 4px 4px 0 0;
-  min-height: 4px;
-  transition: height 0.6s ease;
-}
-
-.hop-bar-col__lbl {
-  font-size: clamp(0.55rem, 0.85vw, 0.64rem);
-  color: rgba(255, 255, 255, 0.45);
-  text-align: center;
-  line-height: 1.2;
-}
-
-/* ── Problem stat cards ──────────────────────── */
-.hop-prob-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(0.65rem, 1.5vw, 1rem);
-}
-
-.hop-prob-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  padding: clamp(1rem, 2.5vw, 1.4rem) clamp(0.75rem, 2vw, 1.1rem);
-  background: rgba(248, 113, 113, 0.06);
-  border: 1px solid rgba(248, 113, 113, 0.14);
-  border-radius: 12px;
-  text-align: center;
-}
-
-.hop-prob-stat__ico {
-  font-size: 1.3rem;
-  color: #f87171;
-}
-
-.hop-prob-stat__val {
-  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
-  font-weight: 800;
-  color: #f87171;
-  letter-spacing: -0.015em;
-  line-height: 1;
-}
-
-.hop-prob-stat__lbl {
-  font-size: clamp(0.68rem, 1vw, 0.76rem);
-  color: rgba(255, 255, 255, 0.58);
-  line-height: 1.45;
-}
-
-/* ── Services grid ───────────────────────────── */
-.hop-services-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: clamp(0.65rem, 1.5vw, 1rem);
-}
-
-.hop-service-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.55rem;
-  padding: clamp(1rem, 2.5vw, 1.4rem) clamp(0.75rem, 1.8vw, 1rem);
-  background: var(--hop-card);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  text-align: center;
-  transition:
-    border-color 0.3s var(--motion-ease-soft),
-    box-shadow 0.3s var(--motion-ease-soft),
-    transform 0.3s var(--motion-ease-soft);
-}
-
-.hop-service-card:hover {
-  border-color: rgba(99, 102, 241, 0.38);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
-  transform: translateY(var(--motion-lift));
-}
-
-.hop-service-card__ico {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 10px;
-  font-size: 1.4rem;
-}
-
-.hop-service-card__name {
-  font-size: clamp(0.78rem, 1.1vw, 0.88rem);
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1.3;
-}
-
-.hop-service-card__desc {
-  font-size: clamp(0.68rem, 0.95vw, 0.76rem);
-  color: rgba(255, 255, 255, 0.52);
-  line-height: 1.4;
-}
-
-/* ── How it works steps ──────────────────────── */
-.hop-steps {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(0.75rem, 2vw, 1.25rem);
-  margin-bottom: clamp(2rem, 4vw, 3rem);
-  position: relative;
-}
-
-.hop-steps::before {
-  content: '';
-  position: absolute;
-  top: 2rem;
-  left: calc(12.5%);
-  right: calc(12.5%);
-  height: 1px;
-  background: rgba(99, 102, 241, 0.35);
-  z-index: 0;
-}
-
-.hop-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.55rem;
-  position: relative;
-  z-index: 1;
-}
-
-.hop-step__circle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 4rem;
-  height: 4rem;
-  border-radius: 50%;
-  background: rgba(99, 102, 241, 0.12);
-  border: 1.5px solid var(--hop-indigo);
-  flex-shrink: 0;
-}
-
-.hop-step__ico {
-  font-size: 1.3rem;
-  line-height: 1;
-}
-
-.hop-step__num {
-  font-size: clamp(0.7rem, 1.05vw, 0.8rem);
-  font-weight: 700;
-  color: var(--hop-cyan);
-  letter-spacing: 0.04em;
-}
-
-.hop-step__title {
-  font-size: clamp(0.88rem, 1.3vw, 1rem);
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1.25;
-}
-
-.hop-step__desc {
-  font-size: clamp(0.76rem, 1.1vw, 0.85rem);
-  color: rgba(255, 255, 255, 0.56);
-  line-height: 1.5;
-}
-
-/* ── Before / After comparison ───────────────── */
-.hop-compare {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(0.75rem, 1.8vw, 1.1rem);
-}
-
-.hop-compare__col {
-  border-radius: 14px;
-  padding: clamp(1.25rem, 2.8vw, 1.65rem);
-}
-
-.hop-compare__col--before {
-  background: rgba(248, 113, 113, 0.06);
-  border: 1px solid rgba(248, 113, 113, 0.22);
-}
-
-.hop-compare__col--after {
-  background: rgba(74, 222, 128, 0.05);
-  border: 1px solid rgba(74, 222, 128, 0.22);
-}
-
-.hop-compare__hd {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  margin-bottom: clamp(0.85rem, 1.8vw, 1.15rem);
-}
-
-.hop-compare__hd strong {
-  font-size: clamp(0.88rem, 1.3vw, 1rem);
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.hop-compare__list {
-  list-style: none;
-  margin: 0;
+.team-band__proof {
+  margin: clamp(1.5rem, 3vw, 2rem) 0 0;
   padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1.1rem;
+}
+
+.team-band__proof-item {
+  padding-left: 1.1rem;
+  border-left: 2px solid var(--tc-champagne-a40);
+}
+
+.team-band__proof-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--tc-text-100);
+}
+
+.team-band__proof-body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--tc-text-500);
+}
+
+@media (max-width: 960px) {
+  .team-band__inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   Closing CTA — the homepage used to end with no ask at all
+   ============================================================ */
+.home-cta {
+  width: 100%;
+  padding: var(--tc-section-y) 0 clamp(4.5rem, 10vw, 8rem);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.home-cta__inner {
+  width: 100%;
+  max-width: var(--tc-container-narrow);
+  margin-inline: auto;
+  padding-inline: var(--tc-gutter);
+  box-sizing: border-box;
+}
+
+.home-cta__title {
+  margin: 0.7rem 0 0;
+  font-family: var(--tc-font-display);
+  font-size: var(--tc-fs-h1);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  color: var(--tc-text-100);
+  text-wrap: balance;
+}
+
+.home-cta__lead {
+  margin: 1.1rem auto 0;
+  max-width: 40rem;
+  font-size: var(--tc-fs-body);
+  line-height: 1.7;
+  color: var(--tc-text-300);
+}
+
+.home-cta__actions {
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: clamp(1.75rem, 3.5vw, 2.4rem);
 }
 
-.hop-compare__item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  font-size: clamp(0.8rem, 1.2vw, 0.9rem);
-  line-height: 1.5;
-}
-
-.hop-compare__item::before {
-  content: '•';
-  flex-shrink: 0;
-  margin-top: 0.05em;
-}
-
-.hop-compare__item--before {
-  color: rgba(255, 255, 255, 0.68);
-}
-
-.hop-compare__item--before::before {
-  color: #f87171;
-}
-
-.hop-compare__item--after {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.hop-compare__item--after::before {
-  content: '✓';
-  color: #4ade80;
-  font-weight: 700;
-}
-
-/* ── Responsive ──────────────────────────────── */
-@media (max-width: 1024px) {
-  .hop-services-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 860px) {
-  .hop-charts {
-    grid-template-columns: 1fr;
-  }
-
-  .hop-prob-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hop-steps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hop-steps::before {
-    display: none;
-  }
-
-  .hop-hero__stats {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 600px) {
-  .hop-services-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hop-compare {
-    grid-template-columns: 1fr;
-  }
-
-  .hop-prob-stats {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 420px) {
-  .hop-steps {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ——— Homepage new sections — responsive ——— */
-
-/* Hero glow: reposition behind centered photo on mobile */
-@media (max-width: 900px) {
-  .home-hero--split::before {
-    left: 50%;
-    top: 26%;
-    width: min(88vw, 480px);
-    height: min(88vw, 480px);
-  }
-
-  /* How It Works: single column */
-  .home-how__steps {
-    grid-template-columns: 1fr;
-    max-width: 32rem;
-    margin-inline: auto;
-  }
-
-  /* Service cards: 2×2 grid */
-  .home-services__grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Trust bar: stack vertically on narrow screens */
 @media (max-width: 720px) {
+  /* Four credentials stack to a 2x2 before going single-column. */
   .home-stats__inner {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .home-stats__item + .home-stats__item {
     border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: clamp(1rem, 3vw, 1.5rem);
   }
 }
 
-/* Service cards: single column on small phones */
-@media (max-width: 480px) {
-  .home-services__grid {
+@media (max-width: 460px) {
+  .home-stats__inner {
     grid-template-columns: 1fr;
   }
 }
 
-/* Reduced motion: disable glow animation and card hover lifts */
-@media (prefers-reduced-motion: reduce) {
-  .home-hero--split::before {
-    animation: none;
-  }
+/* ——— Contact page: what-to-expect row ———
+   Added because the page previously offered a phone number and three social
+   links and nothing else — no service area, availability or handling promise. */
+.contact-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.25rem, 3vw, 2rem);
+  width: 100%;
+  max-width: 58rem;
+  margin: clamp(2.5rem, 5vw, 3.5rem) auto 0;
+  padding: 0;
+  list-style: none;
+}
 
-  .home-how__step:hover,
-  .home-services__card-link:hover {
-    transform: none;
+.contact-facts__item {
+  padding: clamp(1.25rem, 2.5vw, 1.6rem);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--tc-line);
+  border-radius: var(--tc-r-md);
+}
+
+.contact-facts__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  margin-bottom: 0.85rem;
+  color: var(--tc-champagne-400);
+  background: var(--tc-champagne-a12);
+  border: 1px solid var(--tc-champagne-a24);
+  border-radius: var(--tc-r-pill);
+}
+
+.contact-facts__title {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--tc-text-100);
+}
+
+.contact-facts__body {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--tc-text-500);
+}
+
+@media (max-width: 760px) {
+  .contact-facts {
+    grid-template-columns: 1fr;
   }
 }

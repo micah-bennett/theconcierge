@@ -1,8 +1,6 @@
 import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react'
 import {
   BrowserRouter,
-  Link,
-  NavLink,
   Navigate,
   Route,
   Routes,
@@ -10,6 +8,7 @@ import {
   useNavigate,
 } from 'react-router-dom'
 import { SiteFooter } from './components/SiteFooter'
+import { SiteHeader } from './components/SiteHeader'
 import { ContactPage } from './pages/ContactPage'
 import { HomePage } from './pages/HomePage'
 import { HopPage } from './pages/HopPage'
@@ -39,10 +38,9 @@ import { RequireAdmin, RequireAuth } from './hop/RequireAuth'
 import { HopAppLayout } from './hop/HopAppLayout'
 import { HopAdminLayout } from './hop/HopAdminLayout'
 import { useSiteMotion } from './hooks/useSiteMotion'
+import { usePageTitle } from './hooks/usePageTitle'
 import './App.css'
 import './styles/hopApp.css'
-
-const LOGO_IMAGE = '/logo-mark-white.png?v=1'
 
 const ConciergeRequestModal = lazy(() =>
   import('./components/ConciergeRequestModal').then((m) => ({
@@ -66,6 +64,7 @@ function AppRoutes() {
   const navigate = useNavigate()
   const location = useLocation()
   useSiteMotion(location.pathname)
+  usePageTitle(location.pathname)
   const [chatOpen, setChatOpen] = useState(false)
   const onRequestPage = location.pathname === '/request'
   const headerRef = useRef<HTMLElement>(null)
@@ -145,85 +144,7 @@ function AppRoutes() {
   return (
     <div className="site">
       <ScrollToTop />
-      <header ref={headerRef} className="site-header">
-        <Link
-          className="site-header__brand"
-          to="/"
-          aria-label="Hudson Valley Concierge Service — home"
-        >
-          <img
-            className="site-header__brand-logo"
-            src={LOGO_IMAGE}
-            alt="The Concierge"
-            width={80}
-            height={80}
-            decoding="async"
-          />
-          <p className="site-header__brand-name">The Concierge</p>
-        </Link>
-        <nav className="site-header__nav site-header__nav--tabs" aria-label="Primary">
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `site-header__nav-tab${isActive ? ' site-header__nav-tab--active' : ''}`
-            }
-          >
-            Home
-          </NavLink>
-          <a
-            className="site-header__nav-tab site-header__nav-tab--external"
-            href="https://hvconcierge.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Part of the Hudson Valley Concierge Service network — main business site at hvconcierge.com (opens in a new tab)"
-          >
-            HVCS
-          </a>
-          <NavLink
-            to="/personal-services"
-            className={({ isActive }) =>
-              `site-header__nav-tab site-header__nav-tab--long${isActive ? ' site-header__nav-tab--active' : ''}`
-            }
-          >
-            Personal services
-          </NavLink>
-          <NavLink
-            to="/hop"
-            className={({ isActive }) =>
-              `site-header__nav-tab${isActive ? ' site-header__nav-tab--active' : ''}`
-            }
-          >
-            HOP
-          </NavLink>
-          <NavLink
-            to="/plans"
-            className={({ isActive }) =>
-              `site-header__nav-tab${isActive ? ' site-header__nav-tab--active' : ''}`
-            }
-          >
-            Plans
-          </NavLink>
-          <NavLink
-            to="/contact"
-            className={({ isActive }) =>
-              `site-header__nav-tab${isActive ? ' site-header__nav-tab--active' : ''}`
-            }
-          >
-            Contact
-          </NavLink>
-        </nav>
-        <div className="site-header__actions">
-          <NavLink
-            to="/request"
-            className={({ isActive }) =>
-              `site-header__request${isActive ? ' site-header__request--active' : ''}`
-            }
-          >
-            Request Service
-          </NavLink>
-        </div>
-      </header>
+      <SiteHeader ref={headerRef} />
 
       <Suspense fallback={null}>
         <ConciergeChatBot open={chatOpen} onOpenChange={setChatOpen} />

@@ -1,0 +1,702 @@
+/* HOP — public marketing page (/hop) only.
+   Extracted from App.css so the marketing site and this page can evolve
+   separately. This is a DIFFERENT design system from both the public site
+   (navy + champagne, --tc-*) and the authenticated HOP app
+   (src/styles/hopApp.css). Its indigo/violet accent is deliberate: it matches
+   the product a visitor lands in after clicking "Log in".
+   Imported by src/pages/HopPage.tsx. */
+
+/* ============================================================
+   HOP — Healthcare Concierge page  (dark-navy / indigo-cyan)
+   ============================================================ */
+
+/* Local palette.
+   The GROUND and SURFACE are pulled onto the brand's navy (--tc-ink-*) so this
+   page sits seamlessly under the shared header and above the shared footer.
+   The indigo/violet/cyan ACCENT is deliberately kept: it is HOP's product
+   colour and continues into the authenticated app a visitor reaches by
+   clicking "Log in". Chrome = brand, accent = product. */
+.hop-page {
+  --hop-bg: var(--tc-ink-900);
+  --hop-card: var(--tc-ink-700);
+  --hop-indigo: #6366f1;
+  --hop-cyan: #06b6d4;
+  --hop-violet: #8b5cf6;
+}
+
+/* ── Page shell ──────────────────────────────── */
+.hop-page {
+  width: 100%;
+  background: var(--hop-bg);
+  color: #ffffff;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.hop-section {
+  padding: var(--tc-section-y) var(--tc-gutter);
+}
+
+.hop-section--hero {
+  padding-top: clamp(3rem, 6vw, 5rem);
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -5%, rgba(99, 102, 241, 0.25) 0%, transparent 70%),
+    var(--hop-bg);
+  text-align: center;
+}
+
+/* Narrower than --tc-container (94rem) on purpose: this page is a centred
+   long-form pitch, not a wide marketing grid. */
+.hop-inner {
+  width: 100%;
+  max-width: 70rem;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* ── Ticker pill ─────────────────────────────── */
+.hop-ticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 1.1rem;
+  font-size: clamp(0.68rem, 1.05vw, 0.78rem);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+  background: var(--tc-line);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--tc-r-pill);
+  margin-bottom: clamp(1.5rem, 3vw, 2rem);
+}
+
+.hop-ticker__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hop-cyan);
+  flex-shrink: 0;
+}
+
+/* ── Hero heading ────────────────────────────── */
+.hop-h1 {
+  margin: 0 0 clamp(1rem, 2vw, 1.35rem);
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: #ffffff;
+  text-wrap: balance;
+}
+
+.hop-h1__gradient {
+  font-style: normal;
+  display: block;
+  background: linear-gradient(90deg, var(--hop-indigo) 0%, var(--hop-cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hop-hero__sub {
+  margin: 0 auto clamp(1.5rem, 3vw, 2rem);
+  max-width: 44rem;
+  font-size: clamp(0.92rem, 1.6vw, 1.05rem);
+  font-weight: 400;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.72);
+  text-wrap: balance;
+}
+
+/* ── Hero CTAs ───────────────────────────────── */
+.hop-hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+
+.hop-hero__ctas--secondary {
+  margin-top: -1.4rem;
+  gap: 1.4rem;
+}
+
+.hop-link-inline {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: none;
+  transition: color 0.3s var(--motion-ease-soft);
+}
+
+.hop-link-inline:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Hero stat cards ─────────────────────────── */
+.hop-hero__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.8vw, 1.1rem);
+  margin-bottom: clamp(1.75rem, 3.5vw, 2.5rem);
+}
+
+.hop-hero__stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: clamp(1rem, 2.5vw, 1.4rem) clamp(0.85rem, 2vw, 1.2rem);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--tc-r-md);
+  text-align: center;
+}
+
+.hop-hero__stat-val {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.hop-hero__stat-label {
+  font-size: clamp(0.72rem, 1.1vw, 0.82rem);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+}
+
+.hop-hero__stat-source {
+  font-size: clamp(0.62rem, 0.9vw, 0.7rem);
+  color: rgba(255, 255, 255, 0.38);
+}
+
+/* ── Ask HOP bar ─────────────────────────────── */
+.hop-ask {
+  max-width: 44rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.hop-ask__bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.75rem;
+  padding: 0.6rem 0.6rem 0.6rem 1.1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--tc-r-md);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+}
+
+.hop-ask__ico {
+  font-size: 1rem;
+  flex-shrink: 0;
+  color: var(--hop-indigo);
+}
+
+.hop-ask__placeholder {
+  flex: 1;
+  font-size: clamp(0.82rem, 1.3vw, 0.92rem);
+  color: rgba(255, 255, 255, 0.38);
+  text-align: left;
+}
+
+.hop-ask__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.15rem;
+  font-size: clamp(0.78rem, 1.1vw, 0.86rem);
+  font-weight: 700;
+  text-decoration: none;
+  color: #ffffff;
+  background: var(--hop-indigo);
+  border-radius: var(--tc-r-sm);
+  flex-shrink: 0;
+  transition: filter 0.25s ease;
+}
+
+.hop-ask__btn:hover {
+  filter: brightness(1.12);
+}
+
+.hop-ask__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.hop-ask__chip {
+  padding: 0.3rem 0.9rem;
+  font-size: clamp(0.7rem, 1vw, 0.78rem);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.68);
+  background: var(--tc-line);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--tc-r-pill);
+}
+
+/* ── Section typography ──────────────────────── */
+/* Site eyebrow geometry; the red is kept rather than champagne because this
+   one instance labels the burnout-crisis section, where it reads as a signal. */
+.hop-eyebrow {
+  margin: 0 0 0.65rem;
+  font-size: var(--tc-fs-eyebrow);
+  font-weight: 700;
+  letter-spacing: var(--tc-track-eyebrow);
+  text-transform: uppercase;
+  color: #f87171;
+  text-align: center;
+}
+
+.hop-h2 {
+  margin: 0 0 clamp(0.65rem, 1.2vw, 0.85rem);
+  font-size: clamp(1.8rem, 3.8vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.hop-sub {
+  margin: 0 auto clamp(2rem, 4vw, 3rem);
+  max-width: 40rem;
+  font-size: clamp(0.88rem, 1.4vw, 1rem);
+  color: rgba(255, 255, 255, 0.58);
+  text-align: center;
+  line-height: 1.65;
+}
+
+/* ── Charts row ──────────────────────────────── */
+.hop-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.85rem, 2vw, 1.25rem);
+  margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.hop-chart-card {
+  background: var(--hop-card);
+  border: 1px solid var(--tc-line);
+  border-radius: var(--tc-r-md);
+  padding: clamp(1.25rem, 2.8vw, 1.75rem);
+}
+
+.hop-chart-card__hd {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: clamp(1rem, 2vw, 1.4rem);
+}
+
+.hop-chart-card__hd strong {
+  font-size: clamp(0.88rem, 1.3vw, 1rem);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.hop-chart-card__hd span {
+  font-size: clamp(0.7rem, 1vw, 0.78rem);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Donut chart */
+.hop-donut-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+.hop-donut {
+  width: clamp(90px, 22vw, 140px);
+  height: clamp(90px, 22vw, 140px);
+  flex-shrink: 0;
+}
+
+.hop-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  flex: 1;
+}
+
+.hop-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hop-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hop-legend-name {
+  flex: 1;
+  font-size: clamp(0.76rem, 1.1vw, 0.86rem);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.hop-legend-val {
+  font-size: clamp(0.76rem, 1.1vw, 0.86rem);
+  font-weight: 700;
+}
+
+.hop-legend-badge {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.28rem 0.75rem;
+  font-size: clamp(0.68rem, 1vw, 0.76rem);
+  font-weight: 600;
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: var(--tc-r-pill);
+}
+
+/* Bar chart */
+.hop-bar-chart {
+  display: flex;
+  gap: 0.65rem;
+  align-items: stretch;
+  height: clamp(120px, 18vw, 180px);
+}
+
+.hop-bar-chart__y {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.hop-bar-chart__y span {
+  font-size: clamp(0.55rem, 0.85vw, 0.64rem);
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1;
+}
+
+.hop-bar-chart__cols {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+  flex: 1;
+}
+
+.hop-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex: 1;
+  height: 100%;
+}
+
+.hop-bar-col__fill {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  transition: height 0.6s ease;
+}
+
+.hop-bar-col__lbl {
+  font-size: clamp(0.55rem, 0.85vw, 0.64rem);
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* ── Problem stat cards ──────────────────────── */
+.hop-prob-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.65rem, 1.5vw, 1rem);
+}
+
+.hop-prob-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: clamp(1rem, 2.5vw, 1.4rem) clamp(0.75rem, 2vw, 1.1rem);
+  background: rgba(248, 113, 113, 0.06);
+  border: 1px solid rgba(248, 113, 113, 0.14);
+  border-radius: var(--tc-r-md);
+  text-align: center;
+}
+
+.hop-prob-stat__ico {
+  font-size: 1.3rem;
+  color: #f87171;
+}
+
+.hop-prob-stat__val {
+  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+  font-weight: 800;
+  color: #f87171;
+  letter-spacing: -0.015em;
+  line-height: 1;
+}
+
+.hop-prob-stat__lbl {
+  font-size: clamp(0.68rem, 1vw, 0.76rem);
+  color: rgba(255, 255, 255, 0.58);
+  line-height: 1.45;
+}
+
+/* ── Services grid ───────────────────────────── */
+.hop-services-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(0.65rem, 1.5vw, 1rem);
+}
+
+.hop-service-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: clamp(1rem, 2.5vw, 1.4rem) clamp(0.75rem, 1.8vw, 1rem);
+  background: var(--hop-card);
+  border: 1px solid var(--tc-line);
+  border-radius: var(--tc-r-md);
+  text-align: center;
+  transition:
+    border-color 0.3s var(--motion-ease-soft),
+    box-shadow 0.3s var(--motion-ease-soft),
+    transform 0.3s var(--motion-ease-soft);
+}
+
+.hop-service-card:hover {
+  border-color: rgba(99, 102, 241, 0.38);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  transform: translateY(var(--motion-lift));
+}
+
+.hop-service-card__ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
+  font-size: 1.4rem;
+}
+
+.hop-service-card__name {
+  font-size: clamp(0.78rem, 1.1vw, 0.88rem);
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.hop-service-card__desc {
+  font-size: clamp(0.68rem, 0.95vw, 0.76rem);
+  color: rgba(255, 255, 255, 0.52);
+  line-height: 1.4;
+}
+
+/* ── How it works steps ──────────────────────── */
+.hop-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+  position: relative;
+}
+
+.hop-steps::before {
+  content: '';
+  position: absolute;
+  top: 2rem;
+  left: calc(12.5%);
+  right: calc(12.5%);
+  height: 1px;
+  background: rgba(99, 102, 241, 0.35);
+  z-index: 0;
+}
+
+.hop-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.55rem;
+  position: relative;
+  z-index: 1;
+}
+
+.hop-step__circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1.5px solid var(--hop-indigo);
+  flex-shrink: 0;
+}
+
+.hop-step__ico {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.hop-step__num {
+  font-size: clamp(0.7rem, 1.05vw, 0.8rem);
+  font-weight: 700;
+  color: var(--hop-cyan);
+  letter-spacing: 0.04em;
+}
+
+.hop-step__title {
+  font-size: clamp(0.88rem, 1.3vw, 1rem);
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.hop-step__desc {
+  font-size: clamp(0.76rem, 1.1vw, 0.85rem);
+  color: rgba(255, 255, 255, 0.56);
+  line-height: 1.5;
+}
+
+/* ── Before / After comparison ───────────────── */
+.hop-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.8vw, 1.1rem);
+}
+
+.hop-compare__col {
+  border-radius: var(--tc-r-md);
+  padding: clamp(1.25rem, 2.8vw, 1.65rem);
+}
+
+.hop-compare__col--before {
+  background: rgba(248, 113, 113, 0.06);
+  border: 1px solid rgba(248, 113, 113, 0.22);
+}
+
+.hop-compare__col--after {
+  background: rgba(74, 222, 128, 0.05);
+  border: 1px solid rgba(74, 222, 128, 0.22);
+}
+
+.hop-compare__hd {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: clamp(0.85rem, 1.8vw, 1.15rem);
+}
+
+.hop-compare__hd strong {
+  font-size: clamp(0.88rem, 1.3vw, 1rem);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.hop-compare__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hop-compare__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: clamp(0.8rem, 1.2vw, 0.9rem);
+  line-height: 1.5;
+}
+
+.hop-compare__item::before {
+  content: '•';
+  flex-shrink: 0;
+  margin-top: 0.05em;
+}
+
+.hop-compare__item--before {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.hop-compare__item--before::before {
+  color: #f87171;
+}
+
+.hop-compare__item--after {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.hop-compare__item--after::before {
+  content: '✓';
+  color: #4ade80;
+  font-weight: 700;
+}
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 1024px) {
+  .hop-services-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .hop-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .hop-prob-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hop-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hop-steps::before {
+    display: none;
+  }
+
+  .hop-hero__stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .hop-services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hop-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .hop-prob-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .hop-steps {
+    grid-template-columns: 1fr;
+  }
+}

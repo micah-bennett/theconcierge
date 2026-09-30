@@ -1,9 +1,11 @@
 import type { CSSProperties } from 'react'
 import { PlanTierGraphic } from '../components/PlanTierGraphic'
+import { TeamBand } from '../components/TeamBand'
 import { OFFICE_PHONE_DISPLAY, OFFICE_PHONE_TEL } from '../site'
 
 export function PlansPage() {
   return (
+    <>
     <section className="slide slide--plans" aria-labelledby="plans-page-heading">
       <div className="plans-page">
         <header className="slide-split__membership plans-page__intro motion-reveal">
@@ -235,5 +237,11 @@ export function PlansPage() {
         </section>
       </div>
     </section>
+
+    <TeamBand
+      heading="Your plan is staffed, not just sold"
+      lead="Membership hours are delivered by a trained team across transportation, errands, healthcare logistics and executive support — so the hours you buy are hours you can actually use."
+    />
+    </>
   )
 }

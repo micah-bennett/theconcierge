@@ -1,14 +1,18 @@
 # Design system reference
 
-Two **independent** design systems coexist in this repo. They are not meant to match each
-other — don't "fix" one to look like the other, and don't introduce a third. If you're adding a
-new font or color anywhere, it almost certainly belongs in one of the two token sets below, not
-as a fresh one-off.
+**Three** independent design systems coexist in this repo. They are not meant to match each
+other — don't "fix" one to look like another, and don't introduce a fourth. If you're adding a
+new font or color anywhere, it almost certainly belongs in one of the token sets below, not as a
+fresh one-off.
+
+1. **Public marketing site** — navy + champagne, `--tc-*`, in `src/App.css` (§1).
+2. **`/hop` marketing page** — indigo/violet/cyan, `--hop-*`, in `src/styles/hopMarketing.css`
+   (§1c). Deliberately matches the product it sells rather than the site it sits in.
+3. **Authenticated HOP app** — indigo/violet/cyan, `--hop-*`, in `src/styles/hopApp.css` (§2).
 
 ## 1. Public marketing site (`/`, `/personal-services`, `/hop`, `/plans`, `/contact`, `/request`)
 
-Styles live in `src/App.css`. This is the original design, restored after a redesign attempt was
-reversed (see `docs/PROJECT_OVERVIEW.md`).
+Styles live in `src/App.css`. Rebranded 2026-09 (team-forward pass) — see "Brand system" below.
 
 - **Fonts** (loaded in `index.html` via Google Fonts): **DM Sans** (body/UI), **Playfair Display**
   / **Cormorant Garamond** (headings/display), Georgia as serif fallback.
@@ -23,6 +27,92 @@ reversed (see `docs/PROJECT_OVERVIEW.md`).
   each page/section defines its own button classes.
 - Every page here inherits `.site`'s font-family (DM Sans) automatically; headings opt into the
   display font per-class (`font-family: 'Playfair Display', ...`).
+
+### 1a. Brand system — the `--tc-*` tokens (navy + champagne)
+
+A second `:root` block in `src/App.css`, directly under the canvas/motion one. Before this the
+site had **no** accent colour, spacing scale, type scale or container primitive — white
+(`#ffffff`) was the de-facto accent and every section hard-coded its own max-width.
+
+```css
+--tc-ink-900/800/700/600     /* navy grounds, deepest first            */
+--tc-champagne-300/400/500   /* the accent; -400 (#d4b483) is primary  */
+--tc-champagne-a12/a24/a40   /* precomputed tints — see color-mix note */
+--tc-text-100/300/500        /* heading / body / muted                 */
+--tc-line, --tc-line-strong  /* hairlines                              */
+--tc-fs-display/h1/h2/h3/body/eyebrow, --tc-track-eyebrow, --tc-font-display
+--tc-section-y, --tc-gutter, --tc-container (94rem), --tc-container-narrow (58rem)
+--tc-r-sm/md/lg/pill, --tc-e-1/2/3
+```
+
+Rules of the road:
+
+- **The `--tc-` prefix is mandatory.** Four other custom-property sets already live in this tree
+  (`--canvas-*`/`--motion-*`, `--hop-*`, `--form-*`, and the generic scaffold set in
+  `index.css` which already owns a bare `--text`). The prefix is what keeps them from colliding.
+- **Champagne is the accent, not the button.** Use it for eyebrows, rules, icon badges, the
+  active-nav underline and hover states. The **primary CTA stays white-on-dark** — it's the
+  highest-contrast element on the page and demoting it costs conversion.
+- **Never use `color-mix()` in new code.** WKWebView only supports it from 16.2 and the Capacitor
+  iOS target is 15.0. The champagne tints are precomputed `rgba()` for exactly this reason. (The
+  one pre-existing use on `.site` now has a plain fallback declaration before it — don't copy it
+  as a template.)
+- **Adoption is additive.** These tokens are consumed only by rules the rebrand rewrote; the
+  remaining legacy CSS keeps its hard-coded values. Tokenise opportunistically, section by
+  section — a blind sweep of a 3.5k-line desktop-first stylesheet with no tests is not worth it.
+- Utilities: `.tc-wrap` / `.tc-wrap--narrow` (container) and `.tc-eyebrow`.
+
+### 1b. Shared chrome components
+
+- `src/components/SiteHeader.tsx` — the header, extracted from `App.tsx`. Takes `ref` as a plain
+  prop (React 19; no `forwardRef` in this repo) and **the ref must land on the `<header>`** —
+  `App.tsx` keeps a `ResizeObserver` on it publishing `--site-header-h`, which `.slides`
+  padding-top and every `scroll-margin-top` depend on. Two constraints follow: the mobile drawer
+  is a **sibling** of `<header>` and `position: fixed` (inside, it would inflate the measured
+  height), and the scrolled/unscrolled states differ only in colour and shadow — **never height
+  or padding**.
+- `src/components/TeamBand.tsx` — the shared "there is a team behind this" band. On the homepage
+  and every inner marketing page. This is the brand's answer to previously leading with a solo
+  portrait; don't remove it without a deliberate brand decision.
+- `src/components/SiteFooter.tsx` — four-column footer. The bottom bar is **the one place**
+  "Hudson Valley Concierge Service LLC" is named; the brand reads as standalone everywhere else.
+
+### 1d. Personal Services shares classes with Plans — scope under `.slide--services`
+
+`PersonalServicesPage.tsx` still borrows `.plans__desc` and `.plans__list` from the Plans page,
+so **any bare `.plans__*` edit changes both pages**. The established convention is to scope
+services-only overrides under `.slide--services`.
+
+Its hero and cards no longer borrow Plans classes at all: they use `.services-page__title`,
+`.services-page__lead`, `.services-card__title` and `.services-card__includes`. Before this the
+`<h1>` was a `.plans-page__title` — a small uppercase label on the Plans page, which read as a
+caption here — and card titles were `.plans__title-line` pills, which read as tags rather than
+headings.
+
+### 1c. `/hop` marketing page is a third design system
+
+`src/pages/HopPage.tsx` renders `.hop-page`, whose ~760 lines now live in
+**`src/styles/hopMarketing.css`** (extracted from `App.css` 2026-09), imported by that page.
+
+It is a **hybrid**, and the split is deliberate:
+
+- **Chrome follows the brand.** `--hop-bg` and `--hop-card` now resolve to `--tc-ink-900` /
+  `--tc-ink-700`, section rhythm uses `--tc-section-y` / `--tc-gutter`, hairlines use
+  `--tc-line`, radii use `--tc-r-*`, and the eyebrow uses `--tc-fs-eyebrow` /
+  `--tc-track-eyebrow`. So the page sits seamlessly under the shared header and above the shared
+  footer.
+- **Accent stays indigo/violet/cyan.** That is HOP's *product* colour and it continues into the
+  authenticated app a visitor reaches by clicking "Log in". Re-skinning the accent to champagne
+  would make that hand-off jarring, and the app itself is out of scope.
+
+Two values are deliberately left off the scale: the `4px` radius on `.hop-bar-col__fill` (a thin
+data bar — a 14px corner would deform it) and the `10px` on the icon tile (it matches
+`.hop-btn-primary`'s geometry).
+
+> ⚠ **`.hop-btn-primary` and `.hop-btn-ghost` stay in `App.css`, global.** Both the public `/hop`
+> hero *and* ~20 files across the authenticated HOP app use them; moving either into
+> `hopMarketing.css` or `hopApp.css` unstyles the other. The `--hop-*` vars they reference
+> resolve from whichever ancestor applies (`.hop-page`, or `.hop-shell`/`.hop-auth-page`).
 
 ## 2. HOP (everything under `/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/app/*`, `/hop/admin/*`)
 
@@ -58,9 +148,11 @@ silently fell back to system sans-serif. **If you ever see a raw `'Syne'` or `'I
 anywhere in this repo, that's a leftover from the reverted redesign — remove it, don't load the
 font.**
 
-- **Buttons**: `.hop-btn-primary` (indigo→violet gradient) is the shared HOP button class, defined
-  in `src/App.css`'s old `.hop-page` block (yes — the public `/hop` marketing page and the
-  authenticated app share this one class; it's intentional, don't duplicate it).
+- **Buttons**: `.hop-btn-primary` (indigo→violet gradient) and `.hop-btn-ghost` are the shared
+  HOP button classes. They live in `src/App.css` under a "HOP shared buttons — GLOBAL ON PURPOSE"
+  banner, **not** in this file and not in `hopMarketing.css` — the public `/hop` marketing page
+  and the authenticated app both use them, so they must stay somewhere loaded by both. It's
+  intentional; don't duplicate or relocate them.
 - **Conventions**: `.hop-card`, `.hop-page-body`, `.hop-page-title`, `.hop-muted`,
   `.hop-quick-grid` etc. for the core app (dashboard/requests/integrations/profile/admin). Shared
   UI-polish components (`src/hop/SkeletonCard.tsx`, `EmptyState.tsx`, `ToastContext.tsx`/

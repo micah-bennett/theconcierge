@@ -3,6 +3,7 @@ import {
   PersonalServiceGraphic,
   type PersonalServiceIllustration,
 } from '../components/PersonalServiceGraphic'
+import { TeamBand } from '../components/TeamBand'
 
 const SECTIONS: readonly {
   title: string
@@ -86,29 +87,24 @@ const SECTIONS: readonly {
 
 export function PersonalServicesPage() {
   return (
+    <>
     <section className="slide slide--services" aria-labelledby="services-page-heading">
       <div className="services-page">
+        {/* Own hero classes rather than borrowing .plans-page__title, which is a
+            small uppercase label on the Plans page and read as a caption here. */}
         <header className="services-page__hero motion-reveal">
-          <h1 className="plans-page__title" id="services-page-heading">
-            Personal Services
+          <p className="tc-eyebrow">Personal concierge</p>
+          <h1 className="services-page__title" id="services-page-heading">
+            Modern life, fully managed
           </h1>
-          <p className="plans-page__lead">
-            Your personal concierge handles the tasks, errands, and coordination that consume your most
-            valuable resource — time.
+          <p className="services-page__lead">
+            Our team handles the tasks, errands, and coordination that consume your most valuable
+            resource — time. Not a generic errand list: a genuine personal support system that is
+            proactive, discreet, and built for the pace of modern life.
           </p>
         </header>
 
-        <p className="services-page__what-label">What We Handle</p>
-
-        <div className="services-page__spotlight motion-reveal motion-lift motion-reveal--delay-1">
-          <h2 className="services-page__spotlight-heading">
-            <span className="plans__title-line">Modern Life, Fully Managed</span>
-          </h2>
-          <p className="plans__desc services-page__spotlight-desc">
-            Forget the generic errand-list model. We plug into your life as a genuine personal support
-            system — proactive, discreet, and built for the pace of modern life and whatever comes next.
-          </p>
-        </div>
+        <p className="services-page__what-label">What we handle</p>
 
         <div className="services-page__grid">
           {SECTIONS.map((section, index) => (
@@ -123,11 +119,9 @@ export function PersonalServicesPage() {
                   className="services-card__icon services-card__icon--service-graphic"
                 />
               </div>
-              <h3 className="plans__title">
-                <span className="plans__title-line">{section.title}</span>
-              </h3>
+              <h3 className="services-card__title">{section.title}</h3>
               <p className="plans__desc">{section.body}</p>
-              <p className="plans__includes-label">What&apos;s included:</p>
+              <p className="services-card__includes">What&apos;s included</p>
               <ul className="plans__list">
                 {section.items.map((item) => (
                   <li key={item}>{item}</li>
@@ -138,5 +132,11 @@ export function PersonalServicesPage() {
         </div>
       </div>
     </section>
+
+    <TeamBand
+      heading="The people who actually do the work"
+      lead="Personal services run on follow-through. A coordinated team means your errands, bookings and appointments do not stall because one person was unavailable."
+    />
+    </>
   )
 }

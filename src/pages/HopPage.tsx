@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
+import { TeamBand } from '../components/TeamBand'
+import '../styles/hopMarketing.css'
 
 // ── Donut chart ──────────────────────────────────────────────────
 const DONUT_R = 45
@@ -340,6 +342,10 @@ export function HopPage() {
         </div>
       </section>
 
+      <TeamBand
+        heading="HOP is delivered by people, not an app alone"
+        lead="Behind every HOP request is a trained concierge team handling the ride, the meal, the errand and the hand-off — so your staff never has to chase it."
+      />
     </div>
   )
 }
