@@ -67,6 +67,92 @@
   --hop-shadow-glow: 0 0 0 1px rgba(14, 171, 166, 0.25), 0 12px 28px -14px rgba(14, 171, 166, 0.35);
 }
 
+/* Motion tokens — consumed by the HOP shared buttons below. */
+:root {
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-soft: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --motion-lift: -3px;
+}
+
+/* ============================================================
+   HOP shared buttons
+   ============================================================
+   Used across ~20 files of the HOP app on BOTH deployments (main's member app/admin and
+   staff-portal's ConciergeHub). Until 2026-10 these lived in src/App.css, which the
+   staff-portal build never imports — so ConciergeHub's buttons rendered as unstyled grey
+   browser defaults. They live here now because this is the one stylesheet both branches load. */
+.hop-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Bumped from 0.85rem/1.85rem (2026-09 friendliness pass) — bigger, more touch-confident
+     without changing the button's identity; still clears the ~44px touch-target minimum on the
+     Capacitor iOS build. */
+  padding: 0.95rem 2.05rem;
+  font-family: inherit;
+  font-size: clamp(0.85rem, 1.3vw, 0.95rem);
+  font-weight: 800;
+  text-decoration: none;
+  color: #ffffff;
+  /* Solid brand teal, darkening on hover — the public site's .hs-btn--primary. (--hop-indigo /
+     --hop-violet are teal / teal-dark since the 2026-10 rebrand; see the tokens above.) */
+  background: var(--hop-indigo);
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 10px 20px rgba(14, 171, 166, 0.2);
+  transition:
+    filter 0.3s var(--motion-ease-soft),
+    box-shadow 0.3s var(--motion-ease-soft),
+    transform 0.3s var(--motion-ease-soft);
+}
+
+.hop-btn-primary:hover {
+  background: var(--hop-violet);
+  box-shadow: 0 12px 24px rgba(14, 171, 166, 0.28);
+  transform: translateY(var(--motion-lift));
+}
+
+/* :active gives a press-down cue on touch, where :hover is unreliable/absent — this is the
+   button used for Sign in, Save, Submit, Send, Connect across the whole HOP app, so it's the
+   single highest-impact place to add tactile feedback. */
+.hop-btn-primary:active {
+  filter: brightness(0.95);
+  transform: translateY(0) scale(0.98);
+}
+
+/* Previously unstyled: stayed fully vivid while inert during a submit, giving no visual cue and
+   inviting a re-click. Mirrors .hop-btn-secondary:disabled below. */
+.hop-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.hop-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.82rem 1.6rem;
+  font-family: inherit;
+  font-size: clamp(0.85rem, 1.3vw, 0.95rem);
+  font-weight: 700;
+  text-decoration: none;
+  color: #ffffff;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 10px;
+  transition:
+    background 0.3s var(--motion-ease-soft),
+    border-color 0.3s var(--motion-ease-soft);
+}
+
+.hop-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 /* Default heading colour for the whole app. index.css's global h1/h2 rule uses a near-white
    --text-h when the OS is in dark mode, which made any heading without its own colour vanish on
    the light theme. Placed early and wrapped in :where() so every component rule below still
@@ -950,10 +1036,9 @@
   transform: none;
 }
 
-/* `.hop-btn-ghost` is defined in App.css for the public /hop marketing hero (hardcoded white,
-   since that page is always dark) — reused inside the app shell (e.g. HopAdminAccountsPage's
-   row actions), which also supports light mode, so it needs theme-aware colors here instead of
-   silently going white-on-white in light mode. */
+/* `.hop-btn-ghost`'s base rule (top of this file) is hardcoded white — written for the old
+   always-dark /hop marketing hero. Inside the app it needs theme-aware colours instead of going
+   white-on-white in light mode. */
 .hop-shell .hop-btn-ghost,
 .hop-auth-page .hop-btn-ghost {
   color: var(--hop-text);
@@ -1378,17 +1463,11 @@
   font: inherit;
 }
 
-/* ── HOP ConciergeHub branding ───────────────────
-   Applied at the ConciergeHub deployment's root (staff-portal branch) alongside the shared
-   hop-shell — overrides a handful of accent tokens rather than forking the stylesheet, so
-   every other shared-pattern fix (a11y, layout, new components) stays made once. */
-.hop-shell--concierge-hub {
-  /* Staff deployment leads with brand light blue (members get teal) — same palette, a
-     different "which app am I in" cue. */
-  --hop-indigo: #3d8fd1;
-  --hop-violet: #053069;
-  --hop-cyan: #0eaba6;
-}
+/* ── HOP ConciergeHub ─────────────────────────
+   `.hop-shell--concierge-hub` (staff-portal's App.tsx root) used to retint the accent tokens here,
+   but it sits on an ANCESTOR of .hop-shell/.hop-auth-page, which redefine the same tokens — so
+   the override never actually applied. Removed in the 2026-10 rebrand: staff and member apps
+   share one palette, and the sidebar's "ConciergeHub" sub-label tells them apart. */
 
 /* ── Per-role accent (2026-redesign, Phase 2) ─────
    `.hop-shell--admin`/`--concierge`/`--facility` were inert modifier classes on each role's root
@@ -1398,8 +1477,8 @@
    default indigo-led gradient (it's the "home base" surface); concierge leans cyan (the
    in-the-field, task-execution role); facility leans gold (the reporting/insights role, matching
    --hop-gold's existing "highlights" reservation). Reads whatever --hop-indigo/-violet/-cyan
-   already resolve to at this point in the cascade, so it automatically respects the ConciergeHub
-   brand override above rather than hardcoding a second set of hex values. */
+   already resolve to at this point in the cascade rather than hardcoding a second set of hex
+   values. */
 .hop-shell--concierge .hop-shell__nav-link--active {
   background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 100%);
 }

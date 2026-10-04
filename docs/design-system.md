@@ -95,17 +95,18 @@ renamed — read them as roles, not colours:
 - **Headings** are solid `--hop-heading` with tight tracking — the old gradient-clip text on
   `.hop-page-title` / `.hop-stat-card__value` was removed. `.hop-shell :where(h1…h4)` gives every
   heading a default colour so `index.css`'s OS-dark-mode `h1, h2` colour can't make one vanish.
-- **ConciergeHub** (`.hop-shell--concierge-hub`, staff-portal) leads with light blue instead of
-  teal, so staff and members can tell the apps apart.
+- **ConciergeHub** (staff-portal) uses the same palette; its sidebar sub-label says
+  "ConciergeHub". (Its old `.hop-shell--concierge-hub` token override was removed — it sat on an
+  ancestor of `.hop-shell`, which redefines the tokens, so it never applied.)
 - **If you ever see a raw `'Syne'` reference anywhere in this repo, that's a leftover from a
   reverted redesign — remove it, don't load the font.** `Inter` is intentional (unloaded stack).
 
 - **Buttons**: `.hop-btn-primary` (solid teal, teal-dark on hover — matches the public site's
   `.hs-btn--primary`) and `.hop-btn-ghost` are the shared
-  HOP button classes. They live in `src/App.css` under a "HOP shared buttons — GLOBAL ON PURPOSE"
-  banner, **not** in this file — they're used across ~20 app files under different roots
-  (`.hop-shell`, `.hop-auth-page`). `App.css` now holds only these buttons and the `--motion-*`
-  tokens they use. Don't duplicate or relocate them.
+  HOP button classes. They live at the top of `hopApp.css` (with the `--motion-*` tokens they
+  use). Until 2026-10 they were in `src/App.css`, which the `staff-portal` build never imports,
+  so ConciergeHub's buttons rendered as grey browser defaults; `App.css` was deleted on `main`
+  when they moved. Don't move them out of `hopApp.css` again.
 - **Conventions**: `.hop-card`, `.hop-page-body`, `.hop-page-title`, `.hop-muted`,
   `.hop-quick-grid` etc. for the core app (dashboard/requests/integrations/profile/admin). Shared
   UI-polish components (`src/hop/SkeletonCard.tsx`, `EmptyState.tsx`, `ToastContext.tsx`/

@@ -33,7 +33,6 @@ import { RequireAdmin, RequireAuth } from './hop/RequireAuth'
 import { HopAppLayout } from './hop/HopAppLayout'
 import { HopAdminLayout } from './hop/HopAdminLayout'
 import { usePageTitle } from './hooks/usePageTitle'
-import './App.css'
 import './styles/hopApp.css'
 import './styles/hopSite.css'
 
