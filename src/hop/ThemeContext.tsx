@@ -2,11 +2,18 @@ import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ThemeContext, type HopTheme } from './themeContextCore'
 
-const STORAGE_KEY = 'hop-theme'
+// '-v2' since the 2026-10 HOP rebrand made light (the public site's look) the default. The old
+// key's saved 'dark' choices predate the rebrand, so they're deliberately not carried over —
+// everyone lands on light once and can still switch to the (now navy) dark theme.
+const STORAGE_KEY = 'hop-theme-v2'
 
 function readStoredTheme(): HopTheme {
-  if (typeof window === 'undefined') return 'dark'
-  return window.localStorage.getItem(STORAGE_KEY) === 'light' ? 'light' : 'dark'
+  if (typeof window === 'undefined') return 'light'
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === 'dark' ? 'dark' : 'light'
+  } catch {
+    return 'light'
+  }
 }
 
 export function HopThemeProvider({ children }: { children: ReactNode }) {

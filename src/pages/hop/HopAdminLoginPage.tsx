@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useHopAuth } from '../../hop/useHopAuth'
+import { HopLogo } from '../../hop/HopLogo'
 
 export function HopAdminLoginPage() {
   const { login } = useHopAuth()
@@ -36,7 +37,10 @@ export function HopAdminLoginPage() {
   return (
     <div className="hop-auth-page hop-auth-page--admin">
       <form className="hop-auth-card" onSubmit={handleSubmit}>
-        <span className="hop-auth-card__brand">HOP admin</span>
+        <span className="hop-auth-card__brand">
+          <HopLogo />
+          <span className="hop-auth-card__brand-label">ConciergeHub</span>
+        </span>
         <h1 className="hop-auth-card__title">Concierge staff sign in</h1>
         <p className="hop-auth-card__sub">Manage HOP users, requests, and integrations.</p>
 
