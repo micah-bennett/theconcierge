@@ -34,8 +34,16 @@ Professionals"*), in design **and** copy. This supersedes the 2026-09 "team-forw
 whose pieces were removed. What changed:
 
 - **HOP is the parent brand.** The Concierge is now *The Concierge by HOP*, a single page
-  (`/concierge`). Header/footer use the HOP SVG mark (`src/components/HopMark.tsx`,
-  `public/hop-mark.svg`).
+  (`/concierge`).
+- **Official logo pack** (`design/HOP-Logo-Pack/`, with the brand sheet PDF — source files, not
+  published). Trimmed web copies live in `public/brand/` (`hop-logo.png`, `hop-logo-white.png`,
+  `hop-icon.png`, `hop-icon-white.png`); favicons come from its `06-Social-Favicon` folder. Public
+  site: `src/components/HopBrand.tsx`. HOP app and auth pages: `src/hop/HopLogo.tsx`. Brand
+  rules: full-colour on light grounds, reverse-white on navy/dark, never under 120px wide (use
+  the icon instead).
+- **The HOP app (login, signup, member app, admin, ConciergeHub) uses the same palette**: light
+  is now the default theme and matches the public site; dark is navy-based. See
+  `docs/design-system.md` §2.
 - **Light design system**: white/pale-blue grounds, navy `#053069`, teal `#0EABA6`, blue
   `#5BA9E6`, Inter/system sans — `src/styles/hopSite.css`, scoped under `.hs`. See
   `docs/design-system.md` §1.

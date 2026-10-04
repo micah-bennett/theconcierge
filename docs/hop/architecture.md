@@ -540,12 +540,13 @@ this codebase.
 ## Theme (dark/light)
 
 - `src/hop/ThemeContext.tsx` (`HopThemeProvider`) + `useHopTheme()` — `localStorage`-backed
-  (`hop-theme`), defaults to `dark`. Renders a `<div data-hop-theme="dark|light">` wrapper around
+  (`hop-theme-v2` since the 2026-10 HOP rebrand), defaults to `light` (the public site's look;
+  see `docs/design-system.md` §2). Renders a `<div data-hop-theme="dark|light">` wrapper around
   everything inside the HOP route tree (both the auth pages and the authenticated app/admin
   shells sit inside it).
-- Scope is deliberately narrow: **HOP app + admin only**. The public marketing site keeps its
-  fixed dark "cinematic canvas" design — it has no theme toggle and isn't wrapped in
-  `HopThemeProvider`.
+- Scope is deliberately narrow: **HOP app + admin only**. The public site (`.hs`,
+  `hopSite.css`) is light-only, has no theme toggle and isn't wrapped in `HopThemeProvider` —
+  but since 2026-10 it uses the same brand palette, so the hand-off at "Log in" is seamless.
 - `src/styles/hopApp.css` defines the base (dark) values for the `--hop-*` custom properties on
   `.hop-shell, .hop-auth-page`, plus a `[data-hop-theme='light'] .hop-shell, [data-hop-theme='light']
   .hop-auth-page` block overriding them for light mode. Every HOP rule should read colors via

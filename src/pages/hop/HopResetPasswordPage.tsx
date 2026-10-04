@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { hopResetPassword } from '../../hop/api'
+import { HopLogo } from '../../hop/HopLogo'
 
 export function HopResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -35,7 +36,9 @@ export function HopResetPasswordPage() {
   return (
     <div className="hop-auth-page">
       <div className="hop-auth-card">
-        <Link to="/" className="hop-auth-card__brand">HOP</Link>
+        <Link to="/" className="hop-auth-card__brand" aria-label="HOP home">
+          <HopLogo />
+        </Link>
         <h1 className="hop-auth-card__title">Set a new password</h1>
 
         {!token ? (

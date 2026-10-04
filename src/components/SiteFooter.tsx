@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { HopBrand } from './HopMark'
+import { HopBrand } from './HopBrand'
 
 const FOOTER_LINKS = [
   { to: '/organizations', label: 'Organizations' },
@@ -15,7 +15,7 @@ export function SiteFooter() {
       <div className="hs-container">
         <div className="hs-footer__grid">
           <Link className="hs-brand" to="/" aria-label="HOP Home">
-            <HopBrand dotColor="#FFFFFF" />
+            <HopBrand variant="white" />
           </Link>
           <nav className="hs-footer__links" aria-label="Footer">
             {FOOTER_LINKS.map((item) => (

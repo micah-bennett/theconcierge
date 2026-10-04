@@ -6,6 +6,7 @@ import { useHopAuth } from './useHopAuth'
 import { useHopTheme } from './useHopTheme'
 import { HopToastProvider } from './ToastContext'
 import { HopIcon, type HopIconKey } from './icons'
+import { HopLogo } from './HopLogo'
 
 export type HopNavItem = {
   to: string
@@ -56,6 +57,9 @@ export function HopShellLayout({
   const location = useLocation()
   const tour = useTourVisibility(tourKey)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  // "HOP admin" → "admin", "HOP ConciergeHub" → "ConciergeHub", "HOP" → "" — the logo already
+  // says HOP, so the sidebar only labels which portal this is.
+  const subLabel = brandLabel.replace(/^HOP\b\s*/i, '')
 
   // Close the drawer whenever the route changes (a nav click) rather than requiring a second tap.
   // Adjusted during render (React's recommended pattern for "state that depends on a prop
@@ -92,9 +96,9 @@ export function HopShellLayout({
           >
             <HopIcon name="menu" size={22} />
           </button>
-          <div className="hop-shell__brand">
-            <span className="hop-shell__brand-mark">✦</span>
-            <span>{brandLabel}</span>
+          <div className="hop-shell__brand" aria-label={brandLabel}>
+            <HopLogo variant="icon" />
+            <span className="hop-shell__brand-label">{brandLabel}</span>
           </div>
         </header>
 
@@ -110,9 +114,9 @@ export function HopShellLayout({
           className={`hop-shell__sidebar${mobileNavOpen ? ' hop-shell__sidebar--open' : ''}`}
         >
           <div className="hop-shell__sidebar-head">
-            <div className="hop-shell__brand">
-              <span className="hop-shell__brand-mark">✦</span>
-              <span>{brandLabel}</span>
+            <div className="hop-shell__brand hop-shell__brand--stacked">
+              <HopLogo />
+              {subLabel && <span className="hop-shell__brand-sub">{subLabel}</span>}
             </div>
             <button
               type="button"

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { HopBrand } from './HopMark'
+import { HopBrand } from './HopBrand'
 
 /** Single source of truth for the nav row (and its mobile drop-down below 920px). */
 const NAV_LINKS = [

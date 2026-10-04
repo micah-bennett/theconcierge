@@ -6,7 +6,9 @@ new font or color anywhere, it almost certainly belongs in one of the token sets
 fresh one-off.
 
 1. **Public HOP site** — light, navy + teal, `--hs-*`, in `src/styles/hopSite.css` (§1).
-2. **Authenticated HOP app** — dark, indigo/violet/cyan, `--hop-*`, in `src/styles/hopApp.css` (§2).
+2. **Authenticated HOP app** — the same brand palette, light by default with a navy dark theme,
+   `--hop-*`, in `src/styles/hopApp.css` (§2). Separate token set because the app has a theme
+   toggle and ~2.3k lines of its own components; the two are meant to *look* the same.
 
 (Until 2026-10 there were three: a dark navy+champagne marketing site (`--tc-*` in `App.css`)
 and a separate `/hop` marketing page (`hopMarketing.css`). Both were removed in the HOP rebrand —
@@ -17,7 +19,8 @@ if you see a `--tc-*`, `.home-*`, `.plans*` or `.hop-page` reference anywhere, i
 Ported near-verbatim from the leadership mockup (`design/hop-mockup.html`)
 (2026-10). Pages: `src/pages/site/*.tsx`; shared pieces (`Steps`, `PageHero`, `InfoPanel`,
 `Quote`) in `src/pages/site/parts.tsx`; chrome in `src/components/SiteHeader.tsx`,
-`SiteFooter.tsx` and `HopMark.tsx`.
+`SiteFooter.tsx` and `HopBrand.tsx` (the official logo, `public/brand/hop-logo*.png` — see
+`design/HOP-Logo-Pack/` and its brand sheet for usage rules).
 
 ```css
 --hs-navy: #053069;  --hs-navy-dark: #032553;   /* headings, dark bands, footer */
@@ -62,29 +65,43 @@ never hardcode a hex value in a new HOP component** (a few `box-shadow`/gradient
 comments near `color-mix()` for why: `color-mix()` itself is avoided there since it's unsupported
 before Safari/WKWebView 16.2 and this app's Capacitor iOS target is 15.0).
 
+**2026-10 HOP brand palette** (same as the public site, from `design/HOP-Logo-Pack`). The token
+*names* are historical and were kept so nothing (here or on the `staff-portal` branch) had to be
+renamed — read them as roles, not colours:
+
 ```css
---hop-bg: #0d0f1a;
---hop-panel: #161a2c;
---hop-panel-2: #1a1a2e;
---hop-border: rgba(255, 255, 255, 0.1);
---hop-indigo: #6366f1;
---hop-violet: #8b5cf6;
---hop-cyan: #06b6d4;
---hop-text: rgba(255, 255, 255, 0.92);
---hop-muted: rgba(255, 255, 255, 0.58);
---hop-radius-lg: 20px;
---hop-font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
-font-family: 'DM Sans', system-ui, sans-serif; /* base/body font */
+--hop-indigo   /* primary accent      → teal       #0eaba6  (buttons, active nav, focus) */
+--hop-violet   /* primary, pressed     → teal-dark  #078782  (hover, gradient end)       */
+--hop-cyan     /* secondary accent     → light blue #5ba9e6                              */
+--hop-navy     /* brand navy                         #053069                              */
+--hop-heading  /* headings: navy #053069 (light) / white (dark)                          */
+--hop-gold     /* unchanged — rewards/highlights                                          */
+
+/* light theme (DEFAULT) — the public site's look */
+--hop-bg: #f5fafc;  --hop-panel: white;  --hop-panel-2: #eaf6fa;  --hop-border: #d8e6ec;
+--hop-text: #17324d;  --hop-muted: #60768d;  --hop-link: #078782;
+
+/* dark theme — navy ground */
+--hop-bg: #021b3d;  --hop-panel: rgba(5, 48, 105, 0.62);  --hop-text: white;  --hop-link: #7fdcd7;
+
+--hop-font-display: Inter, ui-sans-serif, system-ui, …;  /* body uses it too — same as §1 */
 ```
 
-`--hop-font-display` intentionally points at the **same** Playfair/Cormorant fonts as the public
-site (already loaded by `index.html` — no extra font request). An earlier version of this token
-pointed at `'Syne'`, which was never loaded after the marketing-site font revert, so headings
-silently fell back to system sans-serif. **If you ever see a raw `'Syne'` reference anywhere in
-this repo, that's a leftover from the reverted redesign — remove it, don't load the font.** (`Inter`
-in `hopSite.css` is the exception — it's the public site's intentional, unloaded font stack, §1.)
+- **Light is the default** (`ThemeContext.tsx`, storage key `hop-theme-v2` — bumped so pre-rebrand
+  saved "dark" choices didn't carry over). The toggle still works.
+- **Logo**: `src/hop/HopLogo.tsx` renders both colourways and CSS shows the right one per theme
+  (`.hop-logo__img--color` / `--white`). Sidebar shows the full logo plus a portal sub-label
+  derived from the layout's `brandLabel` ("HOP admin" → "admin"); the phone top bar uses the icon.
+- **Headings** are solid `--hop-heading` with tight tracking — the old gradient-clip text on
+  `.hop-page-title` / `.hop-stat-card__value` was removed. `.hop-shell :where(h1…h4)` gives every
+  heading a default colour so `index.css`'s OS-dark-mode `h1, h2` colour can't make one vanish.
+- **ConciergeHub** (`.hop-shell--concierge-hub`, staff-portal) leads with light blue instead of
+  teal, so staff and members can tell the apps apart.
+- **If you ever see a raw `'Syne'` reference anywhere in this repo, that's a leftover from a
+  reverted redesign — remove it, don't load the font.** `Inter` is intentional (unloaded stack).
 
-- **Buttons**: `.hop-btn-primary` (indigo→violet gradient) and `.hop-btn-ghost` are the shared
+- **Buttons**: `.hop-btn-primary` (solid teal, teal-dark on hover — matches the public site's
+  `.hs-btn--primary`) and `.hop-btn-ghost` are the shared
   HOP button classes. They live in `src/App.css` under a "HOP shared buttons — GLOBAL ON PURPOSE"
   banner, **not** in this file — they're used across ~20 app files under different roots
   (`.hop-shell`, `.hop-auth-page`). `App.css` now holds only these buttons and the `--motion-*`
@@ -105,5 +122,5 @@ in `hopSite.css` is the exception — it's the public site's intentional, unload
   the shared skeleton/empty-state/toast components above for loading, empty, and confirmation
   states rather than one-off inline text.
 - Never add a global font-loading `<link>` to `index.html` without checking both systems above
-  first — `index.html` loads exactly three font families (DM Sans, Playfair Display, Cormorant
-  Garamond), all for the HOP app; the public site uses an unloaded system stack on purpose.
+  first — since the 2026-10 rebrand neither system loads a webfont (both use the unloaded
+  Inter/system stack), and the old DM Sans/Playfair/Cormorant Google Fonts link was removed.

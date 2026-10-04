@@ -26,15 +26,17 @@
      without changing the button's identity; still clears the ~44px touch-target minimum on the
      Capacitor iOS build. */
   padding: 0.95rem 2.05rem;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit;
   font-size: clamp(0.85rem, 1.3vw, 0.95rem);
-  font-weight: 700;
+  font-weight: 800;
   text-decoration: none;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
+  /* Solid brand teal, darkening on hover — the public site's .hs-btn--primary. (--hop-indigo /
+     --hop-violet are teal / teal-dark since the 2026-10 rebrand; see hopApp.css.) */
+  background: var(--hop-indigo);
   border: none;
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 10px 20px rgba(14, 171, 166, 0.2);
   transition:
     filter 0.3s var(--motion-ease-soft),
     box-shadow 0.3s var(--motion-ease-soft),
@@ -42,8 +44,8 @@
 }
 
 .hop-btn-primary:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 6px 30px rgba(99, 102, 241, 0.6);
+  background: var(--hop-violet);
+  box-shadow: 0 12px 24px rgba(14, 171, 166, 0.28);
   transform: translateY(var(--motion-lift));
 }
 
@@ -70,9 +72,9 @@
   align-items: center;
   justify-content: center;
   padding: 0.82rem 1.6rem;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit;
   font-size: clamp(0.85rem, 1.3vw, 0.95rem);
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   color: #ffffff;
   background: transparent;

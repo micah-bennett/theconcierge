@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { hopForgotPassword } from '../../hop/api'
+import { HopLogo } from '../../hop/HopLogo'
 
 export function HopForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -26,7 +27,9 @@ export function HopForgotPasswordPage() {
   return (
     <div className="hop-auth-page">
       <div className="hop-auth-card">
-        <Link to="/" className="hop-auth-card__brand">HOP</Link>
+        <Link to="/" className="hop-auth-card__brand" aria-label="HOP home">
+          <HopLogo />
+        </Link>
         <h1 className="hop-auth-card__title">Reset your password</h1>
 
         {sent ? (

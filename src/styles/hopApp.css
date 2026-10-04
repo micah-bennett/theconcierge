@@ -5,56 +5,82 @@
 
 .hop-shell,
 .hop-auth-page {
-  --hop-bg: #090a13;
-  --hop-panel: rgba(22, 25, 43, 0.82);
-  --hop-panel-2: rgba(26, 26, 46, 0.9);
-  --hop-border: rgba(255, 255, 255, 0.09);
-  --hop-border-hover: rgba(255, 255, 255, 0.24);
-  --hop-overlay: rgba(255, 255, 255, 0.045);
-  --hop-overlay-strong: rgba(255, 255, 255, 0.09);
-  --hop-indigo: #6d6ef5;
-  --hop-violet: #9b5cf7;
-  --hop-cyan: #22d3ee;
+  /* 2026-10 HOP brand palette (design/HOP-Logo-Pack): navy #053069, teal #0EABA6, light blue
+     #5BA9E6. The token NAMES are historical — --hop-indigo is now the primary accent (teal),
+     --hop-violet its pressed shade (teal-dark), --hop-cyan the secondary accent (light blue).
+     Kept rather than renamed because ~2.3k lines here and the staff-portal branch use them.
+     This block is the DARK theme (navy ground); the light theme below is the default. */
+  --hop-bg: #021b3d;
+  --hop-panel: rgba(5, 48, 105, 0.62);
+  --hop-panel-2: rgba(5, 48, 105, 0.82);
+  --hop-border: rgba(255, 255, 255, 0.1);
+  --hop-border-hover: rgba(255, 255, 255, 0.26);
+  --hop-overlay: rgba(255, 255, 255, 0.05);
+  --hop-overlay-strong: rgba(255, 255, 255, 0.1);
+  --hop-indigo: #0eaba6;
+  --hop-violet: #078782;
+  --hop-cyan: #5ba9e6;
   --hop-gold: #f5b942;
-  --hop-aurora-1: rgba(109, 110, 245, 0.22);
-  --hop-aurora-2: rgba(155, 92, 247, 0.16);
-  --hop-aurora-3: rgba(34, 211, 238, 0.12);
+  --hop-navy: #053069;
+  --hop-aurora-1: rgba(14, 171, 166, 0.2);
+  --hop-aurora-2: rgba(91, 169, 230, 0.18);
+  --hop-aurora-3: rgba(14, 171, 166, 0.1);
   --hop-text: rgba(255, 255, 255, 0.94);
-  --hop-muted: rgba(255, 255, 255, 0.6);
-  --hop-hint: rgba(255, 255, 255, 0.4);
-  --hop-link: #a9b6fd;
+  --hop-heading: #ffffff;
+  --hop-muted: rgba(255, 255, 255, 0.64);
+  --hop-hint: rgba(255, 255, 255, 0.42);
+  --hop-link: #7fdcd7;
   --hop-radius-lg: 20px;
   --hop-radius-md: 14px;
   --hop-radius-sm: 10px;
   --hop-radius-pill: 999px;
   --hop-shadow-card: 0 12px 32px -16px rgba(0, 0, 0, 0.55);
-  --hop-shadow-glow: 0 0 0 1px rgba(109, 110, 245, 0.35), 0 14px 36px -14px rgba(109, 110, 245, 0.45);
-  --hop-font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  --hop-shadow-glow: 0 0 0 1px rgba(14, 171, 166, 0.35), 0 14px 36px -14px rgba(14, 171, 166, 0.45);
+  /* Same unloaded system stack as the public site (src/styles/hopSite.css) — Inter where
+     installed, system UI otherwise. */
+  --hop-font-display: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
+  font-family: var(--hop-font-display);
   color: var(--hop-text);
 }
 
 [data-hop-theme='light'] .hop-shell,
 [data-hop-theme='light'] .hop-auth-page {
-  /* Deepened from #f3f4fc and raised panel/border contrast (2026-08-09) — the previous values
-     were both near-white with only a 10%-opacity border between them, so cards read as a flat,
-     washed-out surface in light mode instead of distinct panels. */
-  --hop-bg: #e9ebf7;
-  --hop-panel: rgba(255, 255, 255, 0.94);
-  --hop-panel-2: rgba(238, 240, 250, 0.96);
-  --hop-border: rgba(15, 23, 42, 0.16);
-  --hop-border-hover: rgba(15, 23, 42, 0.32);
-  --hop-overlay: rgba(15, 23, 42, 0.045);
-  --hop-overlay-strong: rgba(15, 23, 42, 0.09);
-  --hop-aurora-1: rgba(109, 110, 245, 0.1);
-  --hop-aurora-2: rgba(155, 92, 247, 0.08);
-  --hop-aurora-3: rgba(34, 211, 238, 0.07);
-  --hop-text: rgba(15, 23, 42, 0.92);
-  --hop-muted: rgba(15, 23, 42, 0.58);
-  --hop-hint: rgba(15, 23, 42, 0.4);
-  --hop-link: #4f46e5;
-  --hop-shadow-card: 0 10px 26px -16px rgba(15, 23, 42, 0.28);
-  --hop-shadow-glow: 0 0 0 1px rgba(79, 70, 229, 0.22), 0 12px 28px -14px rgba(79, 70, 229, 0.28);
+  /* Matches the public site (src/styles/hopSite.css): pale-blue ground, white cards, navy
+     headings, ink body text, #D8E6EC hairlines. */
+  --hop-bg: #f5fafc;
+  --hop-panel: rgba(255, 255, 255, 0.97);
+  --hop-panel-2: #eaf6fa;
+  --hop-border: #d8e6ec;
+  --hop-border-hover: #9fd8d5;
+  --hop-overlay: rgba(5, 48, 105, 0.04);
+  --hop-overlay-strong: rgba(5, 48, 105, 0.08);
+  --hop-aurora-1: rgba(14, 171, 166, 0.08);
+  --hop-aurora-2: rgba(91, 169, 230, 0.1);
+  --hop-aurora-3: rgba(14, 171, 166, 0.05);
+  --hop-text: #17324d;
+  --hop-heading: #053069;
+  --hop-muted: #60768d;
+  --hop-hint: rgba(23, 50, 77, 0.45);
+  --hop-link: #078782;
+  --hop-shadow-card: 0 10px 25px rgba(5, 48, 105, 0.06);
+  --hop-shadow-glow: 0 0 0 1px rgba(14, 171, 166, 0.25), 0 12px 28px -14px rgba(14, 171, 166, 0.35);
+}
+
+/* Default heading colour for the whole app. index.css's global h1/h2 rule uses a near-white
+   --text-h when the OS is in dark mode, which made any heading without its own colour vanish on
+   the light theme. Placed early and wrapped in :where() so every component rule below still
+   wins. */
+.hop-shell :where(h1, h2, h3, h4),
+.hop-auth-page :where(h1, h2, h3, h4) {
+  color: var(--hop-heading);
+}
+
+/* Bare inline links (no class) otherwise get the browser default — a lavender under the dark
+   colour-scheme. Same :where() trick so classed links keep their own colour. */
+.hop-shell :where(a:not([class])),
+.hop-auth-page :where(a:not([class])) {
+  color: var(--hop-link);
 }
 
 .hop-app-loading {
@@ -62,8 +88,8 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  color: var(--hop-muted, rgba(255, 255, 255, 0.6));
-  background: var(--hop-bg, #0d0f1a);
+  color: var(--hop-muted, #60768d);
+  background: var(--hop-bg, #f5fafc);
 }
 
 /* Fixed aurora glow behind every HOP surface — subtle on light theme, more present on dark.
@@ -115,17 +141,42 @@
 }
 
 .hop-auth-card__brand {
-  font-weight: 800;
-  color: var(--hop-text);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  align-self: flex-start;
   text-decoration: none;
-  letter-spacing: 0.02em;
+}
+
+.hop-auth-card__brand-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hop-muted);
+}
+
+/* The mockup's form fields: white with a blue-grey hairline, teal focus. */
+[data-hop-theme='light'] .hop-field input,
+[data-hop-theme='light'] .hop-field select,
+[data-hop-theme='light'] .hop-field textarea {
+  background: #ffffff;
+  border-color: #bdd3dd;
+}
+
+[data-hop-theme='light'] .hop-auth-card__error {
+  background: rgba(220, 38, 38, 0.07);
+  border-color: rgba(220, 38, 38, 0.28);
+  color: #b91c1c;
 }
 
 .hop-auth-card__title {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--hop-text);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--hop-heading);
 }
 
 .hop-auth-card__sub {
@@ -231,22 +282,56 @@
   padding: 0 0.15rem;
 }
 
-.hop-shell__brand-mark {
+.hop-shell__brand--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.hop-shell__brand-sub {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hop-muted);
+}
+
+.hop-shell__brand-label {
+  font-size: 1rem;
+}
+
+/* ── Official logo (src/hop/HopLogo.tsx) ─────────
+   Both colourways are in the DOM; the theme picks one. Brand rule: full-colour on light
+   grounds, reverse-white on navy/dark — never the navy files on dark. */
+.hop-logo {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  font-size: 0.95rem;
-  color: #fff;
-  background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 55%, var(--hop-cyan) 100%);
-  /* Precomputed rgba(), not color-mix() — color-mix() is unsupported before Safari/WKWebView
-     16.2, and this app's Capacitor iOS target is 15.0, so the whole declaration would silently
-     drop on real devices at/below that (see docs/hop/architecture.md). --hop-indigo is the same
-     across both themes, so a static value is safe here. */
-  box-shadow: 0 4px 14px -4px rgba(109, 110, 245, 0.6);
   flex-shrink: 0;
+}
+
+.hop-logo__img {
+  display: block;
+  width: auto;
+  height: 42px; /* ≈143px wide — the brand sheet's 120px minimum for the horizontal lockup */
+}
+
+.hop-logo--icon .hop-logo__img {
+  height: 26px;
+}
+
+.hop-logo__img--color {
+  display: none;
+}
+
+[data-hop-theme='light'] .hop-logo__img--color {
+  display: block;
+}
+
+[data-hop-theme='light'] .hop-logo__img--white {
+  display: none;
+}
+
+.hop-auth-card .hop-logo__img {
+  height: 46px;
 }
 
 .hop-shell__sidebar-head {
@@ -396,25 +481,12 @@
   line-height: 1.25;
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 800;
-  /* index.css's global h1 rule (written for the 56px marketing hero) sets a tight
-     letter-spacing meant for display type at that size — reset it explicitly here so HOP
-     headings never inherit it and read cramped at this smaller size. */
-  letter-spacing: normal;
-  /* Real fallback: a plain, always-visible solid color. The gradient-clip treatment below is
-     gated behind an @supports check, not just declared after this in the cascade — a later plain
-     `color: transparent` would apply regardless of whether background-clip: text is supported,
-     which would make the text fully invisible on any engine that doesn't support the clip. */
-  color: var(--hop-text);
+  /* Solid navy, tight tracking — the public site's heading treatment (2026-10 HOP rebrand;
+     replaces an indigo gradient-clip). Explicit letter-spacing also overrides index.css's
+     global h1 rule. */
+  letter-spacing: -0.03em;
+  color: var(--hop-heading);
   width: fit-content;
-}
-
-@supports (background-clip: text) or (-webkit-background-clip: text) {
-  .hop-page-title {
-    background: linear-gradient(120deg, var(--hop-text) 35%, var(--hop-indigo) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
 }
 
 .hop-page-sub {
@@ -448,7 +520,7 @@
      HOP card heading ("Rate your concierge", "Active request", etc.) read visibly thinner than
      intended without this explicit override. */
   font-weight: 700;
-  color: var(--hop-text);
+  color: var(--hop-heading);
 }
 
 .hop-card__header {
@@ -515,15 +587,15 @@
   border-radius: 50%;
   font-size: 1.3rem;
   background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
-  /* Precomputed rgba() — see the note on .hop-shell__brand-mark above re: color-mix() + iOS 15. */
-  box-shadow: 0 6px 16px -6px rgba(109, 110, 245, 0.7);
+  /* Precomputed rgba() — color-mix() is unsupported before Safari/WKWebView 16.2 and the Capacitor iOS target is 15.0. */
+  box-shadow: 0 6px 16px -6px rgba(14, 171, 166, 0.7);
 }
 
 /* Cycle a distinct accent per tile so the 6 quick-request categories read as visually distinct
    at a glance, not six identical gray boxes. */
 .hop-quick-card:nth-child(2) .hop-quick-card__icon {
   background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 100%);
-  box-shadow: 0 6px 16px -6px rgba(34, 211, 238, 0.7);
+  box-shadow: 0 6px 16px -6px rgba(91, 169, 230, 0.7);
 }
 
 .hop-quick-card:nth-child(3) .hop-quick-card__icon {
@@ -543,7 +615,7 @@
 
 .hop-quick-card:nth-child(6) .hop-quick-card__icon {
   background: linear-gradient(135deg, var(--hop-violet) 0%, #f472b6 100%);
-  box-shadow: 0 6px 16px -6px rgba(155, 92, 247, 0.7);
+  box-shadow: 0 6px 16px -6px rgba(7, 135, 130, 0.7);
 }
 
 /* ── Icon chip (generalized 2026-redesign) ─────
@@ -568,16 +640,16 @@
   height: 2.1rem;
 }
 
-/* Precomputed rgba()/gradients throughout this block, not color-mix() — see the note on
-   .hop-shell__brand-mark above re: Capacitor iOS 15 support. */
+/* Precomputed rgba()/gradients throughout this block, not
+   color-mix() (unsupported before WKWebView 16.2; Capacitor iOS target is 15.0). */
 .hop-icon-chip--indigo {
   background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
-  box-shadow: 0 6px 16px -6px rgba(109, 110, 245, 0.7);
+  box-shadow: 0 6px 16px -6px rgba(14, 171, 166, 0.7);
 }
 
 .hop-icon-chip--cyan {
   background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 100%);
-  box-shadow: 0 6px 16px -6px rgba(34, 211, 238, 0.7);
+  box-shadow: 0 6px 16px -6px rgba(91, 169, 230, 0.7);
 }
 
 .hop-icon-chip--gold {
@@ -597,7 +669,7 @@
 
 .hop-icon-chip--violet {
   background: linear-gradient(135deg, var(--hop-violet) 0%, #f472b6 100%);
-  box-shadow: 0 6px 16px -6px rgba(155, 92, 247, 0.7);
+  box-shadow: 0 6px 16px -6px rgba(7, 135, 130, 0.7);
 }
 
 /* ── Block grid (2026-redesign) ─────────────────
@@ -1076,17 +1148,8 @@
 .hop-stat-card__value {
   font-size: 2.1rem;
   font-weight: 800;
-  /* Real, always-visible fallback — see the .hop-page-title note above re: @supports gating. */
-  color: var(--hop-text);
-}
-
-@supports (background-clip: text) or (-webkit-background-clip: text) {
-  .hop-stat-card__value {
-    background: linear-gradient(120deg, var(--hop-text) 30%, var(--hop-indigo) 120%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
+  letter-spacing: -0.03em;
+  color: var(--hop-heading);
 }
 
 .hop-stat-card__label {
@@ -1223,12 +1286,12 @@
 
 /* ── Active request tracker (dashboard) ──────── */
 .hop-tracker-card {
-  /* Precomputed rgba() — see the note on .hop-shell__brand-mark above re: color-mix() + iOS 15.
+  /* Precomputed rgba() — color-mix() is unsupported before Safari/WKWebView 16.2 and the Capacitor iOS target is 15.0.
      Without this fix, the whole border+background declaration silently dropped on iOS ≤16.1,
      leaving this card flat/borderless — the most likely concrete cause of "pale" dashboard cards
      reported on the real mobile app. */
-  border: 1px solid rgba(109, 110, 245, 0.35);
-  background: linear-gradient(135deg, rgba(109, 110, 245, 0.1), rgba(34, 211, 238, 0.05));
+  border: 1px solid rgba(14, 171, 166, 0.35);
+  background: linear-gradient(135deg, rgba(14, 171, 166, 0.1), rgba(91, 169, 230, 0.05));
 }
 
 /* ── Ride location sharing ───────────────────── */
@@ -1277,8 +1340,8 @@
      (that mix is theme-dependent, so it can't be precomputed to a single static rgba() the way
      the transparent-mix cases elsewhere in this file were) — still avoids color-mix() entirely,
      so it doesn't hit the iOS ≤16.1 drop-the-whole-property failure mode. */
-  background: linear-gradient(rgba(109, 110, 245, 0.18), rgba(109, 110, 245, 0.18)), var(--hop-panel-2);
-  border-color: rgba(109, 110, 245, 0.35);
+  background: linear-gradient(rgba(14, 171, 166, 0.18), rgba(14, 171, 166, 0.18)), var(--hop-panel-2);
+  border-color: rgba(14, 171, 166, 0.35);
 }
 
 .hop-message-thread__bubble p {
@@ -1320,19 +1383,11 @@
    hop-shell — overrides a handful of accent tokens rather than forking the stylesheet, so
    every other shared-pattern fix (a11y, layout, new components) stays made once. */
 .hop-shell--concierge-hub {
-  --hop-indigo: #7c5cff;
-  --hop-violet: #b45cff;
-  --hop-cyan: #5ce1e6;
-}
-
-.hop-shell--concierge-hub .hop-shell__brand::after {
-  content: 'ConciergeHub';
-  display: block;
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--hop-muted);
-  margin-top: 0.15rem;
+  /* Staff deployment leads with brand light blue (members get teal) — same palette, a
+     different "which app am I in" cue. */
+  --hop-indigo: #3d8fd1;
+  --hop-violet: #053069;
+  --hop-cyan: #0eaba6;
 }
 
 /* ── Per-role accent (2026-redesign, Phase 2) ─────
@@ -1349,17 +1404,9 @@
   background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 100%);
 }
 
-.hop-shell--concierge .hop-shell__brand-mark {
-  background: linear-gradient(135deg, var(--hop-cyan) 0%, var(--hop-indigo) 55%, var(--hop-violet) 100%);
-}
-
 .hop-shell--facility .hop-shell__nav-link--active {
   background: linear-gradient(135deg, var(--hop-gold) 0%, #f97316 100%);
   box-shadow: 0 0 0 1px rgba(245, 185, 66, 0.35), 0 14px 36px -14px rgba(245, 185, 66, 0.45);
-}
-
-.hop-shell--facility .hop-shell__brand-mark {
-  background: linear-gradient(135deg, var(--hop-gold) 0%, #f97316 60%, var(--hop-violet) 100%);
 }
 
 /* ── Phase 1: contact actions, ratings, messaging, duty status (2026-07-23) ── */
@@ -1383,7 +1430,7 @@
   cursor: pointer;
   font-size: 1.6rem;
   line-height: 1;
-  color: var(--hop-indigo, #6366f1);
+  color: var(--hop-indigo, #0eaba6);
   /* Grown from ~26px (icon-only padding) toward the ~44px touch-target guideline — the icon
      glyph itself stays the same visual size, the hit area around it grows. */
   padding: 0.5rem 0.35rem;
@@ -1472,7 +1519,7 @@
 }
 
 .hop-unread-badge {
-  background: var(--hop-indigo, #6366f1);
+  background: var(--hop-indigo, #0eaba6);
   color: #fff;
   border-radius: 999px;
   font-size: 0.7rem;
@@ -1508,12 +1555,26 @@
   display: inline-block;
 }
 
+/* Desktop/tablet default: the mobile top bar and the drawer's own close button only ever exist
+   for the sub-720px drawer below. This MUST come before that @media block — it used to sit after
+   it, and at equal specificity the later `display: none` won, so phones never got the top bar or
+   its menu button and had no way to open the nav. */
+.hop-shell__mobile-bar,
+.hop-shell__mobile-close {
+  display: none;
+}
+
 /* Below 720px the sidebar becomes a real off-canvas drawer (slide-in overlay + backdrop, JS-driven
    open/close state in HopShellLayout.tsx) instead of the old approach of reflowing it into a
    horizontal wrapped top bar — with 6-8 nav items across 4 roles, a wrapped row got cramped and
    didn't scale. A slim sticky top bar (brand + hamburger) replaces the old inline sidebar-as-topbar
    on small screens. */
 @media (max-width: 720px) {
+  /* Stack the top bar above the content; the sidebar is a fixed overlay at this size. */
+  .hop-shell {
+    flex-direction: column;
+  }
+
   .hop-shell__mobile-bar {
     display: flex;
     align-items: center;
@@ -1583,13 +1644,6 @@
   }
 }
 
-/* Desktop/tablet default: the mobile top bar, its menu button, the drawer's own close button, and
-   the backdrop only ever exist for the sub-720px drawer above. */
-.hop-shell__mobile-bar,
-.hop-shell__mobile-close {
-  display: none;
-}
-
 /* ── Onboarding tour (2026-07-24) ─────────────────────────────────────────
    A dismissible, replayable "here's what you can do" walkthrough shown on first login per
    role, reopenable anytime from the sidebar's "Quick tour" button — see
@@ -1652,13 +1706,15 @@
   border-radius: 50%;
   font-size: 1.6rem;
   background: linear-gradient(135deg, var(--hop-indigo) 0%, var(--hop-violet) 100%);
-  box-shadow: 0 8px 20px -8px rgba(109, 110, 245, 0.7);
+  box-shadow: 0 8px 20px -8px rgba(14, 171, 166, 0.7);
 }
 
 .hop-tour-card__title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 800;
+  /* Explicit — otherwise index.css's global h2 colour (near-white under an OS dark mode) wins. */
+  color: var(--hop-heading);
 }
 
 .hop-tour-card__body {
@@ -1915,7 +1971,7 @@
 
 .hop-mood-picker__btn--active {
   border-color: var(--hop-indigo);
-  background: rgba(109, 110, 245, 0.16);
+  background: rgba(14, 171, 166, 0.16);
 }
 
 /* HOP AI assistant — floating bottom-right widget (HopAiAssistant.tsx), member app only. */
@@ -2052,14 +2108,14 @@
 
 @keyframes hop-status-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(109, 110, 245, 0.5);
+    box-shadow: 0 0 0 0 rgba(14, 171, 166, 0.5);
     transform: scale(1);
   }
   40% {
     transform: scale(1.08);
   }
   100% {
-    box-shadow: 0 0 0 8px rgba(109, 110, 245, 0);
+    box-shadow: 0 0 0 8px rgba(14, 171, 166, 0);
     transform: scale(1);
   }
 }
@@ -2173,7 +2229,7 @@
 }
 
 .hop-role-badge--user {
-  background: rgba(109, 110, 245, 0.16);
+  background: rgba(14, 171, 166, 0.16);
   color: var(--hop-link);
 }
 
@@ -2183,12 +2239,12 @@
 }
 
 .hop-role-badge--concierge {
-  background: rgba(34, 211, 238, 0.16);
+  background: rgba(91, 169, 230, 0.16);
   color: var(--hop-cyan);
 }
 
 .hop-role-badge--facility {
-  background: rgba(155, 92, 247, 0.18);
+  background: rgba(7, 135, 130, 0.18);
   color: var(--hop-violet);
 }
 
