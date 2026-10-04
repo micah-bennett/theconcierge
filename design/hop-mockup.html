@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="HOP — Hospitality On-Site Professionals. Human-centered support for professionals and organizations." />
+  <title>HOP | Hospitality On-Site Professionals</title>
+  <style>
+    :root {
+      --navy: #053069;
+      --navy-dark: #032553;
+      --teal: #0EABA6;
+      --teal-dark: #078782;
+      --blue: #5BA9E6;
+      --mist: #EAF6FA;
+      --pale: #F5FAFC;
+      --ink: #17324D;
+      --muted: #60768D;
+      --line: #D8E6EC;
+      --white: #FFFFFF;
+      --shadow: 0 18px 45px rgba(5, 48, 105, .10);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--white);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+    .container { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow { margin: 0 0 12px; color: var(--teal-dark); font-size: .78rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    h1, h2, h3 { margin: 0; color: var(--navy); line-height: 1.08; }
+    h1 { max-width: 740px; font-size: clamp(2.5rem, 5vw, 4.75rem); letter-spacing: -.045em; }
+    h2 { font-size: clamp(1.85rem, 3.2vw, 3rem); letter-spacing: -.035em; }
+    h3 { font-size: 1.23rem; }
+    p { margin: 0; }
+    .lead { max-width: 650px; margin-top: 22px; color: #476179; font-size: clamp(1.05rem, 1.7vw, 1.23rem); }
+
+    .site-header {
+      position: sticky; top: 0; z-index: 20;
+      border-bottom: 1px solid rgba(216, 230, 236, .85);
+      background: rgba(255,255,255,.94); backdrop-filter: blur(12px);
+    }
+    .nav { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+    .brand { display: inline-flex; align-items: center; gap: 11px; min-width: max-content; }
+    .brand-mark { width: 43px; height: 43px; display: grid; place-items: center; }
+    .brand-mark svg { width: 100%; height: 100%; display: block; }
+    .brand-copy { display: flex; flex-direction: column; line-height: 1; }
+    .brand-word { color: var(--navy); font-weight: 900; font-size: 1.7rem; letter-spacing: -.08em; }
+    .brand-sub { margin-top: 4px; color: var(--muted); font-size: .49rem; font-weight: 800; letter-spacing: .105em; white-space: nowrap; }
+    .nav-links { display: flex; align-items: center; gap: 20px; color: #38536d; font-size: .91rem; font-weight: 700; }
+    .nav-links a { padding: 8px 0; border-bottom: 2px solid transparent; }
+    .nav-links a:hover, .nav-links a.active { color: var(--navy); border-color: var(--teal); }
+    .nav-toggle { display: none; border: 0; background: none; color: var(--navy); font-size: 1.65rem; cursor: pointer; }
+
+    .button-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 47px; padding: 0 20px; border: 1px solid transparent; border-radius: 10px; cursor: pointer; font-weight: 800; transition: transform .18s ease, background .18s ease, border .18s ease; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { color: #fff; background: var(--teal); box-shadow: 0 10px 20px rgba(14,171,166,.20); }
+    .btn-primary:hover { background: var(--teal-dark); }
+    .btn-secondary { color: var(--navy); border-color: #A9CBD7; background: #fff; }
+    .btn-secondary:hover { border-color: var(--teal); background: #F4FCFC; }
+    .btn-small { min-height: 39px; padding: 0 15px; font-size: .86rem; }
+
+    main section { padding: 88px 0; }
+    main > section.page { padding: 0; }
+
+    .badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: 999px; background: var(--mist); color: var(--teal-dark); font-size: .7rem; font-weight: 900; letter-spacing: .11em; text-transform: uppercase; }
+    .badge-dark { background: rgba(163,242,233,.18); color: #A3F2E9; }
+    .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .login-preview { margin-top: 26px; padding: 26px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 10px 25px rgba(5,48,105,.05); }
+    .login-preview .login-title { color: var(--navy); font-weight: 900; font-size: 1.05rem; }
+    .login-preview .login-sub { display: block; margin-top: 5px; color: var(--muted); font-size: .88rem; }
+    .login-field { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; color: #9BB0BF; background: var(--pale); font-size: .9rem; }
+    .login-btn { margin-top: 14px; padding: 12px 14px; border-radius: 10px; color: #fff; background: #9FC3D2; text-align: center; font-weight: 800; font-size: .92rem; }
+    .login-note { display: block; margin-top: 13px; color: var(--muted); font-size: .8rem; }
+    .hero { overflow: hidden; padding: 78px 0 82px; background: linear-gradient(135deg, #F7FCFD 0%, #FFFFFF 58%, #EBF7FC 100%); }
+    .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; align-items: center; gap: 48px; }
+    .hero-art { position: relative; min-height: 445px; border-radius: 32px; background: var(--navy); overflow: hidden; box-shadow: var(--shadow); }
+    .hero-art::before { content: ""; position: absolute; width: 560px; height: 560px; top: -210px; right: -170px; border-radius: 50%; background: rgba(91,169,230,.28); }
+    .hero-art::after { content: ""; position: absolute; width: 410px; height: 410px; left: -120px; bottom: -210px; border-radius: 50%; background: rgba(14,171,166,.45); }
+    .art-label { position: absolute; left: 34px; top: 31px; z-index: 2; color: #CFEFF0; font-size: .73rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .people { position: absolute; inset: 70px 25px 15px; z-index: 1; display: flex; align-items: end; justify-content: center; gap: 11px; }
+    .person { position: relative; width: 105px; height: 232px; border-radius: 54px 54px 20px 20px; background: #EAF8F7; opacity: .98; }
+    .person::before { content: ""; position: absolute; width: 74px; height: 74px; top: -42px; left: 15px; border-radius: 50%; background: #EAF8F7; }
+    .person:nth-child(1) { height: 174px; width: 82px; background: #7FCFE0; transform: rotate(-4deg); }
+    .person:nth-child(1)::before { width: 58px; height: 58px; top: -33px; left: 12px; background: #7FCFE0; }
+    .person:nth-child(2) { height: 250px; background: #FFFFFF; }
+    .person:nth-child(2)::before { background: #FFFFFF; }
+    .person:nth-child(3) { height: 205px; width: 90px; background: #55C4BE; transform: rotate(4deg); }
+    .person:nth-child(3)::before { width: 63px; height: 63px; top: -35px; left: 13px; background: #55C4BE; }
+    .hero-card { position: absolute; right: 25px; bottom: 24px; z-index: 3; width: min(300px, 78%); padding: 17px; border: 1px solid rgba(255,255,255,.35); border-radius: 14px; color: #fff; background: rgba(3,37,83,.73); backdrop-filter: blur(8px); }
+    .hero-card strong { display: block; color: #A3F2E9; font-size: .83rem; letter-spacing: .08em; text-transform: uppercase; }
+    .hero-card span { display: block; margin-top: 5px; font-size: .94rem; line-height: 1.35; }
+
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 28px; margin-bottom: 35px; }
+    .section-head > p:last-child { max-width: 470px; color: var(--muted); }
+    .cards-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .card { min-height: 255px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: 0 10px 25px rgba(5,48,105,.04); }
+    .card:hover { border-color: #9FD8D5; box-shadow: var(--shadow); }
+    .icon-box { width: 47px; height: 47px; display: grid; place-items: center; margin-bottom: 22px; border-radius: 13px; color: var(--navy); background: var(--mist); font-size: 1.35rem; }
+    .card p { margin-top: 12px; color: var(--muted); font-size: .95rem; }
+    .text-link { display: inline-flex; margin-top: 22px; color: var(--teal-dark); font-weight: 850; font-size: .91rem; }
+    .text-link::after { content: "→"; margin-left: 8px; transition: transform .18s ease; }
+    .text-link:hover::after { transform: translateX(4px); }
+
+    .features { background: var(--pale); }
+    .features-grid { display: grid; grid-template-columns: .9fr 1.1fr; align-items: center; gap: 65px; }
+    .feature-list { display: grid; gap: 15px; }
+    .feature { display: flex; gap: 15px; padding: 17px; border-radius: 15px; background: #fff; border: 1px solid #E0EDF1; }
+    .feature-bullet { flex: 0 0 34px; height: 34px; display: grid; place-items: center; color: #fff; border-radius: 10px; background: var(--teal); font-size: .9rem; font-weight: 900; }
+    .feature strong { color: var(--navy); display: block; }
+    .feature span { display: block; margin-top: 2px; color: var(--muted); font-size: .92rem; }
+    .app-panel { position: relative; min-height: 690px; padding: 34px; overflow: hidden; border-radius: 30px; background: var(--navy); box-shadow: var(--shadow); }
+    .app-panel::before { content: ""; position: absolute; width: 460px; height: 460px; right: -190px; top: -190px; border-radius: 50%; background: rgba(91,169,230,.4); }
+    .app-panel h2 { position: relative; z-index: 1; max-width: 340px; color: #fff; }
+    .app-panel > p { position: relative; z-index: 1; max-width: 340px; margin-top: 15px; color: #C7DDEB; }
+    .app-panel .badge { position: relative; z-index: 1; }
+    .phone { position: absolute; right: 36px; bottom: -30px; z-index: 2; width: 245px; height: 400px; padding: 13px; border: 7px solid #EAF6FA; border-radius: 34px 34px 0 0; background: #fff; box-shadow: 0 12px 34px rgba(0,0,0,.22); }
+    .phone-top { width: 75px; height: 8px; margin: 0 auto 14px; border-radius: 99px; background: #D6E1E8; }
+    .phone-brand { color: var(--navy); font-weight: 900; font-size: 1.15rem; letter-spacing: -.08em; }
+    .phone-sub { color: var(--muted); font-size: .58rem; letter-spacing: .08em; }
+    .phone-card { margin-top: 15px; padding: 13px; border-radius: 13px; background: #EDF9F8; }
+    .phone-card small { color: var(--teal-dark); font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
+    .phone-card strong { display: block; margin-top: 5px; color: var(--navy); font-size: .9rem; line-height: 1.2; }
+    .phone-card span { display: block; margin-top: 8px; color: var(--muted); font-size: .72rem; }
+    .phone-row { height: 8px; margin-top: 13px; border-radius: 99px; background: #E0EBF0; }
+    .phone-row.short { width: 63%; }
+
+    .how { background: #fff; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .step { padding: 22px; border-top: 3px solid var(--teal); background: #fff; }
+    .step-num { color: var(--blue); font-size: 2.15rem; font-weight: 900; letter-spacing: -.07em; }
+    .step p { margin-top: 9px; color: var(--muted); }
+
+    .concierge { padding: 86px 0; background: linear-gradient(105deg, var(--navy) 0 58%, #0A4A7C 58%); color: #fff; }
+    .concierge-grid { display: grid; grid-template-columns: 1fr .76fr; align-items: center; gap: 40px; }
+    .concierge h2 { color: #fff; max-width: 650px; }
+    .concierge p { max-width: 635px; margin-top: 18px; color: #D3E6F0; font-size: 1.07rem; }
+    .concierge-side { padding: 28px; border: 1px solid rgba(181,239,234,.37); border-radius: 22px; background: rgba(255,255,255,.08); }
+    .concierge-side strong { color: #96EFE6; }
+    .concierge-side ul { margin: 15px 0 0; padding-left: 20px; color: #E5F6F7; }
+    .concierge-side li + li { margin-top: 8px; }
+
+    .cta { padding: 85px 0; text-align: center; background: #F1FBFC; }
+    .cta h2 { max-width: 740px; margin: 0 auto; }
+    .cta p { max-width: 610px; margin: 17px auto 0; color: var(--muted); }
+    .cta .button-row { justify-content: center; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-hero { padding: 75px 0 54px; background: linear-gradient(135deg, #F4FBFC, #FFFFFF); }
+    .page-hero .lead { max-width: 730px; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+    .info-panel { padding: 32px; border-radius: 22px; border: 1px solid var(--line); background: #fff; }
+    .info-panel p { margin-top: 13px; color: var(--muted); }
+    .info-panel ul { margin: 18px 0 0; padding-left: 20px; color: #496177; }
+    .info-panel li + li { margin-top: 9px; }
+    .quote { padding: 32px; border-radius: 23px; background: var(--navy); color: #fff; }
+    .quote p { color: #DAEAF2; font-size: 1.15rem; }
+    .quote strong { display: block; margin-top: 17px; color: #8EE8E1; font-size: .84rem; letter-spacing: .08em; text-transform: uppercase; }
+    .contact-form { max-width: 780px; margin: 0 auto; padding: 35px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: var(--shadow); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    label { display: grid; gap: 7px; color: var(--navy); font-size: .87rem; font-weight: 800; }
+    input, select, textarea { width: 100%; padding: 12px 13px; border: 1px solid #BDD3DD; border-radius: 9px; outline: none; color: var(--ink); background: #fff; font: inherit; font-weight: 500; }
+    input:focus, select:focus, textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14,171,166,.14); }
+    textarea { min-height: 128px; resize: vertical; }
+    .form-message { display: none; margin-top: 15px; padding: 12px; border-radius: 9px; color: #075C59; background: #E6FAF7; font-weight: 700; }
+
+    footer { padding: 39px 0; color: #AFC3D1; background: #032553; }
+    .footer-grid { display: flex; align-items: center; justify-content: space-between; gap: 25px; }
+    footer .brand-word { color: #fff; }
+    footer .brand-sub { color: #AFC3D1; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 18px; font-size: .88rem; }
+    .footer-note { margin-top: 17px; color: #88A3B7; font-size: .8rem; }
+
+    @media (max-width: 920px) {
+      .nav-toggle { display: block; }
+      .nav-links { position: absolute; top: 82px; left: 0; right: 0; display: none; padding: 18px 20px 22px; flex-direction: column; align-items: flex-start; background: #fff; border-bottom: 1px solid var(--line); box-shadow: 0 15px 24px rgba(5,48,105,.07); }
+      .nav-links.open { display: flex; }
+      .hero-grid, .features-grid, .concierge-grid { grid-template-columns: 1fr; }
+      .hero-art { min-height: 390px; }
+      .cards-3, .steps { grid-template-columns: 1fr; }
+      .section-head { align-items: flex-start; flex-direction: column; }
+      .app-panel { min-height: 700px; }
+      .split { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .container { width: min(100% - 28px, 1160px); }
+      .site-header .btn-small { display: none; }
+      main section { padding: 64px 0; }
+      .hero { padding: 52px 0 60px; }
+      .hero-art { min-height: 330px; }
+      .people { transform: scale(.85); transform-origin: bottom center; inset: 65px 0 0; }
+      .hero-card { left: 18px; right: auto; bottom: 17px; }
+      .phone { right: 18px; transform: scale(.88); transform-origin: bottom right; }
+      .concierge { background: var(--navy); }
+      .form-grid { grid-template-columns: 1fr; }
+      .contact-form { padding: 22px; }
+      .footer-grid { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#home" data-page-link="home" aria-label="HOP Home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 52C12 36 20 24 31 19C33 18 35 19 36 21L42 33C43 35 42 37 40 38C33 41 29 47 29 55H12V52Z" fill="#0EABA6"/>
+            <path d="M31 55C31 39 39 27 50 22C52 21 54 22 55 24L61 36C62 38 61 40 59 41C52 44 48 50 48 55H31Z" fill="#5BA9E6"/>
+            <circle cx="25" cy="16" r="7" fill="#0EABA6"/>
+            <circle cx="44" cy="12" r="7" fill="#5BA9E6"/>
+            <circle cx="57" cy="27" r="7" fill="#053069"/>
+          </svg>
+        </span>
+        <span class="brand-copy"><span class="brand-word">HOP</span><span class="brand-sub">HOSPITALITY ON-SITE PROFESSIONALS</span></span>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open navigation" aria-expanded="false">☰</button>
+      <nav class="nav-links" id="navLinks" aria-label="Main navigation">
+        <a href="#home" data-page-link="home" class="active">Home</a>
+        <a href="#how-it-works" data-page-link="how">How HOP Works</a>
+        <a href="#professionals" data-page-link="professionals">For Professionals</a>
+        <a href="#organizations" data-page-link="organizations">For Organizations</a>
+        <a href="#concierge" data-page-link="concierge">The Concierge</a>
+        <a href="#portal" data-page-link="portal">HOP Portal</a>
+      </nav>
+      <a class="btn btn-primary btn-small" href="#contact" data-page-link="contact">Start a Conversation</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="page active" id="home">
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <p class="eyebrow">Hospitality On-Site Professionals</p>
+            <h1>Hospitality that helps people and workplaces thrive.</h1>
+            <p class="lead">HOP brings responsive, human-centered support to professionals and organizations—helping people manage the details, stay connected, and build a stronger workplace experience.</p>
+            <div class="button-row">
+              <a class="btn btn-primary" href="#organizations" data-page-link="organizations">Explore HOP for Organizations</a>
+              <a class="btn btn-secondary" href="#professionals" data-page-link="professionals">Explore HOP for Professionals</a>
+            </div>
+          </div>
+          <div class="hero-art" aria-label="Abstract illustration of connected professionals">
+            <span class="art-label">Support that shows up</span>
+            <div class="people"><span class="person"></span><span class="person"></span><span class="person"></span></div>
+            <div class="hero-card"><strong>Human-first support</strong><span>Thoughtful service, responsive tools, and programs designed around real people.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="container">
+          <div class="section-head">
+            <div><p class="eyebrow">One connected experience</p><h2>Support where it matters most.</h2></div>
+            <p>HOP blends hospitality, practical coordination, and easy-to-use technology so people and organizations can access the right kind of help at the right time.</p>
+          </div>
+          <div class="cards-3">
+            <article class="card"><div class="icon-box">✦</div><h3>HOP for Professionals</h3><p>Personalized requests, trusted resources, and practical support that helps professionals protect their time and energy.</p><a class="text-link" href="#professionals" data-page-link="professionals">Explore professional support</a></article>
+            <article class="card"><div class="icon-box">◫</div><h3>HOP for Organizations</h3><p>Adaptive hospitality programs that strengthen employee experience, connection, and day-to-day workplace support.</p><a class="text-link" href="#organizations" data-page-link="organizations">Explore organization support</a></article>
+            <article class="card"><div class="icon-box">⌁</div><span class="badge"><span class="badge-dot"></span>Coming soon</span><h3 style="margin-top:14px">The HOP Portal</h3><p>The app is coming soon—a secure, web-based access point where members log in to request help, connect to services, and find resources.</p><a class="text-link" href="#portal" data-page-link="portal">Preview the HOP Portal</a></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="features">
+        <div class="container features-grid">
+          <div>
+            <p class="eyebrow">Built for real needs</p>
+            <h2>Responsive support—not a one-size-fits-all benefit.</h2>
+            <p class="lead">HOP helps organizations create a more human workplace by listening, adapting, and making practical support easier to access.</p>
+            <div class="feature-list" style="margin-top:28px">
+              <div class="feature"><span class="feature-bullet">✓</span><div><strong>Human-centered</strong><span>Service begins with the real needs, schedules, and pressures people are facing.</span></div></div>
+              <div class="feature"><span class="feature-bullet">✓</span><div><strong>Adaptive support</strong><span>Programs can evolve as workplace needs and employee feedback change.</span></div></div>
+              <div class="feature"><span class="feature-bullet">✓</span><div><strong>On-site and digital</strong><span>Bring support into the workplace while giving people a simple digital way to connect.</span></div></div>
+              <div class="feature"><span class="feature-bullet">✓</span><div><strong>Designed around your people</strong><span>Build a service experience that fits your culture, priorities, and capacity.</span></div></div>
+            </div>
+          </div>
+          <aside class="app-panel">
+            <span class="badge badge-dark"><span class="badge-dot"></span>Coming soon</span>
+            <h2 style="margin-top:16px">The HOP Portal</h2>
+            <p>The app is coming soon. The HOP Portal is our web-based access point—members log in to submit requests, browse resources, and follow their support. No download required.</p>
+            <div class="button-row" style="position:relative;z-index:3"><a class="btn btn-primary" href="#portal" data-page-link="portal">Preview the HOP Portal</a></div>
+            <div class="phone" aria-label="HOP app preview">
+              <div class="phone-top"></div><div class="phone-brand">HOP</div><div class="phone-sub">HOP PORTAL · COMING SOON</div>
+              <div class="phone-card"><small>Good morning</small><strong>What would make today easier?</strong><span>Submit a request, browse resources, or check your support plan.</span></div>
+              <div class="phone-card" style="background:#EEF6FE"><small style="color:#3578B8">In the Portal</small><strong>Workplace resource guide</strong><span>Practical options matched to your needs.</span></div>
+              <div class="phone-row"></div><div class="phone-row short"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section>
+        <div class="container">
+          <div class="section-head"><div><p class="eyebrow">A clear path</p><h2>How HOP works</h2></div><p>Whether HOP is supporting one person or an entire organization, the approach begins with understanding what would make a meaningful difference.</p></div>
+          <div class="steps"><article class="step"><div class="step-num">01</div><h3>Listen</h3><p>We learn about your people, priorities, environment, and the support gaps you want to address.</p></article><article class="step"><div class="step-num">02</div><h3>Design</h3><p>We shape a responsive support experience using hospitality, coordination, resources, and digital access.</p></article><article class="step"><div class="step-num">03</div><h3>Support and adapt</h3><p>HOP stays connected, helps people access support, and adjusts as needs change over time.</p></article></div>
+          <div class="button-row"><a class="btn btn-primary" href="#how-it-works" data-page-link="how">Learn more about HOP</a></div>
+        </div>
+      </section>
+
+      <section class="concierge">
+        <div class="container concierge-grid">
+          <div><p class="eyebrow" style="color:#91EEE7">A HOP service</p><h2>The Concierge by HOP</h2><p>Personalized support for life’s everyday details. The Concierge by HOP gives individuals, families, and busy professionals a trusted place to turn for coordination, planning, and practical assistance.</p><div class="button-row"><a class="btn btn-primary" href="#concierge" data-page-link="concierge">Explore The Concierge</a></div></div>
+          <aside class="concierge-side"><strong>PERSONALIZED SUPPORT MAY INCLUDE</strong><ul><li>Planning, coordination, and research</li><li>Appointment and schedule support</li><li>Local resources and vendor coordination</li><li>Special requests and everyday details</li></ul></aside>
+        </div>
+      </section>
+
+      <section class="cta"><div class="container"><p class="eyebrow">Let’s make support easier</p><h2>Build a more supported experience for your people.</h2><p>Tell HOP what would make life or work easier. We will start with a conversation and identify the right next steps.</p><div class="button-row"><a class="btn btn-primary" href="#contact" data-page-link="contact">Start a Conversation</a></div></div></section>
+    </section>
+
+    <section class="page" id="how">
+      <section class="page-hero"><div class="container"><p class="eyebrow">How HOP Works</p><h1>Support designed to respond to real life.</h1><p class="lead">HOP combines a hospitality mindset, practical coordination, on-site service options, and a future-ready digital experience to make support more accessible.</p></div></section>
+      <section><div class="container"><div class="steps"><article class="step"><div class="step-num">01</div><h3>Discover</h3><p>We listen to understand the people you support, the moments that create pressure, and the opportunities to make things easier.</p></article><article class="step"><div class="step-num">02</div><h3>Build the experience</h3><p>HOP shapes an approach that may include on-site hospitality, request coordination, curated resources, and a clear communication path.</p></article><article class="step"><div class="step-num">03</div><h3>Stay responsive</h3><p>Needs evolve. HOP is designed to gather insight, respond thoughtfully, and improve the support experience over time.</p></article></div></div></section>
+      <section class="features"><div class="container split"><div><span class="badge"><span class="badge-dot"></span>Coming soon</span><h2 style="margin-top:16px">The HOP Portal</h2><p class="lead">The app is coming soon. The HOP Portal is the access point for HOP support—a secure, web-based app members log into from any browser. It is not a replacement for human service; it simply makes requesting and receiving help easier.</p><div class="button-row"><a class="btn btn-primary" href="#portal" data-page-link="portal">Preview the HOP Portal</a></div></div><div class="info-panel"><h3>What the Portal will support</h3><ul><li>Submit and track personalized support requests</li><li>Access workplace and community resources</li><li>Receive updates, reminders, and service information</li><li>Connect with a HOP support professional when appropriate</li><li>Help organizations understand broad, non-identifying support trends</li></ul></div></div></section>
+    </section>
+
+    <section class="page" id="professionals">
+      <section class="page-hero"><div class="container"><p class="eyebrow">HOP for Professionals</p><h1>More room to focus on what matters.</h1><p class="lead">HOP gives busy professionals a supportive, practical way to manage the everyday details that compete for their time and attention.</p><div class="button-row"><a class="btn btn-primary" href="#contact" data-page-link="contact">Talk with HOP</a></div></div></section>
+      <section><div class="container split"><article class="info-panel"><h2>Personalized, practical support</h2><p>Every person’s needs are different. HOP can help create a clear path from “I need help with this” to a practical next step.</p><ul><li>Request coordination and follow-up</li><li>Trusted local and workplace resources</li><li>Planning and organization support</li><li>Service navigation and referrals when appropriate</li><li>Personalized concierge options through The Concierge by HOP</li></ul></article><aside class="quote"><p>“Support is more meaningful when it is easy to access, respectful of a person’s time, and built around what they actually need.”</p><strong>HOP Approach</strong></aside></div></section>
+    </section>
+
+    <section class="page" id="organizations">
+      <section class="page-hero"><div class="container"><p class="eyebrow">HOP for Organizations</p><h1>Create a workplace experience that feels more human.</h1><p class="lead">HOP partners with organizations that want to support their people in practical, thoughtful, and responsive ways—without relying on one-size-fits-all programs.</p><div class="button-row"><a class="btn btn-primary" href="#contact" data-page-link="contact">Discuss a HOP Program</a></div></div></section>
+      <section><div class="container"><div class="section-head"><div><p class="eyebrow">Designed for many environments</p><h2>Hospitality is a workplace advantage.</h2></div><p>HOP can be shaped for companies, professional teams, care settings, campuses, residential communities, and other people-centered organizations.</p></div><div class="cards-3"><article class="card"><div class="icon-box">◌</div><h3>Employee experience</h3><p>Create accessible support options that help employees feel seen, connected, and better able to manage everyday demands.</p></article><article class="card"><div class="icon-box">↗</div><h3>On-site hospitality</h3><p>Bring a warm, organized, service-oriented presence into the places where people work, gather, or receive support.</p></article><article class="card"><div class="icon-box">≋</div><h3>Adaptive programs</h3><p>Start with your priorities, learn from use and feedback, and evolve the program as people’s needs change.</p></article></div></div></section>
+      <section class="features"><div class="container split"><div class="info-panel"><h3>A HOP partnership can include</h3><ul><li>Support-needs discovery and experience design</li><li>On-site hospitality and resource coordination</li><li>Employee-facing request and resource pathways</li><li>Concierge-style support programs</li><li>Future HOP App access and program insight</li></ul></div><div><p class="eyebrow">Built around your culture</p><h2>Support should fit the way your people work.</h2><p class="lead">HOP is not positioned as a generic perks platform. It is a human-centered partnership designed to be present, adaptive, and useful in the moments that matter.</p></div></div></section>
+    </section>
+
+    <section class="page" id="concierge">
+      <section class="page-hero"><div class="container"><p class="eyebrow">A HOP service</p><h1>The Concierge by HOP</h1><p class="lead">Personalized support for the everyday details of life. HOP helps individuals, households, and busy professionals plan, coordinate, and move forward with more ease.</p><div class="button-row"><a class="btn btn-primary" href="#contact" data-page-link="contact">Request Personal Support</a></div></div></section>
+      <section><div class="container split"><div class="info-panel"><h2>Support for life’s moving parts</h2><p>The Concierge by HOP provides a thoughtful, personalized approach to requests that take time, attention, organization, or local knowledge.</p><ul><li>Personal task, errand, and request coordination</li><li>Appointment, calendar, and scheduling support</li><li>Vendor research and coordination</li><li>Travel, reservations, gifts, events, and special requests</li><li>Local resource research and personalized planning</li></ul></div><aside class="quote"><p>“A trusted point of support can turn a long to-do list into a manageable next step.”</p><strong>The Concierge by HOP</strong></aside></div></section>
+    </section>
+
+    <section class="page" id="portal">
+      <section class="page-hero"><div class="container"><span class="badge"><span class="badge-dot"></span>Coming soon</span><h1 style="margin-top:18px">Preview the HOP Portal</h1><p class="lead">The app is coming soon. The HOP Portal is our secure, web-based access point—members simply log in from any browser to request support, find resources, and stay connected. No app store, no download. Here is a preview of what is on the way.</p><div class="button-row"><a class="btn btn-primary" href="#portal-preview">Preview the HOP Portal</a><a class="btn btn-secondary" href="#contact" data-page-link="contact">Request Early Access</a></div></div></section>
+      <section><div class="container split"><div class="info-panel"><h2>What you can do once you log in</h2><p>The Portal turns “I need help with this” into a clear, tracked next step—handled by real HOP professionals.</p><ul><li>Submit a support request in a few clicks</li><li>Track status, updates, and follow-up in one place</li><li>Browse workplace, local, and community resources</li><li>Message a HOP support professional when appropriate</li><li>Access The Concierge by HOP for personal requests</li><li>Organization dashboards with broad, non-identifying support trends</li></ul></div><aside id="portal-preview"><p class="eyebrow">A preview of the login</p><h2>Your access point to HOP.</h2><p class="lead">Because the Portal is web-based, it works on a laptop, tablet, or phone browser—wherever your people already are.</p><div class="login-preview"><span class="login-title">Sign in to the HOP Portal</span><span class="login-sub">Welcome back. Let’s make today easier.</span><div class="login-field">you@example.com</div><div class="login-field">••••••••••</div><div class="login-btn">Log In</div><span class="login-note">Preview only — the HOP Portal is launching soon. Request early access to be notified first.</span></div></aside></div></section>
+      <section class="cta"><div class="container"><p class="eyebrow">Be first in line</p><h2>The app is coming soon.</h2><p>Preview the HOP Portal today, then join the early-access list and we will notify you when Portal logins open for professionals and organizations.</p><div class="button-row"><a class="btn btn-primary" href="#contact" data-page-link="contact">Request Early Access</a></div></div></section>
+    </section>
+
+    <section class="page" id="contact">
+      <section class="page-hero"><div class="container"><p class="eyebrow">Start a Conversation</p><h1>Tell us what would make life or work easier.</h1><p class="lead">Share a little about what you need. This mockup form demonstrates how HOP could route inquiries for organizations, professionals, and personal concierge support.</p></div></section>
+      <section class="features"><div class="container"><form class="contact-form" id="contactForm"><div class="form-grid"><label>First name<input required name="firstName" placeholder="First name" /></label><label>Last name<input required name="lastName" placeholder="Last name" /></label><label>Email<input required type="email" name="email" placeholder="you@example.com" /></label><label>Organization (if applicable)<input name="organization" placeholder="Organization name" /></label></div><label style="margin-top:15px">I am interested in<select name="interest"><option>HOP support for an organization</option><option>HOP support as a professional</option><option>The Concierge by HOP</option><option>Early access to the HOP Portal</option><option>Something else</option></select></label><label style="margin-top:15px">How can HOP help?<textarea required name="message" placeholder="Tell us about the support you are looking for."></textarea></label><div class="button-row"><button class="btn btn-primary" type="submit">Send Inquiry</button></div><p class="form-message" id="formMessage">Thank you—this is a website mockup, so no inquiry was sent. In the live website, this form can connect to your HOP email or CRM.</p></form></div></section>
+    </section>
+  </main>
+
+  <footer><div class="container"><div class="footer-grid"><a class="brand" href="#home" data-page-link="home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 52C12 36 20 24 31 19C33 18 35 19 36 21L42 33C43 35 42 37 40 38C33 41 29 47 29 55H12V52Z" fill="#0EABA6"/><path d="M31 55C31 39 39 27 50 22C52 21 54 22 55 24L61 36C62 38 61 40 59 41C52 44 48 50 48 55H31Z" fill="#5BA9E6"/><circle cx="25" cy="16" r="7" fill="#0EABA6"/><circle cx="44" cy="12" r="7" fill="#5BA9E6"/><circle cx="57" cy="27" r="7" fill="#FFFFFF"/></svg></span><span class="brand-copy"><span class="brand-word">HOP</span><span class="brand-sub">HOSPITALITY ON-SITE PROFESSIONALS</span></span></a><div class="footer-links"><a href="#organizations" data-page-link="organizations">Organizations</a><a href="#professionals" data-page-link="professionals">Professionals</a><a href="#concierge" data-page-link="concierge">The Concierge</a><a href="#portal" data-page-link="portal">HOP Portal</a><a href="#contact" data-page-link="contact">Contact</a></div></div><p class="footer-note">© 2026 HOP — Hospitality On-Site Professionals. A standalone hospitality and support brand.</p></div></footer>
+
+  <script>
+    const links = document.querySelectorAll('[data-page-link]');
+    const pages = document.querySelectorAll('.page');
+    const navLinks = document.getElementById('navLinks');
+    const navToggle = document.getElementById('navToggle');
+
+    function showPage(pageId) {
+      pages.forEach(page => page.classList.toggle('active', page.id === pageId));
+      links.forEach(link => link.classList.toggle('active', link.dataset.pageLink === pageId));
+      navLinks.classList.remove('open');
+      navToggle.setAttribute('aria-expanded', 'false');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.title = pageId === 'home' ? 'HOP | Hospitality On-Site Professionals' : `${pageId.replace(/-/g, ' ')} | HOP`;
+    }
+
+    links.forEach(link => link.addEventListener('click', event => {
+      const pageId = link.dataset.pageLink;
+      if (!pageId) return;
+      event.preventDefault();
+      history.replaceState(null, '', `#${pageId}`);
+      showPage(pageId);
+    }));
+
+    navToggle.addEventListener('click', () => {
+      const isOpen = navLinks.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    document.getElementById('contactForm').addEventListener('submit', event => {
+      event.preventDefault();
+      document.getElementById('formMessage').style.display = 'block';
+    });
+
+    const initial = location.hash.replace('#', '');
+    if (initial && document.getElementById(initial)) showPage(initial);
+  </script>
+<script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://perplexity.localhost","http://localhost:1420","http://127.0.0.1:1420","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+
+</script></body>
+</html>

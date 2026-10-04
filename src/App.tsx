@@ -1,19 +1,14 @@
-import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react'
-import {
-  BrowserRouter,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom'
+import { useLayoutEffect } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { SiteFooter } from './components/SiteFooter'
 import { SiteHeader } from './components/SiteHeader'
-import { ContactPage } from './pages/ContactPage'
-import { HomePage } from './pages/HomePage'
-import { HopPage } from './pages/HopPage'
-import { PersonalServicesPage } from './pages/PersonalServicesPage'
-import { PlansPage } from './pages/PlansPage'
+import { ConciergePage } from './pages/site/ConciergePage'
+import { ContactPage } from './pages/site/ContactPage'
+import { HomePage } from './pages/site/HomePage'
+import { HowItWorksPage } from './pages/site/HowItWorksPage'
+import { OrganizationsPage } from './pages/site/OrganizationsPage'
+import { PortalPage } from './pages/site/PortalPage'
+import { ProfessionalsPage } from './pages/site/ProfessionalsPage'
 import { HopLoginPage } from './pages/hop/HopLoginPage'
 import { HopSignupPage } from './pages/hop/HopSignupPage'
 import { HopAdminLoginPage } from './pages/hop/HopAdminLoginPage'
@@ -37,20 +32,10 @@ import { HopThemeProvider } from './hop/ThemeContext'
 import { RequireAdmin, RequireAuth } from './hop/RequireAuth'
 import { HopAppLayout } from './hop/HopAppLayout'
 import { HopAdminLayout } from './hop/HopAdminLayout'
-import { useSiteMotion } from './hooks/useSiteMotion'
 import { usePageTitle } from './hooks/usePageTitle'
 import './App.css'
 import './styles/hopApp.css'
-
-const ConciergeRequestModal = lazy(() =>
-  import('./components/ConciergeRequestModal').then((m) => ({
-    default: m.ConciergeRequestModal,
-  })),
-)
-
-const ConciergeChatBot = lazy(() =>
-  import('./components/ConciergeChatBot').then((m) => ({ default: m.ConciergeChatBot })),
-)
+import './styles/hopSite.css'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -61,38 +46,8 @@ function ScrollToTop() {
 }
 
 function AppRoutes() {
-  const navigate = useNavigate()
   const location = useLocation()
-  useSiteMotion(location.pathname)
   usePageTitle(location.pathname)
-  const [chatOpen, setChatOpen] = useState(false)
-  const onRequestPage = location.pathname === '/request'
-  const headerRef = useRef<HTMLElement>(null)
-
-  useLayoutEffect(() => {
-    if (location.pathname === '/' && location.hash === '#contact') {
-      navigate('/contact', { replace: true })
-    }
-  }, [location.pathname, location.hash, navigate])
-
-  useLayoutEffect(() => {
-    const el = headerRef.current
-    if (!el) return
-
-    const sync = () => {
-      const h = Math.ceil(el.getBoundingClientRect().height)
-      document.documentElement.style.setProperty('--site-header-h', `${h}px`)
-    }
-
-    sync()
-    const ro = new ResizeObserver(sync)
-    ro.observe(el)
-    window.addEventListener('resize', sync)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', sync)
-    }
-  }, [])
 
   const isHopAppRoute =
     location.pathname.startsWith('/hop/login') ||
@@ -141,34 +96,29 @@ function AppRoutes() {
     )
   }
 
+  // Public site — rebuilt 2026-10 from the leadership HOP mockup. Old URLs
+  // redirect to their nearest new page so existing links keep working.
   return (
-    <div className="site">
+    <div className="hs">
       <ScrollToTop />
-      <SiteHeader ref={headerRef} />
-
-      <Suspense fallback={null}>
-        <ConciergeChatBot open={chatOpen} onOpenChange={setChatOpen} />
-      </Suspense>
-
-      {onRequestPage ? (
-        <Suspense fallback={null}>
-          <ConciergeRequestModal open onClose={() => navigate('/')} />
-        </Suspense>
-      ) : (
-        <>
-          <main className="slides">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/personal-services" element={<PersonalServicesPage />} />
-              <Route path="/hop" element={<HopPage />} />
-              <Route path="/plans" element={<PlansPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          <SiteFooter />
-        </>
-      )}
+      <SiteHeader />
+      <main>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/professionals" element={<ProfessionalsPage />} />
+          <Route path="/organizations" element={<OrganizationsPage />} />
+          <Route path="/concierge" element={<ConciergePage />} />
+          <Route path="/portal" element={<PortalPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/personal-services" element={<Navigate to="/concierge" replace />} />
+          <Route path="/hop" element={<Navigate to="/" replace />} />
+          <Route path="/plans" element={<Navigate to="/organizations" replace />} />
+          <Route path="/request" element={<Navigate to="/contact" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      <SiteFooter />
     </div>
   )
 }

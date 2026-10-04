@@ -73,6 +73,11 @@ npm run db:migrate
 Get the connection string from the Vercel dashboard (Settings → Environment Variables →
 `DATABASE_URL`) or from Neon directly if you have access there.
 
+**Required before deploying the 2026-10 HOP website rebuild**: run `npm run db:migrate` once
+first. It creates the `hop_inquiries` table that the new "Start a Conversation" contact form
+saves into — without it, the form shows an error to visitors. Inquiries are also emailed to
+`NOTIFY_EMAIL` (same address as concierge-request notifications).
+
 **One-time step after the 2026-08-09 HOP-number update**: run this once so accounts created
 *before* that update also get a HOP number (new accounts get one automatically going forward —
 this is only needed once, and it's safe to run again if you're ever unsure whether it ran):

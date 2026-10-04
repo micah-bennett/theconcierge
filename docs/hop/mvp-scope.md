@@ -312,7 +312,8 @@ too). Result:
   `/hop/app`. That lasted until 2026-07-13, when it was removed entirely as repetitive — a user
   doesn't need HOP's own sales pitch every time they log in to *use* HOP. `src/hop/dashboard/` and
   `src/styles/hopDashboard.css` no longer exist. If HOP's pitch needs to live somewhere again,
-  that's the public `/hop` marketing page's job (`src/pages/HopPage.tsx`), not the authenticated
+  that's the public site's job (`src/pages/site/` — the `/hop` marketing page itself was removed in
+  the 2026-10 HOP rebrand), not the authenticated
   dashboard — see "Where HOP's app lives in routing" in `architecture.md`.
 - **Orphaned (backend kept, no frontend)**: the "Book a Relief Call" facility-lead-capture feature
   (`relief_call_requests` table, `sendReliefEmail`) has no page linking to it anymore — its
@@ -320,8 +321,9 @@ too). Result:
   via `POST /api/requests?type=relief` — merged from the former standalone `api/relief.ts` into
   `api/requests.ts` on 2026-08-27 as a function-budget consolidation, freeing a slot for
   `api/hop/profile.ts`; see `docs/hop/architecture.md`); it just isn't reachable from any UI right
-  now. If asked to add a facility-contact flow, check here first before rebuilding it — a natural
-  home would be the Contact page.
+  now. If asked to add a facility-contact flow, check here first before rebuilding it. Note the
+  2026-10 public Contact page now has its own general inquiry form (`?type=inquiry`, an
+  "organization" interest option) that covers most of what relief calls were for.
 - **Reverted**: the `path` (`'individual' | 'facility'`) field that was added to
   `concierge_requests`/`api/requests.ts`/`api/_lib/requestValidation.ts` for the redesign's toggle
   was removed from the app layer. The `path` column itself is still in the DB (harmless, unused,

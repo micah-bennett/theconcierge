@@ -58,6 +58,21 @@ CREATE TABLE IF NOT EXISTS relief_call_requests (
 CREATE INDEX IF NOT EXISTS relief_call_requests_created_at_idx
   ON relief_call_requests (created_at DESC);
 
+-- Public-site "Start a Conversation" form (POST /api/requests?type=inquiry), 2026-10 HOP rebrand.
+CREATE TABLE IF NOT EXISTS hop_inquiries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  organization TEXT NOT NULL DEFAULT '',
+  interest TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hop_inquiries_created_at_idx
+  ON hop_inquiries (created_at DESC);
+
 -- ── HOP: users, sessions, service requests, integrations ──────────────────
 
 CREATE TABLE IF NOT EXISTS hop_users (

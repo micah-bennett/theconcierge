@@ -9,10 +9,11 @@ the code, trust the code and fix the doc.
 
 Two products under one company (Hudson Valley Concierge Service LLC), one codebase, one deploy:
 
-1. **The Concierge (public marketing site)** — general-audience concierge service marketing
-   (transportation, errands, lifestyle concierge, healthcare logistics) for individuals, families,
-   businesses, and seniors in the Hudson Valley, NY. Routes: `/`, `/personal-services`, `/hop`
-   (HOP's own marketing page), `/plans`, `/contact`, `/request` (a request-form modal).
+1. **HOP public site** — HOP (Hospitality On-Site Professionals) is the parent brand; *The
+   Concierge by HOP* is one service under it. Routes: `/`, `/how-it-works`, `/professionals`,
+   `/organizations`, `/concierge`, `/portal`, `/contact`. Old URLs redirect: `/personal-services`
+   → `/concierge`, `/hop` → `/`, `/plans` → `/organizations`, `/request` → `/contact`. Pages live
+   in `src/pages/site/`. See the 2026-10 entry below.
 2. **HOP** — a login-gated product for healthcare staff (concierge requests, calendar
    integration, wearables-to-come) with its own user portal and admin portal. Routes:
    `/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/app/*` (authenticated user),
@@ -27,32 +28,32 @@ dashboard instead (see `docs/hop/mvp-scope.md` for exactly what that looks like 
 re-propose moving that content back to the public homepage** unless explicitly asked — that
 exact idea was tried and reversed.
 
-**2026-09 — team-forward rebrand (public marketing site only).** Leadership repositioned the
-brand away from centring the owner: *"pull away from making me the face … when we hyper focus on
-me it makes it small and singular"*, and asked to separate the brand from HVCS. What changed:
+**2026-10 — HOP rebrand (public site rebuilt from a leadership mockup).** After a leadership
+review, the whole public site was rebuilt to match a static mockup (*"HOP — Hospitality On-Site
+Professionals"*), in design **and** copy. This supersedes the 2026-09 "team-forward" rebrand,
+whose pieces were removed. What changed:
 
-- The homepage hero was a full-body **solo portrait of the owner** (`hero-home.png`). It is now
-  full-bleed team photography (`public/hero-team-*.webp`, source in `design/`). `hero-home.png`
-  and `hero-concierge.png` are retired — still on disk, referenced by nothing. The owner is still
-  present: he is the centre figure in both team photos.
-- A shared `TeamBand` component (`src/components/TeamBand.tsx`) now appears on the homepage and
-  every inner marketing page. **This is the point of the rebrand** — don't strip it out.
-- The **HVCS** tab and its outbound `hvconcierge.com` link were removed from the header. The
-  parent entity is now named in exactly one place: the footer legal line. This was a deliberate
-  brand decision, not an oversight — don't "restore" the nav link.
-- The site gained an actual brand system (navy + champagne `--tc-*` tokens), a real mobile nav
-  drawer, a four-column footer, Open Graph tags and per-route titles. See
-  `docs/design-system.md` §1a–1d.
-- `.hop-page`'s ~760 lines moved out of `App.css` into `src/styles/hopMarketing.css`, and that
-  page's **chrome** (ground, surface, section rhythm, hairlines, radii, eyebrow) moved onto the
-  `--tc-*` scale. Its indigo/violet **accent** is kept on purpose — see `docs/design-system.md`
-  §1c.
-- **Personal Services** got a real hero (Playfair display title, champagne eyebrow) and card
-  headings of its own instead of borrowing Plans' uppercase label and pill classes, plus a
-  three-up grid. The old "spotlight" card was folded into the hero lead.
+- **HOP is the parent brand.** The Concierge is now *The Concierge by HOP*, a single page
+  (`/concierge`). Header/footer use the HOP SVG mark (`src/components/HopMark.tsx`,
+  `public/hop-mark.svg`).
+- **Light design system**: white/pale-blue grounds, navy `#053069`, teal `#0EABA6`, blue
+  `#5BA9E6`, Inter/system sans — `src/styles/hopSite.css`, scoped under `.hs`. See
+  `docs/design-system.md` §1.
+- **Seven pages, real routes** (the mockup used hash-switched sections): see the route list above.
+- **The HOP Portal is presented as live**, not "Coming soon" as in the mockup — every portal CTA
+  links to `/hop/login` / `/hop/signup`. This was a deliberate deviation agreed with the user.
+- **Removed, on purpose ("match the mockup exactly")**: the phone number, `TeamBand` team
+  photography, the credentials row, the floating chatbot widget (`ConciergeChatBot`), the
+  `/request` concierge-request modal, Plans and Personal Services pages, the `/hop` marketing
+  page (`HopPage.tsx` + `hopMarketing.css`), `useSiteMotion`, and the footer's "Hudson Valley
+  Concierge Service LLC" legal line (the mockup's footer calls HOP "a standalone hospitality and
+  support brand"). All are in git history if leadership wants any back. The server side of the
+  chatbot (`api/chat.ts`) and the default concierge-request handler (`api/requests.ts`) still
+  exist and are still deployed — they just have no public UI now.
+- **The contact form is real** (the mockup's was a stub): `POST /api/requests?type=inquiry` →
+  `hop_inquiries` table + owner email via `sendInquiryEmail`. Needs `npm run db:migrate`.
 
-This is a visual/brand change to the **public marketing site only** — it did not move any HOP
-content onto the public pages, and the authenticated HOP app was not touched.
+The authenticated HOP app (`/hop/login`, `/hop/app/*`, `/hop/admin/*`) was not touched.
 
 ## Stack
 
@@ -98,15 +99,15 @@ deep-linking into nested routes on the web deployment" for why both exist.
 - **Planning new HOP work**: `docs/hop/roadmap.md` has the phased technical design for what's
   next (Facility portal, member social feed, rewards, family profiles) — check it before
   designing a feature from scratch.
-- **Working on the public marketing site** (Home, Personal Services, Plans, Contact): read
-  `docs/design-system.md` for the visual conventions; the pages are otherwise plain React
-  components with no special architecture — read the component code directly.
+- **Working on the public site** (`src/pages/site/*`): read `docs/design-system.md` §1 for the
+  visual conventions; the pages are otherwise plain React components with no special
+  architecture — read the component code directly.
 - **Fonts/colors/buttons, on any page**: `docs/design-system.md` is the single source of truth.
-  Three independent design systems coexist (public marketing site, the `/hop` marketing page, and
-  the authenticated HOP app) — don't cross-contaminate them.
-- **Re-generating the brand photography**: originals live in `design/`; run
-  `node scripts/optimize-brand-photos.mjs` to rebuild the `public/*.webp` derivatives and the OG
-  card. It is deliberately not part of `npm run build`.
+  Two independent design systems coexist (the light public HOP site and the dark authenticated
+  HOP app) — don't cross-contaminate them.
+- **Re-generating the OG share card** (`public/og-team.jpg`, still the old team photo — a
+  HOP-branded replacement is pending): originals live in `design/`; run
+  `node scripts/optimize-brand-photos.mjs`. It is deliberately not part of `npm run build`.
 - **Deploying**: `docs/vercel-setup.md`.
 - **Non-engineer backend tasks** (env vars, migrations, creating accounts, deploying):
   `docs/hop/backend-guide.md`.

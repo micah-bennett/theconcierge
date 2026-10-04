@@ -2,9 +2,11 @@ import { Resend } from 'resend'
 
 import type { ConciergeRequest } from './requestValidation.js'
 import type { ReliefCallRequest } from './reliefValidation.js'
+import type { HopInquiry } from './inquiryValidation.js'
 import { ownerNotificationTemplate } from './emailTemplates/ownerNotification.js'
 import { customerConfirmationTemplate } from './emailTemplates/customerConfirmation.js'
 import { reliefOwnerNotificationTemplate } from './emailTemplates/reliefOwnerNotification.js'
+import { inquiryOwnerNotificationTemplate } from './emailTemplates/inquiryOwnerNotification.js'
 import { hopWelcomeTemplate } from './emailTemplates/hopWelcome.js'
 import { hopPasswordResetTemplate } from './emailTemplates/hopPasswordReset.js'
 
@@ -70,6 +72,23 @@ export async function sendReliefEmail(data: ReliefCallRequest): Promise<void> {
     html: reliefOwnerNotificationTemplate(data),
   })
   if (error) throw new Error(`Relief call notification failed: ${error.message}`)
+}
+
+export async function sendInquiryEmail(data: HopInquiry): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY?.trim()
+  if (!apiKey) throw new Error('RESEND_API_KEY is not configured')
+
+  const resend = new Resend(apiKey)
+  const notifyTo = process.env.NOTIFY_EMAIL?.trim() || NOTIFY_EMAIL
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: notifyTo,
+    replyTo: data.email,
+    subject: `New HOP Inquiry — ${data.interest}`,
+    html: inquiryOwnerNotificationTemplate(data),
+  })
+  if (error) throw new Error(`Inquiry notification failed: ${error.message}`)
 }
 
 export async function sendHopWelcomeEmail(

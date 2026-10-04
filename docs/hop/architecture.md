@@ -50,8 +50,9 @@ working, unrelated code.
 
 ## Where HOP's app lives in routing
 
-- `/hop` — the existing marketing page (`src/pages/HopPage.tsx`), untouched except for a
-  login/signup CTA in the hero.
+- `/hop` — redirects to `/` since the 2026-10 HOP rebrand (the old `HopPage.tsx` marketing page
+  was removed; the whole public site is now HOP's marketing, see `src/pages/site/`). `/portal`
+  is the public page that points members at `/hop/login`.
 - `/hop/login`, `/hop/signup`, `/hop/admin/login`, `/hop/forgot-password`, `/hop/reset-password`
   — auth pages, public.
 - `/hop/app/*` — authenticated **user** portal (`src/pages/hop/app/`), behind `RequireAuth`.
@@ -67,7 +68,7 @@ Google Calendar preview. It previously also rendered a componentized "why HOP" m
 below that (`src/hop/dashboard/`, `src/styles/hopDashboard.css`) — removed 2026-07-13 as repetitive
 noise once a user is already logged in; see `mvp-scope.md` for that history. Don't re-add
 marketing/sell content to the authenticated dashboard — if leadership wants HOP's pitch shown
-somewhere, that belongs on the public `/hop` marketing page (`src/pages/HopPage.tsx`), not here.
+somewhere, that belongs on the public site (`src/pages/site/`), not here.
 
 ## Family Care (`/hop/app/family-care`)
 
@@ -799,7 +800,8 @@ decoupled from the consumer-facing product, as the seed of a future standalone E
 - **`theconcierge`** (`ay-projects3/theconcierge`, production domain `theconcierge.life`) — tracks
   the `main` branch. Full app: public marketing site + consumer HOP signup/login (`/hop/app/*`) +
   a legacy admin portal (`/hop/admin/*`, frozen — see below). **12 of 12 — fully maxed** as of the
-  2026-09 Feed pass: `chat.ts`, `requests.ts` (now also carrying the former `relief.ts` *and* the
+  2026-09 Feed pass: `chat.ts`, `requests.ts` (now also carrying the former `relief.ts`, the
+  public-site contact form as `?type=inquiry` (2026-10, `hop_inquiries` table), *and* the
   former `ride-location.ts`, see below), and 10 under `api/hop/**` (`admin/users.ts`, `auth.ts`,
   `integrations/google.ts`, `messages.ts`, `profile.ts`, `request-messages.ts`, `requests.ts`,
   `rewards.ts`, `social.ts` (new), `wellness.ts`). `admin/integrations.ts` and the top-level

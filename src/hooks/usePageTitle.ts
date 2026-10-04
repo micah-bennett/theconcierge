@@ -1,20 +1,19 @@
 import { useEffect } from 'react'
 
-const BASE = 'The Concierge'
-
 /**
- * Per-route document.title for the public marketing pages.
+ * Per-route document.title for the public HOP site.
  *
  * Titles only — the Open Graph tags stay static in index.html because this is a
  * client-rendered SPA with no prerendering, so crawlers never run this.
  */
 const TITLES: Record<string, string> = {
-  '/': `${BASE} — Hudson Valley concierge team`,
-  '/personal-services': `Personal services — ${BASE}`,
-  '/hop': `HOP, healthcare concierge — ${BASE}`,
-  '/plans': `Plans & membership — ${BASE}`,
-  '/contact': `Contact — ${BASE}`,
-  '/request': `Request service — ${BASE}`,
+  '/': 'HOP | Hospitality On-Site Professionals',
+  '/how-it-works': 'How HOP Works | HOP',
+  '/professionals': 'For Professionals | HOP',
+  '/organizations': 'For Organizations | HOP',
+  '/concierge': 'The Concierge by HOP | HOP',
+  '/portal': 'HOP Portal | HOP',
+  '/contact': 'Start a Conversation | HOP',
 }
 
 export function usePageTitle(pathname: string) {
