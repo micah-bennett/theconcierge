@@ -1,17 +1,9 @@
 import { requirePageUser } from "@hop/shared/server/session";
-import { APP_NAME, APP_ROLE } from "@/lib/app";
-import { SignOutButton } from "@hop/shared/ui/AppHeader";
+import { APP_ROLE } from "@/lib/app";
+import RepApp from "@/components/RepApp";
 
-// Placeholder until this app's phase is built (docs/rebuild/).
+/** The Rep App. Who you are comes from the session cookie; there is no rep picker. */
 export default async function Home() {
   const user = await requirePageUser(APP_ROLE);
-  return (
-    <main className="auth">
-      <div className="auth-card">
-        <h1 className="disp">{APP_NAME}</h1>
-        <p className="auth-sub">Signed in as {user.firstName} {user.lastName}. This app is being built.</p>
-        <SignOutButton />
-      </div>
-    </main>
-  );
+  return <RepApp me={{ first: user.firstName, name: `${user.firstName} ${user.lastName}`.trim(), initials: `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase() }} />;
 }

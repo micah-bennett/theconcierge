@@ -4,7 +4,9 @@ import "@hop/shared/styles/portal.css";
 export const metadata: Metadata = {
   title: "HOP Rep",
   description: "Radical Hospitality for the people who keep healthcare running.",
-  icons: { icon: "/logo.png" }
+  icons: { icon: "/logo.png", apple: "/icon-192.png" },
+  // app/manifest.ts makes it installable ("Add to Home Screen").
+  appleWebApp: { capable: true, title: "HOP Rep", statusBarStyle: "default" }
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#012f6c" };

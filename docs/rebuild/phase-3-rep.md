@@ -58,7 +58,9 @@ Port `RepApp.tsx`:
 
 ## Done when
 
-- [ ] `npm run build -w @hop/rep` and lint pass.
+- [x] `npm run build -w @hop/rep` and lint pass. _(2026-10-14: build + `tsc --noEmit` pass. There's no
+      ESLint setup for the Next apps (no `lint` script, no `eslint-config-next`), so "lint" is the
+      build's type and lint step only.)_
 - [ ] Leadership's Test 1 (`prototype/HOP Portal How to Test the Flow.txt`) passes across two
       browsers. Console on :3002, Rep App on :3003:
   1. Console: New trip or request → Fill with sample → send to **Andre Wells**.
@@ -71,7 +73,8 @@ Port `RepApp.tsx`:
 - [ ] Andre's cookie with a PATCH to Renee's job id → 404. A PATCH with `rep` in the body → 400.
       Skipping from offer to completed → 400.
 - [ ] A door unlock writes a `portal_door_events` row.
-- [ ] Docs: `mvp-scope.md` Rep rows and the status table.
+- [ ] Docs: `mvp-scope.md` Rep rows and the status table. _(Left to the orchestrator: this lane may
+      only edit `apps/rep` and this file. The suggested Rep rows are in the Phase 3 hand-off.)_
 
 ## Notes from earlier phases
 
@@ -97,3 +100,66 @@ Port `RepApp.tsx`:
 
   The facility is "Hudson Valley Medical Center", with 6 mockup units plus "Wound Care"
   (group size 3, which must be suppressed).
+
+## Phase 3 build notes (2026-10-14)
+
+**Built** (all under `apps/rep`):
+- `components/RepApp.tsx`: the starter's `RepApp` without the rep picker. Identity comes from the
+  session; `app/(app)/page.tsx` reads it server side with `requirePageUser` and passes name and
+  initials as props, which is the same session `GET /api/auth?action=me` reads, without the extra
+  round trip or a blank header while it loads. A desktop side panel shows "Signed in as …" and
+  Sign out.
+- Mockup gap fill, in starter classes: the "Sample" photo button, the "Done today" and "Member
+  rating" tiles on Jobs, the proof photo and signature on the completed card, the chat sheet (sample,
+  in memory), clickable Inbox threads and the "Concierge lead" row, the Start of shift checklist
+  (UI only), and Sign out on Me.
+- Every save goes through `useJobs().update()`, and a rejected save toasts the server's message
+  and resyncs. Accept, Pass, Start, Complete and similar toasts appear only after the server
+  accepts the change.
+- `lib/image.ts`: downscales camera photos to 1600px JPEG (stepping down quality, then size, to
+  about 650 KB as a data URL) so six inline photos still fit one PATCH under 4.5 MB.
+- `lib/server/rules.ts`: `checkRepPatch()`, the rep rules on top of `repPatchJobSchema`:
+  - forward-only moves via `REP_STATUS_MOVES`, where resending the same status is allowed
+  - proof (photo, plus signature if `needSig`) required to complete, checked against the merged job
+  - a passed (`declined`) job is frozen
+  - proof can't be added before Accept and is locked after Complete
+  - photo and signature values must be a `data:image/` URL or a Vercel Blob URL, not an arbitrary
+    https link
+- `/api/jobs`, `/api/jobs/[id]`, `/api/uploads`, `/api/door`, `/api/calls`. All are `withAuth("rep")`
+  and ownership-checked through `getJob(id, { repId })`.
+- `app/manifest.ts` and `public/icon-192.png` / `icon-512.png` (the logo padded onto cream). The
+  root layout adds `apple-touch-icon` and `appleWebApp`.
+
+**Door rules enforced server side now:**
+- the job has a door
+- the job is accepted, started or in progress
+- an unlock needs `door.state` to be `ok`, `closed` or `open`
+
+The member approval is still simulated in the Rep App (the rep's own PATCH sets `ok` after 1.8 s),
+so `ok` isn't proof of consent. That's the `TODO(IT)` in `api/door/route.ts`. The client now calls
+`/api/door` first and only flips the door card if the server agreed.
+
+**Verified without a database** (no `DEV_DATABASE_URL` was available):
+- build and typecheck
+- `next start` returns 401 "Not signed in" for every route with no cookie, with a Console cookie,
+  and with `?rep=`
+- `/` redirects to `/login`
+- the manifest is served and linked
+- 19 unit cases of `checkRepPatch` plus `repPatchJobSchema` all pass:
+  - `rep` in the body is rejected (→ 400)
+  - offer→completed is rejected (→ 400)
+  - completing without the photo or signature is rejected
+  - a foreign photo URL is rejected
+
+**Not verified** (needs the Neon dev branch and the Console):
+- Test 1 end to end
+- the real 404 for Andre → Renee's job (it comes from `rep_id = $repId` in the SQL WHERE)
+- the `portal_door_events` row
+- uploads with Blob
+- the UI in a browser (it can't render without a session)
+
+**Known limits (not fixed here):**
+- Job fields are last-write-wins whole arrays (`log`, `updates`, `door`). A Console log append and
+  a rep log append inside the same 4 s poll window can drop one entry. It needs server-side append
+  semantics in `packages/shared` (`updateJob`).
+- Inbox, chat, the 4.9 rating, online/offline and the shift checklist are sample/UI-only.
