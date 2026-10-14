@@ -1,0 +1,19 @@
+/* Facility View additions on top of @hop/shared/styles/portal.css. */
+
+/* Suppressed (fewer than MIN_GROUP_SIZE people): hatched grey, no number. */
+.heat2 .c.supp,
+.rcard.supp .meter,
+.hdetail.supp .spark i {
+  background: repeating-linear-gradient(45deg, #dfe4eb 0 5px, #f3f5f8 5px 10px);
+}
+.heat2 .c.supp { color: #8592a6; cursor: help; }
+.heat2 .c.miss { background: #f1f3f6; color: #9aa5b8; }
+.heat2 .dn.supp { color: var(--muted); }
+.rcard.supp { background: #fafbfc; }
+.hdetail.supp .bignum { font-size: 30px; color: var(--muted); }
+
+.fv-loading { opacity: 0.55; transition: opacity 0.15s; }
+.fv-err { color: #b23e36; font-size: 13.5px; font-weight: 600; margin: 8px 0; }
+.fv-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fv-legend i { width: 26px; height: 10px; border-radius: 3px; display: inline-block; }
+.fv-legend i.supp { background: repeating-linear-gradient(45deg, #dfe4eb 0 4px, #f3f5f8 4px 8px); }
