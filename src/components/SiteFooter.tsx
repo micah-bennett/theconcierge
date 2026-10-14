@@ -9,6 +9,8 @@ const FOOTER_LINKS = [
   { to: '/contact', label: 'Contact' },
 ] as const
 
+const BLOG_URL = 'https://blog.hopserves.com'
+
 export function SiteFooter() {
   return (
     <footer className="hs-footer">
@@ -23,6 +25,7 @@ export function SiteFooter() {
                 {item.label}
               </Link>
             ))}
+            <a href={BLOG_URL}>Blog</a>
           </nav>
         </div>
         <p className="hs-footer__note">
