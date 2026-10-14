@@ -25,13 +25,15 @@ Each Portal app is a standard Next.js App Router project:
 
 ```
 apps/<app>/
-  app/layout.tsx            fonts + import "@hop/shared/styles/portal.css"
-  app/login/page.tsx        <LoginScreen app="<app>" /> from @hop/shared
-  app/(app)/layout.tsx      server component: getSessionUser() → redirect("/login") if absent or wrong role
+  app/layout.tsx            fonts + "@hop/shared/styles/portal.css"; <body class="phone-app"> (Staff, Rep) or "desk-app" (Console, Facility)
+  app/login/page.tsx        <LoginScreen appName tagline [signupHref] /> (redirects to / if already signed in)
+  app/set-password/page.tsx <SetPasswordScreen /> (invite + reset links land here)
+  app/(app)/layout.tsx      requirePageUser(APP_ROLE) → redirect("/login") if absent or wrong role
   app/(app)/page.tsx        the app itself (client component ported from the starter)
-  app/api/auth/route.ts     export const { GET, POST } = createAuthRoutes({ role: "<role>", ... })
-  app/api/<resource>/...    route handlers; every one starts with requireUser(request, "<role>")
-  lib/app.ts                APP_ROLE, app name, nav tabs
+  app/api/auth/route.ts     export const { GET, POST } = createAuthRoutes({ role: APP_ROLE, ... })
+  app/api/<resource>/...    route handlers wrapped in withAuth(APP_ROLE, handler)
+  lib/app.ts                APP_ROLE, APP_NAME, APP_TAGLINE
+  public/logo.png           a committed copy of packages/shared/assets/logo.png
   next.config.ts            transpilePackages: ["@hop/shared"], the starter's security headers
   package.json              name "@hop/<app>", fixed dev port (see below)
 ```
@@ -48,12 +50,14 @@ Subpath exports:
 | `@hop/shared/brand` | brand tokens, `JOB_TYPES`, `STATUS_LABEL`. **No hard-coded `REPS`**: reps come from the DB | `prototype/starter/lib/brand.ts` |
 | `@hop/shared/types` | `Job`, `StaffRequest`, `PortalUser`, `Role`, facility/unit types | `lib/types.ts` |
 | `@hop/shared/validate` | zod schemas for every API body | `lib/validate.ts` |
-| `@hop/shared/client` | `api` fetch helpers, `useJobs` polling hook (4 s) | `lib/client.ts` |
-| `@hop/shared/ui/*` | `Phone` screen shell (tabs, sheet, toast, without the decorative frame), `AppHeader`, `StatusSteps`, `SignaturePad`, `LoginScreen`, `SetPasswordScreen` | `components/ui/*` |
+| `@hop/shared/client` | `j()` fetch helper + `ApiError`, `authApi`, `jobsApi`, `useJobs` polling hook (4 s, optimistic `update`, `onData` for side data) | `lib/client.ts` |
+| `@hop/shared/time` | `nowT`, `nowTA` | `lib/time.ts` |
+| `@hop/shared/ui/*` | `Phone` (screen shell: tabs, sheet, toast, `usePhone`, `ICONS`, `useDesktopToast`; no decorative frame), `AppHeader` (+ `SignOutButton`), `StatusSteps` (+ `statusPill`), `SignaturePad`, `LoginScreen`, `SetPasswordScreen` | `components/ui/*` |
 | `@hop/shared/styles/portal.css` | the Portal design tokens + classes | `app/globals.css` |
-| `@hop/shared/server/db` | `sql()` that returns a cached `neon(DATABASE_URL)` | new |
-| `@hop/shared/server/auth` | sessions, passwords, `requireUser`, `getSessionUser`, `createAuthRoutes` | old `api/_lib/hopAuth.ts` (in git history) |
-| `@hop/shared/server/store` | jobs/requests/users queries | `lib/store/postgres.ts` |
+| `@hop/shared/server/db` | `sql()` (cached `neon(DATABASE_URL)`), `json()`, `readJson()` (size-capped), `zodMessage()` | new |
+| `@hop/shared/server/auth` | sessions, passwords, `requireUser`, `withAuth`, `getSessionUser`, `getSessionUserFromCookies`, password tokens, `createAuthRoutes` | old `api/_lib/hopAuth.ts` (in git history) |
+| `@hop/shared/server/session` | `requirePageUser(role)` for server layouts/pages | new |
+| `@hop/shared/server/store` | jobs (ownership-checked via `repId`), job/door events, requests (`listMyRequests` joins job status), users/reps/invites, facilities/units | `lib/store/postgres.ts` |
 | `@hop/shared/server/email` | Resend: invite, password reset | new |
 | `@hop/shared/server/integrations/*` | Twilio, Seam, push stubs with `TODO(IT)` | `lib/integrations/*` |
 
@@ -74,14 +78,17 @@ bundle.
   - The first `console` user: `node scripts/create-console-admin.mjs` (from the repo root,
     reads `DATABASE_URL`).
 - **Sessions**: a random 32-byte token in an httpOnly, `SameSite=Lax`, `Secure` (on https)
-  cookie named `hop_portal_session`. Only `HMAC-SHA256(token, SESSION_HASH_SECRET)` is stored, in
+  cookie named after the app's role: `hop_portal_staff`, `hop_portal_console`, `hop_portal_rep`
+  or `hop_portal_facility_admin`. (On localhost every app shares one cookie jar, because cookies
+  ignore the port, so a single name would let signing in to one app sign you out of another.) Only `HMAC-SHA256(token, SESSION_HASH_SECRET)` is stored, in
   `portal_sessions`. The TTL is 30 days.
   - Lockout: 8 failed attempts lock the account for 15 minutes.
   - Passwords: bcrypt cost 12, minimum length 10.
   - Each app has its own domain, so each app has its own cookie. One person can't be signed into
     two apps with one cookie, and that's intended.
-- **Every route handler** begins with `const user = await requireUser(request, APP_ROLE)`, which
-  returns 401 or 403 by itself when needed. Ownership is checked in the query:
+- **Every route handler** is wrapped as `export const GET = withAuth(APP_ROLE, async (request,
+  user, ctx) => …)`. `withAuth` returns 401 when there's no session for this app's role, and
+  turns any thrown `Response` (`throw json({ error }, 400)`) into the reply. Ownership is checked in the query:
   - A rep only reads and patches jobs where `rep_id = user.id`.
   - A staff member only sees requests where `member_id = user.id`.
   - A facility admin only sees aggregates for `user.facility_id`.
@@ -98,7 +105,8 @@ portal_users           id uuid, email (unique, lower-cased), password_hash (null
 portal_sessions        token_hash pk, user_id, expires_at, created_at
 portal_password_tokens token_hash pk, user_id, purpose ('invite'|'reset'), expires_at, used_at
 portal_staff_profiles  user_id pk, job_title, unit_id, prefs jsonb (what "HOP knows you"),
-                       points int, lifetime_points int, updated_at
+                       consents jsonb (watch/calendar/schedule consent intent), points int, lifetime_points int, updated_at
+portal_point_claims    (user_id, earn_key, period) pk, points, claimed_at   (one claim per earn per day/week)
 portal_requests        id text pk ('r'+8), member_id → users, status ('new'|'dispatched'|'completed'|'cancelled'),
                        job_id, data jsonb (StaffRequest), created_at, updated_at
 portal_jobs            id text pk ('d'+8), rep_id → users, request_id, status, data jsonb (Job),
@@ -107,7 +115,7 @@ portal_job_events      id bigserial, job_id, actor_id, kind, detail jsonb, at   
 portal_door_events     id bigserial, job_id, actor_id, action ('unlock'|'lock'), at
 portal_unit_signals    unit_id, day date, metric ('strain'|'stress'|'missed_breaks'|'requests'),
                        hour smallint null, value numeric, group_size int   (Facility View source)
-portal_support_actions id uuid, facility_id, unit_id, actions jsonb, sent_by, status, created_at
+portal_support_actions id uuid, facility_id, unit_id, actions jsonb, sent_by, status ('sent'|'resolved'), request_id, created_at
 ```
 
 Jobs and requests keep their full detail in JSONB `data`, exactly the starter's `Job` /

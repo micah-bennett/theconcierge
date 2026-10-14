@@ -14,7 +14,7 @@ deployable app.
 | Phase | File | Builds | Status |
 |---|---|---|---|
 | 0 | n/a (done in the planning session) | Removed the old HOP system and iOS, moved the landing site to `apps/site`, set up the workspace and wrote these docs | ✅ Done 2026-10-14 |
-| 1 | `phase-1-foundation.md` | `packages/shared`, the DB schema, auth, the shared UI and the demo seed | ⬜ Not started |
+| 1 | `phase-1-foundation.md` | `packages/shared`, the DB schema, auth, the shared UI and the demo seed, plus the skeletons of all four apps | 🟡 Code done 2026-10-14; DB verification pending a Neon dev branch |
 | 2 | `phase-2-console.md` | `apps/console`: Concierge Console + Team accounts | ⬜ Not started |
 | 3 | `phase-3-rep.md` | `apps/rep`: Concierge Rep App | ⬜ Not started |
 | 4 | `phase-4-staff.md` | `apps/staff`: Staff App + self sign-up | ⬜ Not started |

@@ -1,0 +1,44 @@
+{
+  "name": "@hop/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Code shared by the four HOP Portal apps: types, brand, validation, DB store, auth, UI",
+  "exports": {
+    "./brand": "./src/brand.ts",
+    "./types": "./src/types.ts",
+    "./validate": "./src/validate.ts",
+    "./client": "./src/client.ts",
+    "./time": "./src/time.ts",
+    "./ui/*": "./src/ui/*.tsx",
+    "./server/*": "./src/server/*.ts",
+    "./server/integrations/*": "./src/server/integrations/*.ts",
+    "./styles/portal.css": "./styles/portal.css",
+    "./assets/*": "./assets/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "bcryptjs": "^3.0.3",
+    "cookie": "^2.0.1",
+    "resend": "^6.16.0",
+    "server-only": "^0.0.1",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "next": ">=15",
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "next": "^15.5.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "typescript": "~5.9.3"
+  }
+}

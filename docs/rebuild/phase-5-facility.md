@@ -59,4 +59,25 @@ header from the session, plus Sign out.
 
 ## Notes from earlier phases
 
-_(none yet)_
+- **Phase 1 already scaffolded this app.** `apps/facility` has `package.json` (dev port 3004),
+  `next.config.ts`, `tsconfig.json`, `lib/app.ts`, the root layout, `/login`, `/set-password`,
+  `/api/auth`, `public/logo.png` and an `(app)/` group whose layout requires the session. Replace
+  the placeholder `app/(app)/page.tsx` and skip the "Scaffold" section below, except for anything
+  it lists that doesn't exist yet.
+- Wrap routes as `export const GET = withAuth(APP_ROLE, async (request, user, ctx) => …)`
+  (`@hop/shared/server/auth`). Use `readJson`, `json` and `zodMessage` from
+  `@hop/shared/server/db`, and the store functions in `@hop/shared/server/store`. Read
+  `packages/shared/src/` before writing anything new; most of what you need is there.
+- Use `useJobs` from `@hop/shared/client`. It takes no rep argument, `update()` returns a promise
+  that rejects with `ApiError`, and `onData` gives you the whole `/api/jobs` response.
+- UI from `@hop/shared/ui/*`: `Phone`/`usePhone`/`ICONS`/`useDesktopToast`, `AppHeader`
+  (+ `SignOutButton`), `StatusSteps` (+ `statusPill`), `SignaturePad`. All the starter's CSS
+  classes are in `@hop/shared/styles/portal.css`, already imported.
+- Demo accounts (after `hop:seed-demo`; every password is `DEMO_PASSWORD`):
+  - console@demo.hop
+  - renee@ / marcus@ / andre@demo.hop (reps)
+  - jordan@ / patel@ / kelly@demo.hop (staff)
+  - facility@demo.hop
+
+  The facility is "Hudson Valley Medical Center", with 6 mockup units plus "Wound Care"
+  (group size 3, which must be suppressed).

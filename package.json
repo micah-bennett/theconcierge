@@ -10,6 +10,13 @@
     "dev:site": "npm run dev -w @hop/site",
     "build:site": "npm run build -w @hop/site",
     "lint": "npm run lint --workspaces --if-present",
-    "db:migrate": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f db/schema.sql"
+    "db:migrate": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f db/schema.sql",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "hop:create-console-admin": "node scripts/create-console-admin.mjs",
+    "hop:seed-demo": "node scripts/seed-demo.mjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "bcryptjs": "^3.0.3"
   }
 }
