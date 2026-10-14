@@ -70,7 +70,8 @@ Same pattern as the earlier apps, with `@hop/staff`, port 3001, `APP_ROLE = "sta
 
 ## Done when
 
-- [ ] `npm run build -w @hop/staff` and lint pass.
+- [x] `npm run build -w @hop/staff` and lint pass. (Build and `tsc --noEmit` pass. The repo has
+      no ESLint config yet, so Next's lint step is a no-op.)
 - [ ] Sign up a new user with the demo facility → lands on Today with their name.
 - [ ] Leadership's Test 2: every tab and sheet from the table above renders and behaves like the
       mockup. Clutch, Rescue, Voice, Ask, a welcome card and a Life item each create a request
@@ -81,6 +82,61 @@ Same pattern as the earlier apps, with `@hop/staff`, port 3001, `APP_ROLE = "sta
       or Rep App is refused.
 - [ ] Claiming the same daily earn twice in one day adds points once.
 - [ ] Docs: `mvp-scope.md` Staff rows (real vs sample, exactly as built) and the status table.
+      (Text drafted in "Phase 4 build notes" below; the parallel-build lane rules kept this agent
+      out of `docs/portal/*` and `docs/rebuild/README.md`, so whoever merges applies it.)
+
+Verified without a database (no `DEV_DATABASE_URL` was available): every `/api/requests` and
+`/api/profile` method returns 401 with no session, `/` redirects to `/login`, `/signup` renders,
+sign-up rejects a bad body with 400 before touching the DB, and `/manifest.webmanifest` serves.
+Everything that needs Neon (sign-up, requests reaching the Console, the full loop, A-vs-B
+isolation, the double-claim check) is **not yet verified**.
+
+## Phase 4 build notes (2026-10-14)
+
+What was built, file by file:
+
+- `app/api/auth/route.ts`: `allowSignup: true`, `onSignup: createProfileOnSignup`. The hook
+  checks the unit belongs to the facility (`throw json({error}, 400)`, so the shared factory
+  deletes the new user row) and inserts `portal_staff_profiles` (job title, unit, `PREFS0`).
+- `app/signup/page.tsx` + `components/SignupForm.tsx`: name, email, password, optional mobile,
+  job title (datalist suggestions), facility, unit, consent checkbox (`[CONFIRM]` wording).
+- `app/api/requests/route.ts`: GET (mine only, with job status, rep first name, job window,
+  needs-attention flag, client updates; staff-local query in `lib/server/requests.ts`), POST
+  (`newRequestSchema`; member id, name and job title from session + profile).
+- `app/api/profile/route.ts`: GET; PATCH with exactly one of `{prefs}`, `{claim}`,
+  `{consent:{source,granted,scopes?}}`. Claims are one SQL statement (`INSERT … ON CONFLICT DO
+  NOTHING RETURNING` feeding the points `UPDATE`). Periods: daily = local date, weekly = ISO
+  week, big wins = once, counted in `America/New_York` (`[CONFIRM]`). `connect` needs a granted
+  `wear:*` consent and `profile` needs three "You told HOP" prefs.
+- Consent keys (`portal_staff_profiles.consents`): `wear:<app>` (one at a time), `cal:<app>`,
+  `work:<app>`, plus the "What HOP learns from" (`learn:<source>`) and "Your privacy"
+  (`priv:<setting>`) switches. Intent only; nothing is read from any of them.
+- `components/`: `StaffApp` (shell, 5 tabs, top bar chat + avatar, voice FAB), `store.tsx`
+  (profile, 5 s request polling, `ask()`, picked Week window), `sheets.tsx` (Compose, Clutch,
+  Rescue, Voice, Chat, Connect, Perm), `screens/*` (Today, Week, Life, Recharge, Crew, You,
+  Know, Smart), `app/manifest.ts`.
+- Sample role content comes from `lib/roles.ts` `pickRole(jobTitle)` (nurse / doctor / tech /
+  home health, default nurse). The Overtime Rescue card shows for everyone, because the shift
+  state it was gated on in the mockup is sample.
+- Request categories are the shared `JOB_CATS` (the mockup's "wellness" isn't one; the
+  "Schedule reset" suggestion files as an errand).
+- Redeem is sample (toast only, `[CONFIRM reward catalog]`), since nothing fulfils a redemption.
+
+Leftovers for other phases:
+
+- Phase 6 / `apps/site`: the landing page's "Create an account" button should link to the Staff
+  App's `/signup` (not in this app's lane).
+- `docs/portal/mvp-scope.md` Staff row, as built: **Real**: sign-up with facility/unit check,
+  Ask / Clutch (urgent) / Overtime Rescue / Voice drop / Chat asks / Welcome-card actions / Life
+  Admin "Have HOP handle it" → `portal_requests`; My requests with live job status (5 s poll),
+  rep first name, window and updates; profile (name, job title, facility, unit, member since);
+  "HOP knows you" prefs (confirm, forget, teach); points balance + lifetime tier; once-per-period
+  earn claims (client-claimed, `TODO(IT)` server-verify); consent intent for watch, calendars,
+  work schedule, learn-from and privacy switches. **Sample**: welcome-card observations, shift
+  state and Week pattern, suggestions, Post Shift Landing / Sleep Guard / Home Ready, readiness
+  and synced-day cards, Life Admin items / moments / Family Hub, streak, redeem, challenges,
+  leaderboard (except your own points), wellbeing charts, Crew (all five sub-tabs; Pulse submit
+  claims the real weekly points), Hop chat replies, Smart home.
 
 ## Notes from earlier phases
 
