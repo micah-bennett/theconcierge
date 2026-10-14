@@ -1,48 +1,29 @@
-# The Concierge
+# HOP
 
-React, TypeScript, and Vite frontend deployed on Vercel, with Vercel Functions and Neon Postgres for backend services.
+HOP (Hospitality On-Site Professionals): the public landing site plus the four HOP Portal apps,
+in one npm-workspaces monorepo. Each app is deployed to its own Vercel project, and all of them
+share one Neon Postgres database.
 
-**Agents: read [CLAUDE.md](CLAUDE.md) first** (Claude Code loads it automatically) — it routes you
-to [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) and the rest of `docs/`, and covers
-project-wide conventions/gotchas this README doesn't.
+| Folder | What it is | Stack |
+|---|---|---|
+| `apps/site` | Public landing site. `/portal` links to the four apps | Vite + React, Vercel Functions |
+| `apps/staff` | Staff App, for nurses, doctors and every healthcare professional | Next.js |
+| `apps/console` | Concierge Console, for the HOP dispatch team | Next.js |
+| `apps/rep` | Concierge Rep App, for HOP field reps | Next.js |
+| `apps/facility` | Facility View, for hospital leaders (unit totals only) | Next.js |
+| `packages/shared` | Types, brand, validation, DB store, auth, shared UI | TypeScript |
+
+**Agents: read [CLAUDE.md](CLAUDE.md) first.** It routes you to `docs/`. The build is being done
+in phases; see [docs/rebuild/README.md](docs/rebuild/README.md) for status.
 
 ## Development
 
 ```bash
-npm install
-npm run dev
-```
-
-Use `vercel dev` when testing `/api/requests`, `/api/chat`, or any `/api/hop/*` route locally.
-
-## Validation
-
-```bash
+npm install            # once, from the repo root (installs every workspace)
+npm run dev:site       # landing site on http://localhost:5173
 npm run lint
-npm run build
+npm run build:site
 ```
 
-## Backend
-
-- `api/requests.ts`: validates requests, stores them in Neon, and sends emails.
-- `api/chat.ts`: server-side concierge chatbot, calls the Anthropic API directly.
-- `api/hop/**`: HOP login, service requests, admin, and Google Calendar integration APIs.
-- `db/schema.sql`: idempotent Postgres schema.
-- `.env.example`: required server-only environment variables.
-
-See [docs/vercel-setup.md](docs/vercel-setup.md) for deployment and migration instructions, and
-[docs/design-system.md](docs/design-system.md) for the fonts/colors/conventions used across the
-public site and HOP (two deliberately separate design systems — don't mix them).
-
-## HOP
-
-HOP (`/hop`) is a concierge product for healthcare staff with its own login (`/hop/login`,
-`/hop/signup`) and admin (`/hop/admin/login`) accounts. See `docs/hop/vision.md`,
-`docs/hop/architecture.md`, and `docs/hop/mvp-scope.md` before adding a HOP feature — they're
-kept up to date with what's actually built vs. stubbed.
-
-To create the first admin account:
-
-```bash
-DATABASE_URL="..." npm run hop:create-admin
-```
+Run each Portal app with `npm run dev -w @hop/<staff|console|rep|facility>`, once its phase has
+been built. Database changes: `npm run db:migrate` (needs `DATABASE_URL`).

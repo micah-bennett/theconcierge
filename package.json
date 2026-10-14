@@ -1,46 +1,15 @@
 {
-  "name": "theconcierge",
+  "name": "hop",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "description": "HOP: public landing site + the four HOP Portal apps (Staff, Console, Rep, Facility)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && tsc -p tsconfig.api.json && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "db:migrate": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f db/schema.sql",
-    "hop:create-admin": "node scripts/create-hop-admin.mjs",
-    "hop:seed-concierge-hub": "node scripts/seed-hop-concierge-hub.mjs",
-    "hop:backfill-numbers": "node scripts/backfill-hop-numbers.mjs",
-    "cap:sync": "npm run build -- --base=./ && npx cap sync",
-    "cap:ios": "npm run cap:sync && npx cap open ios"
-  },
-  "dependencies": {
-    "@capacitor/cli": "^8.4.0",
-    "@capacitor/core": "^8.4.0",
-    "@capacitor/ios": "^8.4.0",
-    "@neondatabase/serverless": "^1.1.0",
-    "bcryptjs": "^3.0.3",
-    "cookie": "^2.0.1",
-    "lucide-react": "^1.45.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-router-dom": "^7.14.1",
-    "resend": "^6.16.0"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@types/node": "^24.12.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^9.39.4",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.4.0",
-    "sharp": "^0.35.5",
-    "typescript": "~5.9.3",
-    "typescript-eslint": "^8.57.0",
-    "vite": "^8.0.1"
+    "dev:site": "npm run dev -w @hop/site",
+    "build:site": "npm run build -w @hop/site",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:migrate": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f db/schema.sql"
   }
 }

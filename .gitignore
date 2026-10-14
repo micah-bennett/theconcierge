@@ -30,3 +30,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Next.js
+.next
+next-env.d.ts
+*.tsbuildinfo
+
+# Prototype originals (unpacked copy lives in prototype/starter/)
+prototype/*.zip

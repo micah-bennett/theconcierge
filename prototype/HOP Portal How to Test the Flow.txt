@@ -1,0 +1,45 @@
+HOP Portal: How to Test the Flow
+Hi Yasa, this is a short walkthrough so you can feel how the four apps work together before you move them to Vercel. Everything uses sample data.
+The links
+App
+Link
+Who it is for
+Staff App
+https://hop-staff-app.pplx.app
+Nurses, doctors and every healthcare professional
+Concierge Console
+https://hop-concierge.pplx.app
+The HOP dispatch team
+Concierge Rep App
+https://hop-concierge.pplx.app/rep/
+HOP field reps
+Facility View
+https://hop-facility-view.pplx.app
+Hospital leaders
+
+Sign in to Perplexity with the email these were shared with if a link asks you to.
+Test 1: Send a job to one rep (about 3 minutes)
+Open the Console and the Rep App side by side.
+
+	•	In the Console, click New trip or request, then Fill with sample.
+	•	Change the title to anything you like, choose Andre Wells under Send to rep, and click Send to rep.
+	•	In the Rep App, you are signed in as Renee first. Notice she does not see the new job. Reps only see what dispatch sends them.
+	•	Switch to Andre Wells. The job appears as a new offer. Click Accept.
+	•	Open the job and tap Start task, then the status updates (On my way, Arrived). Try Call, Text and the smart door card.
+	•	Tap Sample under photo proof, then Sign, draw a signature, type a name and Save signature.
+	•	Tap Complete task.
+	•	Back in the Console, the job shows Completed with the photo and signature. Click Details to see the full timeline.
+Test 2: The Staff App
+	•	Switch roles on the left (ICU Nurse, ER Doctor, Imaging Tech, Home Health Aide).
+	•	Try the Welcome back cards, Ask HOP for anything, and Clutch.
+	•	Open Rewards, You (what HOP has learned) and Home (Alexa, Apple, Google and smart lock access).
+Test 3: Facility View
+	•	Switch the heat map between Strain, Stress, Missed breaks and HOP requests, and click any cell.
+	•	In Burnout Radar, try Send support on a team.
+	•	Everything here is unit totals only. No names or personal data reach the hospital.
+What is connected where
+	•	Live pages above: the Console and Rep App share one live backend, so Test 1 works for real across devices. The Staff App and Facility View are front ends only.
+	•	Next.js starter (Drive folder): all four apps are wired together. A Staff App request lands in the Console queue, the Console dispatches it, and the Rep App sends updates, photos and signatures back. Run it with npm install then npm run dev. The README covers Vercel, Postgres and Blob setup, and the IT Handoff lists what to build next.
+Good to know
+	•	Jobs you send on the live Console may reset when the site is updated.
+	•	Anything marked [CONFIRM] is still an open business decision.
