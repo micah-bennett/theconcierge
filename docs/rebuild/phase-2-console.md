@@ -81,17 +81,44 @@ plain with starter classes (`.panel`, `.tag`, `.btn`, `.field`):
 
 ## Done when
 
-- [ ] `npm run build -w @hop/console` and `npm run lint` pass.
+- [x] `npm run build -w @hop/console` and `npm run lint` pass. (2026-10-14; `tsc --noEmit` also clean.)
 - [ ] With the demo seed: sign in as console@demo.hop. A rep account signing in here gets the
-      wrong-app message, not a session.
+      wrong-app message, not a session. *(Needs a dev DB. Not run yet.)*
 - [ ] Dispatch a job to Andre from the composer. It appears in the dispatch table with "New
-      offer". `portal_jobs.rep_id` is Andre's uuid.
-- [ ] Dispatch from a queued staff request. The request moves to dispatched.
+      offer". `portal_jobs.rep_id` is Andre's uuid. *(Needs a dev DB. Not run yet.)*
+- [ ] Dispatch from a queued staff request. The request moves to dispatched. *(Needs a dev DB.)*
 - [ ] `curl` without a cookie → 401 on every `/api/*` route except `auth`. A forged `rep` uuid
-      that isn't a rep → 400.
+      that isn't a rep → 400. *(First half verified 2026-10-14 against `next start`: all 8
+      method/route pairs on jobs, jobs/[id], requests and team return 401, and `/` and `/team`
+      redirect to `/login`. The forged-rep 400 is coded (`isActiveRep` in POST /api/jobs and on
+      reassign in PATCH /api/jobs/[id]) but needs a DB to run.)*
 - [ ] Team: invite a rep. The set-password link is logged (dev) or emailed. Disable → that user
-      can't sign in.
-- [ ] Docs: `mvp-scope.md` Console rows updated and the status table updated.
+      can't sign in. *(Needs a dev DB.)*
+- [ ] Docs: `mvp-scope.md` Console rows updated and the status table updated. *(The orchestrator
+      owns those files during the parallel build; the text was handed back in the Phase 2 report.)*
+
+### Phase 2 build notes (2026-10-14)
+
+- **Routes** (5 functions incl. auth): `api/auth`, `api/jobs` (GET, POST), `api/jobs/[id]` (PATCH),
+  `api/requests` (GET, PATCH `?id=`), `api/team` (GET, POST, PATCH `?id=`). Every one is wrapped in
+  `withAuth("console")`.
+- **Console-only SQL** lives in `apps/console/lib/server/queries.ts`: every rep with an `active`
+  flag (so jobs held by a disabled rep still show a name; pickers list active reps only), requests
+  joined to the member's phone and shared `prefs`, `enableUser` (back to `invited` if the user
+  never set a password, never straight to `active`), and `voidInviteTokens` (on resend and on
+  disable).
+- **Request PATCH** only allows `new → cancelled` and `cancelled → new`. `dispatched` and
+  `completed` are set by the jobs flow, never by hand.
+- **POST /api/jobs with `requestId`** returns 404 if the request is gone and 409 if it is no longer
+  `new`, so one request isn't dispatched twice from two tabs (still not atomic; see the report).
+- **Mockup gap check:** built the request lifecycle (Matching → Dispatched → On the way → Verified
+  → Completed, derived in `lib/lifecycle.ts`), the selected-request panel with its stepper,
+  timeline, "Know your member" (real: the member's `portal_staff_profiles.prefs`; the mockup's tier
+  and mood are left out because tier rules belong to Phase 4 and mood is wellness data),
+  Dispatch/Cancel/Reopen/View job actions, the Service network panel (static, keeps
+  `Partner [CONFIRM]`), and "Today's volume by service" (**sample**, labelled). Left out: the
+  mockup's sample KPIs "Avg response" and "Service rating" (the starter's four real KPIs stay),
+  and the "Message staff" button (no messaging exists yet).
 
 ## Notes from earlier phases
 
