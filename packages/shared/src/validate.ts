@@ -2,7 +2,11 @@ import { z } from "zod";
 import { JOB_CATS } from "./brand";
 
 const safe = (max = 400) => z.string().max(max).transform((s) => s.replace(/[<>`]/g, ""));
-const img = z.string().max(3_000_000).refine((v) => /^(data:image\/(png|jpeg|webp);base64,|https:\/\/)/.test(v), "Must be an image");
+/** Proof images: an inline data URL (demo) or a Vercel Blob URL. No other hosts. */
+const img = z
+  .string()
+  .max(3_000_000)
+  .refine((v) => /^(data:image\/(png|jpeg|webp);base64,|https:\/\/[a-z0-9-]+\.(public\.)?blob\.vercel-storage\.com\/)/.test(v), "Must be an image");
 const entry = z.tuple([safe(40), safe(600)]);
 const cat = z.enum(JOB_CATS);
 const status = z.enum(["offer", "accepted", "started", "in_progress", "completed", "declined"]);
@@ -110,4 +114,6 @@ export const inviteSchema = z
     role: z.enum(["rep", "console", "facility_admin"]),
     facilityId: z.string().uuid().nullable().default(null)
   })
-  .refine((v) => v.role !== "facility_admin" || !!v.facilityId, { message: "Pick a facility", path: ["facilityId"] });
+  .refine((v) => v.role !== "facility_admin" || !!v.facilityId, { message: "Pick a facility", path: ["facilityId"] })
+  // Only facility admins belong to a facility.
+  .transform((v) => (v.role === "facility_admin" ? v : { ...v, facilityId: null }));

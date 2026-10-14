@@ -1,8 +1,8 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import type { Facility, Job, JobStatus, MyRequest, PortalUser, RepSummary, Role, StaffRequest, Unit, UserStatus } from "../types";
+import type { Facility, Job, JobStatus, LogEntry, MyRequest, PortalUser, RepSummary, Role, StaffRequest, Unit, UserStatus } from "../types";
 import { toUser } from "./auth";
-import { sql } from "./db";
+import { json, sql } from "./db";
 
 /*
  * Jobs and requests keep the starter's full Job / StaffRequest objects in JSONB `data`; the
@@ -17,7 +17,7 @@ export const newId = (prefix: string) => prefix + randomBytes(4).toString("hex")
 export async function listJobs(opts: { repId?: string } = {}): Promise<Job[]> {
   const rows = (opts.repId
     ? await sql()`SELECT data FROM portal_jobs WHERE rep_id = ${opts.repId} AND status <> 'declined' ORDER BY updated_at DESC LIMIT 200`
-    : await sql()`SELECT data FROM portal_jobs ORDER BY updated_at DESC LIMIT 300`) as { data: Job }[];
+    : await sql()`SELECT data FROM portal_jobs ORDER BY created_at DESC LIMIT 300`) as { data: Job }[];
   return rows.map((r) => r.data);
 }
 
@@ -29,28 +29,68 @@ export async function getJob(id: string, opts: { repId?: string } = {}): Promise
   return rows[0]?.data ?? null;
 }
 
+/**
+ * Creates the job. With a requestId, the request is claimed first (new → dispatched) in one
+ * conditional UPDATE, so two consoles dispatching the same request can't both create a job:
+ * the loser gets a 409.
+ */
 export async function createJob(job: Job, actorId: string): Promise<Job> {
+  if (job.requestId) {
+    const claimed = (await sql()`
+      UPDATE portal_requests
+      SET status = 'dispatched', job_id = ${job.id},
+          data = data || ${JSON.stringify({ status: "dispatched", jobId: job.id })}::jsonb, updated_at = NOW()
+      WHERE id = ${job.requestId} AND status = 'new'
+      RETURNING id
+    `) as unknown[];
+    if (!claimed.length) throw json({ error: "This request was already dispatched or cancelled." }, 409);
+  }
   await sql()`
     INSERT INTO portal_jobs (id, rep_id, request_id, status, data)
     VALUES (${job.id}, ${job.rep}, ${job.requestId ?? null}, ${job.status}, ${JSON.stringify(job)}::jsonb)
   `;
   await logJobEvent(job.id, actorId, "created", { rep: job.rep, status: job.status });
-  if (job.requestId) await updateRequest(job.requestId, { status: "dispatched", jobId: job.id });
   return job;
 }
 
 /**
+ * Append-only list fields: the console and the rep both add entries within one 4 s poll, so a
+ * PATCH's array is merged into what's stored (keeping every existing entry, adding new ones)
+ * rather than replacing it. Entries can't be deleted through a PATCH.
+ */
+function mergeAppend<T>(stored: T[] | undefined, incoming: T[] | undefined): T[] | undefined {
+  if (!incoming) return stored;
+  const seen = new Set((stored ?? []).map((e) => JSON.stringify(e)));
+  return [...(stored ?? []), ...incoming.filter((e) => !seen.has(JSON.stringify(e)))];
+}
+
+/**
  * Merges `patch` into the job. With `repId`, only that rep's job can change (returns null otherwise).
+ * `log`, `updates`, `notesList` and `door.log` are append-merged (see mergeAppend).
+ * The UPDATE is conditional on the status and data.updatedAt read here (a JS ms number, so it
+ * compares exactly, unlike a timestamptz round-tripped through the driver), so two concurrent PATCHes
+ * can't both pass the caller's status-move check: the second gets a 409 and should refetch.
  * Writes a job event per status change or reassignment, and completes the linked request.
  */
 export async function updateJob(id: string, patch: Partial<Job>, actorId: string, opts: { repId?: string } = {}): Promise<Job | null> {
   const before = await getJob(id, opts);
   if (!before) return null;
-  const next: Job = { ...before, ...patch, id: before.id, updatedAt: Date.now() };
-  const rows = (opts.repId
-    ? await sql()`UPDATE portal_jobs SET rep_id = ${next.rep}, status = ${next.status}, data = ${JSON.stringify(next)}::jsonb, updated_at = NOW() WHERE id = ${id} AND rep_id = ${opts.repId} RETURNING id`
-    : await sql()`UPDATE portal_jobs SET rep_id = ${next.rep}, status = ${next.status}, data = ${JSON.stringify(next)}::jsonb, updated_at = NOW() WHERE id = ${id} RETURNING id`) as unknown[];
-  if (!rows.length) return null;
+  const next: Job = {
+    ...before,
+    ...patch,
+    id: before.id,
+    log: mergeAppend<LogEntry>(before.log, patch.log) ?? [],
+    updates: mergeAppend<LogEntry>(before.updates, patch.updates) ?? [],
+    notesList: mergeAppend<string>(before.notesList, patch.notesList) ?? [],
+    door: patch.door === undefined ? before.door : patch.door && { ...patch.door, log: mergeAppend<LogEntry>(before.door?.log, patch.door.log) },
+    updatedAt: Date.now()
+  };
+  const rows = (await sql()`
+    UPDATE portal_jobs SET rep_id = ${next.rep}, status = ${next.status}, data = ${JSON.stringify(next)}::jsonb, updated_at = NOW()
+    WHERE id = ${id} AND status = ${before.status} AND data->>'updatedAt' = ${String(before.updatedAt)}
+    RETURNING id
+  `) as unknown[];
+  if (!rows.length) throw json({ error: "This job just changed. Refresh and try again." }, 409);
   if (patch.status && patch.status !== before.status) await logJobEvent(id, actorId, "status", { from: before.status, to: patch.status });
   if (patch.rep && patch.rep !== before.rep) await logJobEvent(id, actorId, "reassigned", { from: before.rep, to: patch.rep });
   if (patch.attn && !before.attn) await logJobEvent(id, actorId, "attention", patch.attn);
@@ -143,8 +183,9 @@ export async function listUsers(opts: { roles?: Role[] } = {}): Promise<TeamMemb
     FROM portal_users u LEFT JOIN portal_facilities f ON f.id = u.facility_id
     WHERE u.role = ANY(${roles})
     ORDER BY u.role, u.first_name, u.last_name
-  `) as (Parameters<typeof toUser>[0] & { created_at: string; last_login_at: string | null; facility_name: string | null })[];
-  return rows.map((r) => ({ ...toUser(r), createdAt: r.created_at, lastLoginAt: r.last_login_at, facilityName: r.facility_name }));
+  `) as (Parameters<typeof toUser>[0] & { created_at: string | Date; last_login_at: string | Date | null; facility_name: string | null })[];
+  const iso = (d: string | Date) => new Date(d).toISOString();
+  return rows.map((r) => ({ ...toUser(r), createdAt: iso(r.created_at), lastLoginAt: r.last_login_at ? iso(r.last_login_at) : null, facilityName: r.facility_name }));
 }
 
 export async function getUser(id: string): Promise<PortalUser | null> {
@@ -170,10 +211,23 @@ export async function createInvitedUser(input: {
   return rows[0] ? toUser(rows[0]) : null;
 }
 
-/** Disabling also ends every session for that user. */
+/**
+ * Disabling also ends every session and voids unused invite/reset links. "active" is only applied
+ * to users who have a password; an invited user who never set one goes back to "invited".
+ */
 export async function setUserStatus(id: string, status: UserStatus): Promise<void> {
-  await sql()`UPDATE portal_users SET status = ${status}, updated_at = NOW() WHERE id = ${id}`;
-  if (status === "disabled") await sql()`DELETE FROM portal_sessions WHERE user_id = ${id}`;
+  await sql()`
+    UPDATE portal_users
+    SET status = CASE WHEN ${status} = 'active' AND password_hash IS NULL THEN 'invited' ELSE ${status} END,
+        failed_login_attempts = CASE WHEN ${status} = 'active' THEN 0 ELSE failed_login_attempts END,
+        locked_until = CASE WHEN ${status} = 'active' THEN NULL ELSE locked_until END,
+        updated_at = NOW()
+    WHERE id = ${id}
+  `;
+  if (status === "disabled") {
+    await sql()`DELETE FROM portal_sessions WHERE user_id = ${id}`;
+    await sql()`UPDATE portal_password_tokens SET used_at = NOW() WHERE user_id = ${id} AND used_at IS NULL`;
+  }
 }
 
 // ── Facilities ───────────────────────────────────────────────────────────────

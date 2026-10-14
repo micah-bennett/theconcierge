@@ -18,11 +18,34 @@ export function json(body: unknown, status = 200, headers: Record<string, string
   return Response.json(body, { status, headers: { "Cache-Control": "no-store", ...headers } });
 }
 
-/** Reads a JSON body with a size cap. Returns {} for an empty or invalid body. */
+/**
+ * Reads a JSON body with a size cap. Returns {} for an empty or invalid body.
+ * The cap is checked on the declared length and again on the bytes actually read (chunked bodies
+ * have no content-length).
+ */
 export async function readJson(request: Request, maxBytes = 64_000): Promise<unknown> {
+  const tooLarge = () => json({ error: "Request is too large" }, 413);
   const len = Number(request.headers.get("content-length") || "0");
-  if (len > maxBytes) throw json({ error: "Request is too large" }, 413);
-  return request.json().catch(() => ({}));
+  if (len > maxBytes) throw tooLarge();
+  if (!request.body) return {};
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      await reader.cancel().catch(() => {});
+      throw tooLarge();
+    }
+    chunks.push(value);
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  } catch {
+    return {};
+  }
 }
 
 /** First zod issue as a readable message. */
