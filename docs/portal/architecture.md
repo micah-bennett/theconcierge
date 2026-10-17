@@ -184,7 +184,7 @@ every project.
 - In each Portal project, "Include files outside the root directory" must stay on (the default),
   because the apps import `packages/shared`.
 - Use Vercel's "Ignored Build Step" with
-  `git diff --quiet HEAD^ HEAD -- . ../../packages ../../db`, so a change to one app doesn't
+  `git diff --quiet HEAD^ HEAD -- . ../../packages ../../package-lock.json`, so a change to one app doesn't
   rebuild the others.
 - The old `theconcierge-staff` project and the `staff-portal` branch are retired in Phase 6.
 

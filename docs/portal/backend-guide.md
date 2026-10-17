@@ -82,11 +82,53 @@ To put a fresh copy back (for example, to reset after a walkthrough), run the re
 ALLOW_DEMO_SEED=1 DEMO_PASSWORD="…10+ characters…" DATABASE_URL="postgres://…" npm run hop:seed-demo
 ```
 
-## Coming in later phases (filled in by Phase 6)
+## The five Vercel projects (team: AY Projects)
 
-- Creating the four Portal projects and their env vars
-- Creating the first Concierge Console account (`npm run hop:create-console-admin`)
-- Inviting reps and facility leaders from the Console's Team screen
-- Resetting a password, disabling an account
-- Deploying and rolling back one app without touching the others, and where to see logs
-- Retiring `theconcierge-staff` and the `staff-portal` branch
+| Project | Folder (Root Directory) | Live address |
+|---|---|---|
+| `hop_services` | `apps/site` | https://theconcierge.life (the public site) |
+| `hop-staff` | `apps/staff` | https://hop-staff.vercel.app |
+| `hop-console` | `apps/console` | https://hop-console.vercel.app |
+| `hop-rep` | `apps/rep` | https://hop-rep.vercel.app |
+| `hop-facility` | `apps/facility` | https://hop-facility.vercel.app |
+
+All five are connected to the GitHub repo. A push to `main` deploys to production, and a push to
+any other branch makes a preview. The four apps skip a build when nothing in their own folder or
+`packages/` changed.
+
+**Settings each Portal app has** (Vercel → project → Settings → Environment Variables):
+- `DATABASE_URL`: the Neon database.
+- `SESSION_HASH_SECRET`: one random value, shared by the four apps.
+- `APP_URL`: that app's own address.
+- `STAFF_URL`, `CONSOLE_URL`, `REP_URL`, `FACILITY_URL`: the four addresses above.
+- `RESEND_API_KEY`: needed for invite and password-reset emails. **Add it by hand** (see below).
+
+**The site** also has `VITE_STAFF_URL`, `VITE_CONSOLE_URL`, `VITE_REP_URL` and
+`VITE_FACILITY_URL`. These are the links on the HOP Portal page.
+
+### Adding the email key to the four apps (one time)
+1. Vercel → `hop_services` → Settings → Environment Variables → `RESEND_API_KEY` → copy the value
+   (or create a new key at resend.com → API Keys).
+2. For each of `hop-staff`, `hop-console`, `hop-rep` and `hop-facility`: Settings → Environment
+   Variables → Add → Key `RESEND_API_KEY`, paste the value, tick Production and Preview → Save.
+3. Redeploy each one: Deployments → the top one → ⋯ → Redeploy.
+
+Until this is done, inviting someone from the Console Team screen and "Forgot password" won't work
+on the live apps.
+
+### Changing an app's address (custom domain)
+Vercel → project → Settings → Domains → Add (for example `console.theconcierge.life`). Then update
+that address in all four apps' `*_URL` settings and the site's `VITE_*_URL`, and redeploy.
+
+### Rolling back one app
+Vercel → that project → Deployments → pick the last good one → ⋯ → Promote to Production. The
+other apps aren't affected.
+
+### Logs
+Vercel → project → Logs (or Deployments → a deployment → Runtime Logs).
+
+## Still to do
+- Creating the real first Concierge Console account (`npm run hop:create-console-admin`) and
+  removing the demo data (above) before real staff sign up.
+- Retiring `theconcierge-staff` and the `staff-portal` branch (only with the operator's go-ahead;
+  it can't be undone).

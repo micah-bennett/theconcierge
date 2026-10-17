@@ -4,7 +4,7 @@ Keep this honest. Update it in the same change that builds, stubs or removes som
 means it reads or writes the database and works across devices. "Sample" means it's hard-coded
 demo data on the client, as in leadership's mockups. "Not built" means there's no code.
 
-_Last updated: 2026-10-17 (Phases 0–5 built and verified against the database; Phase 6 deploy not started)._
+_Last updated: 2026-10-17 (Phases 0–5 verified; the four apps deployed to Vercel, the site goes live on the merge to `main`)._
 
 ## Landing site (`apps/site`): real
 
@@ -19,7 +19,7 @@ _Last updated: 2026-10-17 (Phases 0–5 built and verified against the database;
 All four are built and run locally against the database (2026-10-17). Leadership's Test 1 (Console → Andre
 → Rep App → Completed with proof) passes end to end. So do these checks: sign-up, invites,
 disable, lockout, one-time links, rep and staff isolation, the door log, reward claims, Send
-support and the facility privacy floor. None is deployed yet (Phase 6). "Real" below means
+support and the facility privacy floor. All four are live on Vercel (see `backend-guide.md`); invite and reset emails need `RESEND_API_KEY` added to each app. "Real" below means
 DB-backed.
 
 ### Shared (`packages/shared`)

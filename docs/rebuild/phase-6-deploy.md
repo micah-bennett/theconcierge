@@ -69,6 +69,18 @@ if the operator has logged it in and approves.
 - [ ] The status table in `docs/rebuild/README.md` shows all phases done. `mvp-scope.md` is
       final.
 
+## Progress (2026-10-17)
+
+- The four projects (`hop-staff`, `hop-console`, `hop-rep`, `hop-facility`) were created on the
+  AY Projects team with the CLI. They're connected to the repo, and each has its env vars and the
+  ignored build step. Production was deployed from `portal-rebuild` with
+  `vercel deploy --prod --cwd apps/<app>`.
+- The site project is `hop_services` (already at Root Directory `apps/site`), with the four
+  `VITE_*_URL` values set. It goes live when `portal-rebuild` merges to `main`.
+- Leadership's Test 1, plus isolation and the privacy floor, pass against the live URLs (using the
+  demo seed, by the operator's choice).
+- `RESEND_API_KEY` couldn't be copied by the agent; the operator adds it (backend guide).
+
 ## Notes from earlier phases
 
 _(none yet)_
