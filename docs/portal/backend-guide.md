@@ -86,14 +86,17 @@ ALLOW_DEMO_SEED=1 DEMO_PASSWORD="…10+ characters…" DATABASE_URL="postgres://
 
 | Project | Folder (Root Directory) | Live address |
 |---|---|---|
-| `hop_services` | `apps/site` | https://theconcierge.life (the public site) |
+| `hop_services` | `apps/site` | https://www.hopserves.com (the public site) |
 | `hop-staff` | `apps/staff` | https://hop-staff.vercel.app |
 | `hop-console` | `apps/console` | https://hop-console.vercel.app |
 | `hop-rep` | `apps/rep` | https://hop-rep.vercel.app |
 | `hop-facility` | `apps/facility` | https://hop-facility.vercel.app |
 
 All five are connected to the GitHub repo. A push to `main` deploys to production, and a push to
-any other branch makes a preview. The four apps skip a build when nothing in their own folder or
+any other branch makes a preview. If a site deploy ever shows "Ready" but the live site doesn't
+change, an earlier rollback has paused auto-promotion: Deployments → the new one → ⋯ → Promote to
+Production. (`theconcierge.life` is not attached to any project right now; it shows Vercel's
+DEPLOYMENT_NOT_FOUND page.) The four apps skip a build when nothing in their own folder or
 `packages/` changed.
 
 **Settings each Portal app has** (Vercel → project → Settings → Environment Variables):

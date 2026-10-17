@@ -19,7 +19,7 @@ Run Phase 1 first. Phases 2–5 each produce one deployable app and only touch t
 | 3 | `phase-3-rep.md` | `apps/rep`: Concierge Rep App | ✅ Done 2026-10-17 (verified against the database) |
 | 4 | `phase-4-staff.md` | `apps/staff`: Staff App + self sign-up | ✅ Done 2026-10-17 (verified against the database; leadership's Test 2 click-through still open) |
 | 5 | `phase-5-facility.md` | `apps/facility`: Facility View | ✅ Done 2026-10-17 (verified against the database) |
-| 6 | `phase-6-deploy.md` | Five Vercel projects, retiring `staff-portal`, the end-to-end test | 🟡 2026-10-17: four apps live on Vercel and Test 1 passes in production. Still open: the site going live (merge to `main`), `RESEND_API_KEY` on the apps, the real console admin, removing the demo, retiring `staff-portal` |
+| 6 | `phase-6-deploy.md` | Five Vercel projects, retiring `staff-portal`, the end-to-end test | 🟡 2026-10-17: all five live (site on www.hopserves.com), Test 1 passes in production. Still open: `RESEND_API_KEY` on the apps, the real console admin, removing the demo, retiring `staff-portal` |
 
 When you finish a phase:
 1. Set its row to ✅ with the date.

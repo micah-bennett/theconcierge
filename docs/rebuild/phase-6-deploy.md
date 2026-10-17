@@ -76,7 +76,7 @@ if the operator has logged it in and approves.
   ignored build step. Production was deployed from `portal-rebuild` with
   `vercel deploy --prod --cwd apps/<app>`.
 - The site project is `hop_services` (already at Root Directory `apps/site`), with the four
-  `VITE_*_URL` values set. It goes live when `portal-rebuild` merges to `main`.
+  `VITE_*_URL` values set. Merged to `main` and live on www.hopserves.com. The build had to be promoted by hand because an earlier rollback had paused auto-promotion.
 - Leadership's Test 1, plus isolation and the privacy floor, pass against the live URLs (using the
   demo seed, by the operator's choice).
 - `RESEND_API_KEY` couldn't be copied by the agent; the operator adds it (backend guide).

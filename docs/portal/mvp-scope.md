@@ -4,7 +4,7 @@ Keep this honest. Update it in the same change that builds, stubs or removes som
 means it reads or writes the database and works across devices. "Sample" means it's hard-coded
 demo data on the client, as in leadership's mockups. "Not built" means there's no code.
 
-_Last updated: 2026-10-17 (Phases 0–5 verified; the four apps deployed to Vercel, the site goes live on the merge to `main`)._
+_Last updated: 2026-10-17 (Phases 0–5 verified; all five deployed to Vercel)._
 
 ## Landing site (`apps/site`): real
 
