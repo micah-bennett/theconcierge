@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /hop/
+Disallow: /api/
+
+Sitemap: https://www.hopserves.com/sitemap.xml

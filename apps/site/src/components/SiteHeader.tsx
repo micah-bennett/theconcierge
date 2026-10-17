@@ -12,6 +12,9 @@ const NAV_LINKS = [
   { to: '/portal', label: 'HOP Portal' },
 ] as const
 
+/** The HOP Blog lives on WordPress.com, so it is a plain external link, not a router route. */
+const BLOG_URL = 'https://blog.hopserves.com'
+
 /**
  * The public-site header. Sticky, so nothing below needs to know its height.
  * Below 920px the nav collapses into a drop-down panel toggled by the ☰ button.
@@ -72,6 +75,7 @@ export function SiteHeader() {
               {item.label}
             </NavLink>
           ))}
+          <a href={BLOG_URL}>Blog</a>
         </nav>
         <Link className="hs-btn hs-btn--primary hs-btn--small hs-header__cta" to="/contact">
           Start a Conversation
