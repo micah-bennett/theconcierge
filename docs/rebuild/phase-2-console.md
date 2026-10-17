@@ -82,19 +82,19 @@ plain with starter classes (`.panel`, `.tag`, `.btn`, `.field`):
 ## Done when
 
 - [x] `npm run build -w @hop/console` and `npm run lint` pass. (2026-10-14; `tsc --noEmit` also clean.)
-- [ ] With the demo seed: sign in as console@demo.hop. A rep account signing in here gets the
-      wrong-app message, not a session. *(Needs a dev DB. Not run yet.)*
-- [ ] Dispatch a job to Andre from the composer. It appears in the dispatch table with "New
-      offer". `portal_jobs.rep_id` is Andre's uuid. *(Needs a dev DB. Not run yet.)*
-- [ ] Dispatch from a queued staff request. The request moves to dispatched. *(Needs a dev DB.)*
-- [ ] `curl` without a cookie → 401 on every `/api/*` route except `auth`. A forged `rep` uuid
+- [x] With the demo seed: sign in as console@demo.hop. A rep account signing in here gets the
+      wrong-app message, not a session.
+- [x] Dispatch a job to Andre from the composer. It appears in the dispatch table with "New
+      offer". `portal_jobs.rep_id` is Andre's uuid.
+- [x] Dispatch from a queued staff request. The request moves to dispatched.
+- [x] `curl` without a cookie → 401 on every `/api/*` route except `auth`. A forged `rep` uuid
       that isn't a rep → 400. *(First half verified 2026-10-14 against `next start`: all 8
       method/route pairs on jobs, jobs/[id], requests and team return 401, and `/` and `/team`
       redirect to `/login`. The forged-rep 400 is coded (`isActiveRep` in POST /api/jobs and on
-      reassign in PATCH /api/jobs/[id]) but needs a DB to run.)*
-- [ ] Team: invite a rep. The set-password link is logged (dev) or emailed. Disable → that user
-      can't sign in. *(Needs a dev DB.)*
-- [ ] Docs: `mvp-scope.md` Console rows updated and the status table updated. *(The orchestrator
+      reassign in PATCH /api/jobs/[id]) and verified against the database 2026-10-17.)*
+- [x] Team: invite a rep. The set-password link is logged (dev) or emailed. Disable → that user
+      can't sign in.
+- [x] Docs: `mvp-scope.md` Console rows updated and the status table updated. *(The orchestrator
       owns those files during the parallel build; the text was handed back in the Phase 2 report.)*
 
 ### Phase 2 build notes (2026-10-14)

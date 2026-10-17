@@ -14,11 +14,11 @@ Run Phase 1 first. Phases 2–5 each produce one deployable app and only touch t
 | Phase | File | Builds | Status |
 |---|---|---|---|
 | 0 | n/a (done in the planning session) | Removed the old HOP system and iOS, moved the landing site to `apps/site`, set up the workspace and wrote these docs | ✅ Done 2026-10-14 |
-| 1 | `phase-1-foundation.md` | `packages/shared`, the DB schema, auth, the shared UI and the demo seed, plus the skeletons of all four apps | 🟡 Built 2026-10-14; DB checks pending a Neon dev branch |
-| 2 | `phase-2-console.md` | `apps/console`: Concierge Console + Team accounts | 🟡 Built 2026-10-14 (parallel agent); DB checks pending |
-| 3 | `phase-3-rep.md` | `apps/rep`: Concierge Rep App | 🟡 Built 2026-10-14 (parallel agent); DB checks pending |
-| 4 | `phase-4-staff.md` | `apps/staff`: Staff App + self sign-up | 🟡 Built 2026-10-14 (parallel agent); DB checks pending |
-| 5 | `phase-5-facility.md` | `apps/facility`: Facility View | 🟡 Built 2026-10-14 (parallel agent); DB checks pending |
+| 1 | `phase-1-foundation.md` | `packages/shared`, the DB schema, auth, the shared UI and the demo seed, plus the skeletons of all four apps | ✅ Done 2026-10-17 (verified against the database) |
+| 2 | `phase-2-console.md` | `apps/console`: Concierge Console + Team accounts | ✅ Done 2026-10-17 (verified against the database) |
+| 3 | `phase-3-rep.md` | `apps/rep`: Concierge Rep App | ✅ Done 2026-10-17 (verified against the database) |
+| 4 | `phase-4-staff.md` | `apps/staff`: Staff App + self sign-up | ✅ Done 2026-10-17 (verified against the database; leadership's Test 2 click-through still open) |
+| 5 | `phase-5-facility.md` | `apps/facility`: Facility View | ✅ Done 2026-10-17 (verified against the database) |
 | 6 | `phase-6-deploy.md` | Five Vercel projects, retiring `staff-portal`, the end-to-end test | ⬜ Not started |
 
 When you finish a phase:

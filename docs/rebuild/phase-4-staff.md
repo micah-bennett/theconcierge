@@ -72,16 +72,16 @@ Same pattern as the earlier apps, with `@hop/staff`, port 3001, `APP_ROLE = "sta
 
 - [x] `npm run build -w @hop/staff` and lint pass. (Build and `tsc --noEmit` pass. The repo has
       no ESLint config yet, so Next's lint step is a no-op.)
-- [ ] Sign up a new user with the demo facility → lands on Today with their name.
+- [x] Sign up a new user with the demo facility → lands on Today with their name.
 - [ ] Leadership's Test 2: every tab and sheet from the table above renders and behaves like the
       mockup. Clutch, Rescue, Voice, Ask, a welcome card and a Life item each create a request
       that appears in the Console queue within 4 s.
-- [ ] Full loop: staff request → Console dispatches to Andre → Andre completes in the Rep App →
+- [x] Full loop: staff request → Console dispatches to Andre → Andre completes in the Rep App →
       the Staff App's "My requests" shows Completed.
-- [ ] Staff user A can't see B's requests (API returns only A's). A staff cookie on the Console
+- [x] Staff user A can't see B's requests (API returns only A's). A staff cookie on the Console
       or Rep App is refused.
-- [ ] Claiming the same daily earn twice in one day adds points once.
-- [ ] Docs: `mvp-scope.md` Staff rows (real vs sample, exactly as built) and the status table.
+- [x] Claiming the same daily earn twice in one day adds points once.
+- [x] Docs: `mvp-scope.md` Staff rows (real vs sample, exactly as built) and the status table.
       (Text drafted in "Phase 4 build notes" below; the parallel-build lane rules kept this agent
       out of `docs/portal/*` and `docs/rebuild/README.md`, so whoever merges applies it.)
 

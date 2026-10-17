@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-// Demo data for local development and the leadership walkthrough. NEVER run against production.
+// Demo data for local development and the leadership walkthrough. Only run it against a database
+// with no real Portal users. It was seeded into the live database on 2026-10-17, before launch, at
+// the operator's choice. Remove it before real staff sign up: npm run hop:remove-demo.
 // Idempotent: fixed ids + ON CONFLICT DO NOTHING, so running it twice changes nothing.
 //
 //   ALLOW_DEMO_SEED=1 DEMO_PASSWORD='something-10+' DATABASE_URL=<dev branch> npm run hop:seed-demo

@@ -17,7 +17,7 @@ apps/
 packages/
   shared/      @hop/shared: everything two or more apps need
 db/schema.sql  one idempotent schema for the shared Neon database
-scripts/       repo-level Node scripts (create the first console account, seed demo data)
+scripts/       repo-level Node scripts (create the first console account, seed and remove demo data)
 prototype/     leadership's concept: starter code + mockups. Reference only, never imported
 ```
 

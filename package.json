@@ -13,7 +13,8 @@
     "db:migrate": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f db/schema.sql",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "hop:create-console-admin": "node scripts/create-console-admin.mjs",
-    "hop:seed-demo": "node scripts/seed-demo.mjs"
+    "hop:seed-demo": "node scripts/seed-demo.mjs",
+    "hop:remove-demo": "node scripts/remove-demo.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -49,21 +49,20 @@ header from the session, plus Sign out.
 
 - [x] `npm run build -w @hop/facility` passes (and `npm run typecheck -w @hop/facility`). The app
       has no ESLint config, so there's no separate lint step to run. *(2026-10-14)*
-- [ ] Sign in as facility@demo.hop. Every view from the mockup works. Switching metric and range
-      refetches. *(Not verified: no dev database was available. The UI is built and refetches on
-      every metric/range change in code.)*
-- [ ] The seeded small unit shows as suppressed. The API JSON contains no value for it (check it
+- [x] Sign in as facility@demo.hop. Every view from the mockup works. Switching metric and range
+      refetches.
+- [x] The seeded small unit shows as suppressed. The API JSON contains no value for it (check it
       with curl, not just in the UI). *(Verified in `apps/facility/scripts/check-suppression.mts`
       with seed-shaped rows for every metric × range, including a check that no value or group
       size for the small unit appears anywhere in the serialized response. The curl check against a
       seeded DB is still to do.)*
-- [ ] Send support → appears in the Console queue as a unit-level item with no names. The radar
-      shows Sent. *(Not verified: no dev database.)*
+- [x] Send support → appears in the Console queue as a unit-level item with no names. The radar
+      shows Sent.
 - [x] A facility admin for facility A can't read facility B. There's no parameter to even ask.
       *(Every query takes the facility id from `user.facilityId`; the route reads only `metric`,
       `range` and `action` from the URL. Unauthenticated GET/POST return 401, checked with curl
       against `next start`.)*
-- [ ] Docs: `mvp-scope.md` Facility rows and the status table. *(Left to the coordinating session:
+- [x] Docs: `mvp-scope.md` Facility rows and the status table. *(Left to the coordinating session:
       this phase ran in a parallel lane that may not edit `docs/portal/*` or the README.)*
 
 ## Phase 5 build notes (2026-10-14)

@@ -4,7 +4,7 @@ Keep this honest. Update it in the same change that builds, stubs or removes som
 means it reads or writes the database and works across devices. "Sample" means it's hard-coded
 demo data on the client, as in leadership's mockups. "Not built" means there's no code.
 
-_Last updated: 2026-10-14 (Phases 0–5 built; database verification pending)._
+_Last updated: 2026-10-17 (Phases 0–5 built and verified against the database; Phase 6 deploy not started)._
 
 ## Landing site (`apps/site`): real
 
@@ -16,9 +16,11 @@ _Last updated: 2026-10-14 (Phases 0–5 built; database verification pending)._
 
 ## Portal apps
 
-All four are built. **None has been run against a database yet**: build, type checks and the
-signed-out (401) route checks pass, but the end-to-end flow waits on a Neon dev branch. See
-`docs/rebuild/README.md`. "Real" below means DB-backed in the code.
+All four are built and run locally against the database (2026-10-17). Leadership's Test 1 (Console → Andre
+→ Rep App → Completed with proof) passes end to end. So do these checks: sign-up, invites,
+disable, lockout, one-time links, rep and staff isolation, the door log, reward claims, Send
+support and the facility privacy floor. None is deployed yet (Phase 6). "Real" below means
+DB-backed.
 
 ### Shared (`packages/shared`)
 | Feature | Status |

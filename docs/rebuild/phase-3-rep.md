@@ -61,7 +61,7 @@ Port `RepApp.tsx`:
 - [x] `npm run build -w @hop/rep` and lint pass. _(2026-10-14: build + `tsc --noEmit` pass. There's no
       ESLint setup for the Next apps (no `lint` script, no `eslint-config-next`), so "lint" is the
       build's type and lint step only.)_
-- [ ] Leadership's Test 1 (`prototype/HOP Portal How to Test the Flow.txt`) passes across two
+- [x] Leadership's Test 1 (`prototype/HOP Portal How to Test the Flow.txt`) passes across two
       browsers. Console on :3002, Rep App on :3003:
   1. Console: New trip or request → Fill with sample → send to **Andre Wells**.
   2. Signed in as **Renee**, the job is not visible.
@@ -70,10 +70,10 @@ Port `RepApp.tsx`:
      Complete task.
   4. Console: the job shows Completed, with the photo and signature in Details and the full
      timeline.
-- [ ] Andre's cookie with a PATCH to Renee's job id → 404. A PATCH with `rep` in the body → 400.
+- [x] Andre's cookie with a PATCH to Renee's job id → 404. A PATCH with `rep` in the body → 400.
       Skipping from offer to completed → 400.
-- [ ] A door unlock writes a `portal_door_events` row.
-- [ ] Docs: `mvp-scope.md` Rep rows and the status table. _(Left to the orchestrator: this lane may
+- [x] A door unlock writes a `portal_door_events` row.
+- [x] Docs: `mvp-scope.md` Rep rows and the status table. _(Left to the orchestrator: this lane may
       only edit `apps/rep` and this file. The suggested Rep rows are in the Phase 3 hand-off.)_
 
 ## Notes from earlier phases

@@ -59,6 +59,29 @@ npm run db:migrate
 
 It's always safe to run twice: it only adds things, and it never deletes tables or data.
 
+**Status:** applied to the live database on 2026-10-17 (it added the `portal_` tables and
+`hop_inquiries`; the old tables were not touched).
+
+## Demo accounts (in the live database until launch)
+
+On 2026-10-17 the operator chose to put the demo data in the live database instead of a separate
+Neon branch. Nothing live reads the `portal_` tables yet, so this is safe for now. The demo is one
+sample hospital ("Hudson Valley Medical Center"), eight accounts ending in `@demo.hop`, four
+sample jobs and two sample requests. All the demo accounts share one password (`DEMO_PASSWORD`).
+
+**Before real staff sign up**, delete it. This removes only the demo hospital, the `@demo.hop`
+accounts and anything they created:
+
+```bash
+CONFIRM_REMOVE_DEMO=1 DATABASE_URL="postgres://…" npm run hop:remove-demo
+```
+
+To put a fresh copy back (for example, to reset after a walkthrough), run the remove command, then:
+
+```bash
+ALLOW_DEMO_SEED=1 DEMO_PASSWORD="…10+ characters…" DATABASE_URL="postgres://…" npm run hop:seed-demo
+```
+
 ## Coming in later phases (filled in by Phase 6)
 
 - Creating the four Portal projects and their env vars

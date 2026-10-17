@@ -168,17 +168,17 @@ There is no in-memory store. Local dev uses a real Neon database or a Neon branc
 
 ## Done when
 
-- [ ] `npm run typecheck -w @hop/shared` passes.
-- [ ] `npm run db:migrate` runs twice cleanly. The `portal_*` tables exist. The `hop_*` tables
+- [x] `npm run typecheck -w @hop/shared` passes.
+- [x] `npm run db:migrate` runs twice cleanly. The `portal_*` tables exist. The `hop_*` tables
       are untouched.
-- [ ] `ALLOW_DEMO_SEED=1 npm run hop:seed-demo` runs twice cleanly.
-- [ ] A throwaway script (not committed) proves the auth lifecycle against the DB:
+- [x] `ALLOW_DEMO_SEED=1 npm run hop:seed-demo` runs twice cleanly.
+- [x] A throwaway script (not committed) proves the auth lifecycle against the DB:
   - createSession, then getSessionUser
   - wrong-role 403
   - lockout after 8 bad passwords
   - an invite token sets a password exactly once
-- [ ] `npm run lint` and `npm run build:site` still pass.
-- [ ] `docs/portal/architecture.md` matches what you built (file names, exports, the logo
+- [x] `npm run lint` and `npm run build:site` still pass.
+- [x] `docs/portal/architecture.md` matches what you built (file names, exports, the logo
       decision). The status table in `docs/rebuild/README.md` is updated.
 
 ## Notes from earlier phases
