@@ -5,5 +5,14 @@ import RepApp from "@/components/RepApp";
 /** The Rep App. Who you are comes from the session cookie; there is no rep picker. */
 export default async function Home() {
   const user = await requirePageUser(APP_ROLE);
-  return <RepApp me={{ first: user.firstName, name: `${user.firstName} ${user.lastName}`.trim(), initials: `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase() }} />;
+  return (
+    <RepApp
+      me={{
+        id: user.id,
+        first: user.firstName,
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        initials: `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase()
+      }}
+    />
+  );
 }

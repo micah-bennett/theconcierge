@@ -53,33 +53,3 @@ export async function downscalePhoto(file: Blob): Promise<string> {
   }
   return out;
 }
-
-/** The mockup's "Sample" proof photo: a drawn doorstep with a HOP verified stamp. */
-export function samplePhoto(): string {
-  const c = document.createElement("canvas");
-  c.width = 480;
-  c.height = 320;
-  const x = c.getContext("2d")!;
-  x.fillStyle = "#e9e3d6";
-  x.fillRect(0, 0, 480, 320);
-  x.fillStyle = "#8a6a4a";
-  x.fillRect(150, 40, 180, 280);
-  x.fillStyle = "#6d5238";
-  x.fillRect(165, 55, 150, 250);
-  x.fillStyle = "#d9b26a";
-  x.beginPath();
-  x.arc(290, 190, 7, 0, 7);
-  x.fill();
-  x.fillStyle = "#c79a5b";
-  x.fillRect(190, 240, 100, 70);
-  x.fillStyle = "#a87b44";
-  x.fillRect(190, 240, 100, 12);
-  x.fillStyle = "#04a6a8";
-  x.fillRect(225, 262, 30, 30);
-  x.fillStyle = "rgba(1,47,108,.85)";
-  x.fillRect(0, 282, 480, 38);
-  x.fillStyle = "#fff";
-  x.font = "bold 16px sans-serif";
-  x.fillText("HOP verified · " + new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }), 14, 307);
-  return c.toDataURL("image/jpeg", 0.8);
-}
