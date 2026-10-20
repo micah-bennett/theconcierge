@@ -15,10 +15,10 @@ type PortalApp = {
 const PORTAL_APPS: readonly PortalApp[] = [
   {
     icon: '♥',
-    title: 'Staff App',
+    title: 'HOP Client',
     who: 'Nurses, doctors, and every healthcare professional',
-    desc: 'Ask HOP for anything, earn rewards, and keep a profile that learns what you need—in and out of the hospital.',
-    url: import.meta.env.VITE_STAFF_URL,
+    desc: 'Ask HOP for anything, check in on how your day is going, earn rewards, and message the HOP team—in and out of the hospital.',
+    url: import.meta.env.VITE_CLIENT_URL || import.meta.env.VITE_STAFF_URL,
     signup: true,
   },
   {
