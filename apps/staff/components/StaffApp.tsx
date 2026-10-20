@@ -1,4 +1,6 @@
 "use client";
+import { useEffect, useState } from "react";
+import { messagesApi } from "@hop/shared/client";
 import { Phone, usePhone } from "@hop/shared/ui/Phone";
 import { initials } from "@/lib/roles";
 import { Svg, ic } from "./bits";
@@ -14,7 +16,7 @@ import { Know } from "./screens/Know";
 import { Smart } from "./screens/Smart";
 
 /*
- * The Staff App: the mockup's structure (staff-app.html) in the starter's React style.
+ * HOP Client (formerly the Staff App): the mockup's structure (staff-app.html) in the starter's React style.
  * Five tabs (Today, Week, Life, Recharge, Crew), plus You, HOP knows you and Smart home from the
  * top bar. Identity comes from the session; there is no "See it as" picker.
  */
@@ -53,16 +55,53 @@ function Shell() {
   );
 }
 
+/** Unread messages across my HOP Concierge and job threads, polled every 15 s. */
+function useUnread() {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let live = true;
+    const pull = () =>
+      messagesApi
+        .threads()
+        .then((r) => live && setN(r.threads.reduce((s, t) => s + t.unread, 0)))
+        .catch(() => {});
+    pull();
+    const t = setInterval(pull, 15000);
+    return () => {
+      live = false;
+      clearInterval(t);
+    };
+  }, []);
+  return [n, setN] as const;
+}
+
 function TopBar() {
   const { profile, go } = useStaff();
   const { openSheet } = usePhone();
+  const [unread, setUnread] = useUnread();
   return (
     <div className="top">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="HOP" />
       <div className="row" style={{ gap: 8 }}>
-        <button className="iconbtn" aria-label="Chat with Hop" onClick={() => openSheet(<ChatSheet />)}>
+        <button
+          className="iconbtn"
+          aria-label={unread ? `Message HOP Concierge, ${unread} unread` : "Message HOP Concierge"}
+          style={{ position: "relative" }}
+          onClick={() => {
+            setUnread(0);
+            openSheet(<ChatSheet />);
+          }}
+        >
           <Svg p={ic.chat} />
+          {unread > 0 && (
+            <span
+              aria-hidden
+              style={{ position: "absolute", top: -3, right: -3, minWidth: 18, height: 18, padding: "0 5px", borderRadius: 99, background: "var(--coral)", color: "#fff", fontSize: 11, fontWeight: 800, display: "grid", placeItems: "center" }}
+            >
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
         </button>
         <button className="avatar" aria-label="Your profile" onClick={() => go("you")}>
           {profile ? initials(profile.firstName, profile.lastName) : ""}

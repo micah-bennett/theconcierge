@@ -5,12 +5,18 @@ import type { StaffRequest } from "@hop/shared/types";
 import { newRequestSchema } from "@hop/shared/validate";
 import { APP_ROLE } from "@/lib/app";
 import { getJobTitle } from "@/lib/server/profile";
-import { listMyRequestsDetailed } from "@/lib/server/requests";
+import { listMyRequestsDetailed, listRequestPhotos } from "@/lib/server/requests";
 
 export const dynamic = "force-dynamic";
 
-/** My requests only (member_id = me), each with its job's live status, rep first name and window. */
-export const GET = withAuth(APP_ROLE, async (_request, user) => {
+/**
+ * GET                 → { requests }  my requests only (member_id = me), each with its job's live
+ *                       status, rep first name, window, updates, door state, photo count, my rating.
+ * GET ?photos=<id>    → { photos }    the rep's completion photos on one of my completed requests.
+ */
+export const GET = withAuth(APP_ROLE, async (request, user) => {
+  const photosFor = new URL(request.url).searchParams.get("photos");
+  if (photosFor) return json({ photos: await listRequestPhotos(user.id, photosFor.slice(0, 40)) });
   return json({ requests: await listMyRequestsDetailed(user.id) });
 });
 

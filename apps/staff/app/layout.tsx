@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "@hop/shared/styles/portal.css";
 
 export const metadata: Metadata = {
-  title: "HOP",
+  title: "HOP Client",
   description: "Radical Hospitality for the people who keep healthcare running.",
   icons: { icon: "/logo.png" }
 };

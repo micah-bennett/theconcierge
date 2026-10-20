@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { messagesApi } from "@hop/shared/client";
+import { MessageThread } from "@hop/shared/ui/MessageThread";
 import { usePhone } from "@hop/shared/ui/Phone";
 import type { JobCat } from "@hop/shared/types";
 import { CATS, type Cat } from "@/lib/roles";
@@ -116,9 +118,9 @@ export function ClutchSheet() {
 // ── Overtime Rescue ──────────────────────────────────────────────────────────
 
 const RESCUE: [string, string, string][] = [
-  ["🧒", "School pickup", "Approved pickup person on file"],
-  ["🐕", "Walk and feed the dog", "Your regular pet sitter"],
-  ["🍲", "Dinner for the family", "Delivered at 6:30 PM"],
+  ["🧒", "School pickup", "HOP confirms the details with you first"],
+  ["🐕", "Walk and feed the dog", "So they aren't waiting on you"],
+  ["🍲", "Dinner for the family", "Delivered home this evening"],
   ["💬", "Text home for me", "We let them know you are safe and running late"]
 ];
 
@@ -168,18 +170,11 @@ export function RescueSheet() {
 
 type Item = [icon: string, title: string, detail: string, cls: string];
 
-const DEMO_LINE = "I need dog food, a birthday card for my mom, and can someone grab my dry cleaning before Friday.";
-const DEMO_ITEMS: Item[] = [
-  ["🐶", "Dog food", "Your usual brand · delivered in your next open window", "t"],
-  ["🎂", "Birthday card for Mom", "3 picks sent for you to choose · mailed by Wed", "g"],
-  ["👔", "Dry cleaning pickup", "Back on your door before Friday 6 PM", "s"]
-];
-
 /** Splits a spoken list into errands: "dog food, a card for mom, and grab my dry cleaning". */
 export function splitErrands(t: string): string[] {
   return t
     .replace(/\b(i need|i want|i'd like|can (someone|you|hop)|could (someone|you|hop)|please|also|then)\b/gi, ",")
-    .split(/,|;|\.|\band\b|\bplus\b/i)
+    .split(/,|;|\.|\n|\band\b|\bplus\b/i)
     .map((s) => s.trim().replace(/^to\s+/i, ""))
     .filter((s) => s.length > 2)
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
@@ -200,47 +195,39 @@ type Rec = {
 
 /**
  * Uses the browser's speech recognition (webkitSpeechRecognition) when it exists and the member
- * allows the mic; otherwise plays the mockup's scripted demo. The errands go as one real request.
+ * allows the mic. Otherwise (or when they'd rather type) a text box goes through the same
+ * splitErrands → one real request flow. Nothing is scripted.
  */
 export function VoiceSheet() {
   const { ask, go } = useStaff();
   const { closeSheet } = usePhone();
-  const [mode, setMode] = useState<"live" | "demo" | null>(null);
-  const [listening, setListening] = useState(true);
+  const [mode, setMode] = useState<"live" | "type" | null>(null);
+  const [listening, setListening] = useState(false);
   const [text, setText] = useState("");
+  const [typed, setTyped] = useState("");
+  const [why, setWhy] = useState<string | null>(null);
   const [items, setItems] = useState<Item[] | null>(null);
   const [busy, setBusy] = useState(false);
   const rec = useRef<Rec | null>(null);
   const finalText = useRef("");
-  const timer = useRef<ReturnType<typeof setInterval>>(undefined);
 
   const finish = (t: string) => {
     setListening(false);
-    const parts = splitErrands(t);
-    setItems(parts.map((p) => ["📝", p, "HOP sorts out the details", "t"]));
+    setItems(splitErrands(t).map((p) => ["📝", p, "HOP sorts out the details", "t"]));
   };
 
-  const demo = () => {
-    setMode("demo");
-    setListening(true);
+  const typeInstead = (reason: string | null) => {
+    rec.current = null;
+    setMode("type");
+    setListening(false);
+    setWhy(reason);
     setItems(null);
-    let i = 0;
-    clearInterval(timer.current);
-    timer.current = setInterval(() => {
-      i += 2;
-      setText(DEMO_LINE.slice(0, i));
-      if (i >= DEMO_LINE.length) {
-        clearInterval(timer.current);
-        setListening(false);
-        setItems(DEMO_ITEMS);
-      }
-    }, 35);
   };
 
   const live = () => {
     const w = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
     const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
-    if (!Ctor) return demo();
+    if (!Ctor) return typeInstead("Voice isn't available in this browser.");
     const r = new Ctor();
     r.lang = "en-US";
     r.interimResults = true;
@@ -262,8 +249,8 @@ export function VoiceSheet() {
     r.onerror = (e) => {
       if (rec.current !== r) return;
       failed = true;
-      // No mic permission, no speech service, etc.: fall back to the scripted demo.
-      if (e.error !== "aborted") demo();
+      if (e.error === "aborted") return;
+      typeInstead(e.error === "not-allowed" || e.error === "service-not-allowed" ? "The mic is blocked for this site." : e.error === "no-speech" ? "HOP didn't hear anything." : "Voice didn't work this time.");
     };
     r.onend = () => {
       if (failed || rec.current !== r) return;
@@ -282,14 +269,13 @@ export function VoiceSheet() {
     try {
       r.start();
     } catch {
-      demo();
+      typeInstead("Voice didn't start in this browser.");
     }
   };
 
   useEffect(() => {
     live();
     return () => {
-      clearInterval(timer.current);
       const r = rec.current;
       rec.current = null;
       r?.abort();
@@ -312,16 +298,40 @@ export function VoiceSheet() {
     <div>
       <h2 className="disp" style={{ ...head, textAlign: "center" }}>Voice errand drop</h2>
       <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 14 }}>Just say it. HOP sorts it out.</p>
-      <button
-        className={`mic ${listening ? "live" : ""}`}
-        aria-label={listening ? "Stop listening" : "Start listening"}
-        onClick={() => (listening ? (mode === "live" ? rec.current?.stop() : undefined) : live())}
-        style={{ display: "grid" }}
-      >
-        <Svg p={ic.mic} />
-      </button>
-      <div className="transcript">{text ? text : <span style={{ color: "#9aa5b8" }}>{listening ? "Listening..." : "Tap the mic and say your errands."}</span>}</div>
-      {mode === "demo" && <p className="mock" style={{ marginTop: -4 }}>Voice isn&apos;t available in this browser, so this is a sample. Sending it creates a real request.</p>}
+      {mode !== "type" ? (
+        <>
+          <button className={`mic ${listening ? "live" : ""}`} aria-label={listening ? "Stop listening" : "Start listening"} onClick={() => (listening ? rec.current?.stop() : live())} style={{ display: "grid" }}>
+            <Svg p={ic.mic} />
+          </button>
+          <div className="transcript">{text ? text : <span style={{ color: "#9aa5b8" }}>{listening ? "Listening..." : "Tap the mic and say your errands."}</span>}</div>
+          <p style={{ textAlign: "center", marginBottom: 8 }}>
+            <a role="button" style={{ fontSize: 13, color: "var(--teal)", fontWeight: 700, cursor: "pointer" }} onClick={() => { rec.current?.abort(); typeInstead(null); }}>
+              Type it instead
+            </a>
+          </p>
+        </>
+      ) : (
+        <div style={{ margin: "12px 0" }}>
+          {why && <p className="mock" style={{ marginTop: 0, marginBottom: 8 }}>{why} Type what you need instead.</p>}
+          <textarea
+            className="field"
+            rows={3}
+            maxLength={400}
+            placeholder="Type what you need, for example: dog food, a card for mom, and my dry cleaning"
+            aria-label="Type what you need"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+          />
+          <div className="row" style={{ gap: 8, marginTop: 8 }}>
+            <button className="btn n" style={{ flex: 1 }} disabled={!typed.trim()} onClick={() => finish(typed)}>
+              Make my list
+            </button>
+            <button className="btn o" style={{ flex: "0 0 auto" }} onClick={live} aria-label="Try the mic again">
+              <Svg p={ic.mic} size={18} />
+            </button>
+          </div>
+        </div>
+      )}
       <div className="parsed">
         {items && items.length > 0 && (
           <>
@@ -344,111 +354,100 @@ export function VoiceSheet() {
             </button>
           </>
         )}
-        {items && !items.length && <p className="mock">HOP didn&apos;t catch any errands. Tap the mic to try again.</p>}
+        {items && !items.length && <p className="mock">HOP didn&apos;t catch any errands. Try again with a short list.</p>}
       </div>
     </div>
   );
 }
 
-// ── Chat with Hop (scripted; asks become real requests) ──────────────────────
+// ── Message HOP Concierge (a real thread with the HOP team) ─────────────────
 
-const CHAT: Record<string, { reply: string; req: { cat: JobCat; text: string } | null }> = {
-  "Plan my evening": {
-    reply: "Done. I asked your concierge for dinner at 7:45 and a dog walk at 6, and I blocked 9:30 as wind down time. Track it in Your requests.",
-    req: { cat: "food", text: "Plan my evening: dinner at 7:45 PM and a dog walk at 6 PM" }
-  },
-  "Book a ride home": {
-    reply: "A vetted driver will be at the staff exit when your shift ends. Your concierge has the request, and I will send the car details 10 minutes before.",
-    req: { cat: "ride", text: "Ride home from the staff exit when my shift ends" }
-  },
-  "I am feeling overwhelmed": {
-    reply: "Thank you for telling me. I can hold the quiet room for ten minutes right now, and take two errands off tonight. If you want to talk to someone, I can connect you with your support line. [CONFIRM resource]",
-    req: null
-  },
-  "Surprise my family": {
-    reply: "Love it. I asked your concierge for a pizza night delivered at 6 with a note from you. Track it in Your requests.",
-    req: { cat: "family", text: "Surprise my family: pizza night delivered at 6 PM with a note from me" }
-  }
+/** Chips that create a real request right away. */
+const CHAT_REQUESTS: Record<string, { cat: JobCat; text: string }> = {
+  "Book a ride home": { cat: "ride", text: "Ride home from the staff exit when my shift ends" },
+  "Plan my evening": { cat: "food", text: "Plan my evening: dinner and a dog walk" },
+  "Surprise my family": { cat: "family", text: "Surprise my family: a pizza night with a note from me" }
 };
-
-function guessCat(t: string): JobCat {
-  const s = t.toLowerCase();
-  if (/\b(ride|drive|uber|lyft|airport|commute|car)\b/.test(s)) return "ride";
-  if (/\b(dog|cat|pet|walk|vet|litter)\b/.test(s)) return "pet";
-  if (/\b(food|lunch|dinner|breakfast|coffee|latte|meal|eat|snack|pizza)\b/.test(s)) return "food";
-  if (/\b(kid|kids|son|daughter|school|family|mom|dad|sitter|childcare|pickup)\b/.test(s)) return "family";
-  if (/\b(package|grocer|groceries|deliver|delivery|drop off)\b/.test(s)) return "delivery";
-  return "errand";
-}
+/** Chips that send a message to the team. */
+const CHAT_MESSAGES = ["I am feeling overwhelmed", "Can you call me?", "Where is my request?"];
 
 export function ChatSheet() {
-  const { thread, setThread, ask } = useStaff();
-  const [msg, setMsg] = useState("");
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    box.current?.scrollTo({ top: box.current.scrollHeight });
-  }, [thread]);
+  const { ask, profile } = useStaff();
+  const { toast } = usePhone();
+  const [busy, setBusy] = useState(false);
+  // Remounting the thread after a chip message shows it straight away instead of on the next poll.
+  const [rev, setRev] = useState(0);
 
-  const reply = (t: string) => setTimeout(() => setThread((th) => [...th, ["ai", t]]), 700);
-
-  async function chip(p: string) {
-    setThread((th) => [...th, ["me", p]]);
-    const c = CHAT[p];
-    if (c.req) {
-      const ok = await ask({ ...c.req, source: "chat" }, "Sent to your concierge.");
-      reply(ok ? c.reply : "I couldn't reach your concierge just now. Try again in a moment.");
-    } else reply(c.reply);
+  async function chipRequest(label: string) {
+    setBusy(true);
+    await ask({ ...CHAT_REQUESTS[label], source: "chat" }, "Sent to your concierge. Track it in Your requests.");
+    setBusy(false);
   }
 
-  async function typed() {
-    const t = msg.trim();
-    if (!t) return;
-    setMsg("");
-    setThread((th) => [...th, ["me", t]]);
-    const ok = await ask({ cat: guessCat(t), text: t.slice(0, 400), source: "chat" }, "Sent to your concierge.");
-    reply(ok ? "Got it. I sent that to your concierge, and you can watch it in Your requests." : "I couldn't reach your concierge just now. Try again in a moment.");
+  async function chipMessage(body: string) {
+    if (!profile) return;
+    setBusy(true);
+    try {
+      await messagesApi.post("staff", profile.id, body);
+      setRev((n) => n + 1);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Couldn't send. Try again.");
+    }
+    setBusy(false);
   }
 
   return (
     <div>
-      <div className="row" style={{ marginBottom: 12 }}>
+      <div className="row" style={{ marginBottom: 8 }}>
         <div className="ico t">
           <Svg p={ic.chat} size={22} style={{ color: "var(--teal)" }} />
         </div>
         <div>
-          <h2 className="disp" style={{ ...head, fontSize: 19 }}>Hop</h2>
-          <p style={{ fontSize: 13, color: "var(--muted)" }}>Your always on concierge</p>
+          <h2 className="disp" style={{ ...head, fontSize: 19 }}>Message HOP Concierge</h2>
+          <p style={{ fontSize: 13, color: "var(--muted)" }}>A real person on the HOP team replies, usually within a few minutes during service hours. [CONFIRM hours]</p>
         </div>
       </div>
-      <div className="chat" ref={box}>
-        {thread.map((m, i) => (
-          <div key={i} className={`bub ${m[0]}`}>
-            {m[1]}
-          </div>
+      {profile ? (
+        <MessageThread
+          key={rev}
+          kind="staff"
+          threadKey={profile.id}
+          meId={profile.id}
+          emptyText="Say hello, ask a question, or tell us what you need."
+          placeholder="Message the HOP team"
+          onError={toast}
+        />
+      ) : (
+        <p className="mock">Loading…</p>
+      )}
+      <p style={{ ...kick, margin: "12px 2px 6px" }}>Quick asks</p>
+      <div className="moods" style={{ margin: "0 0 6px" }}>
+        {Object.keys(CHAT_REQUESTS).map((p) => (
+          <button key={p} className="chip" disabled={busy} onClick={() => chipRequest(p)}>
+            {p}
+          </button>
         ))}
-      </div>
-      <div className="moods" style={{ margin: "0 0 10px" }}>
-        {Object.keys(CHAT).map((p) => (
-          <button key={p} className="chip" onClick={() => chip(p)}>
+        {CHAT_MESSAGES.map((p) => (
+          <button key={p} className="chip" disabled={busy || !profile} onClick={() => chipMessage(p)}>
             {p}
           </button>
         ))}
       </div>
-      <form
-        className="row"
-        style={{ gap: 8 }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          typed();
-        }}
-      >
-        <input className="field" value={msg} maxLength={400} onChange={(e) => setMsg(e.target.value)} placeholder="Ask Hop for anything" />
-        <button className="btn p" style={{ padding: "11px 14px" }}>
-          Send
-        </button>
-      </form>
-      {/* No LLM in this phase. TODO(IT): a real assistant behind the same request flow. */}
-      <p className="mock">Sample conversation. Anything you ask for goes to your concierge as a real request.</p>
+      <p className="mock">Ride, evening and family chips go straight to your concierge as requests. The others send a message.</p>
+    </div>
+  );
+}
+
+/** Job chat: the member and the rep on one request (the Console can read it). */
+export function JobChatSheet({ jobId, title, rep }: { jobId: string; title: string; rep: string | null }) {
+  const { profile } = useStaff();
+  const { toast } = usePhone();
+  return (
+    <div>
+      <h2 className="disp" style={{ ...head, fontSize: 19 }}>Message {rep || "your rep"}</h2>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>{title}</p>
+      {profile ? <MessageThread kind="job" threadKey={jobId} meId={profile.id} emptyText={`No messages yet. ${rep || "Your rep"} sees what you write here.`} onError={toast} /> : <p className="mock">Loading…</p>}
+      <p className="mock">The HOP team can read this conversation too.</p>
     </div>
   );
 }
@@ -462,7 +461,7 @@ const WORK = "Unit schedule app";
 type Kind = "wear" | "cal" | "work";
 
 export function ConnectSheet() {
-  const { setConsent, homeConn, go } = useStaff();
+  const { setConsent, go } = useStaff();
   const { openSheet, closeSheet, toast } = usePhone();
   const conn = useConnections();
   const isOn = (k: Kind, n: string) => (k === "wear" ? conn.wear === n : k === "cal" ? conn.cal.includes(n) : conn.work);
@@ -472,18 +471,18 @@ export function ConnectSheet() {
       <div className="it" key={n}>
         <div className="grow">
           <b>{n}</b>
-          <small>{on ? "Connected · consent saved" : d}</small>
+          <small>{on ? "Saved · we'll connect this when it's ready" : d}</small>
         </div>
         <button
           className={`btn ${on ? "o" : "p"}`}
           style={{ padding: "7px 12px", fontSize: 12 }}
           onClick={async () => {
             if (on) {
-              if (await setConsent(`${k}:${n}`, false)) toast(`${n} disconnected. HOP stopped reading it.`);
+              if (await setConsent(`${k}:${n}`, false)) toast(`${n} turned off.`);
             } else openSheet(<PermSheet k={k} n={n} />);
           }}
         >
-          {on ? "Disconnect" : "Connect"}
+          {on ? "Turn off" : "Turn on"}
         </button>
       </div>
     );
@@ -491,7 +490,9 @@ export function ConnectSheet() {
   return (
     <div>
       <h2 className="disp" style={head}>Connect your apps</h2>
-      <p style={{ color: "var(--muted)", fontSize: 14, margin: "4px 0 12px" }}>HOP reads only what you allow and never shares who you are with your hospital.</p>
+      <p style={{ color: "var(--muted)", fontSize: 14, margin: "4px 0 12px" }}>
+        We&apos;ll connect these when they&apos;re ready. For now HOP saves your choice and reads nothing. When it does, it reads only what you allow and never shares who you are with your hospital.
+      </p>
       <p className="kick" style={{ margin: "4px 2px 6px" }}>Watch or health app · pick one</p>
       <div className="card list" style={{ padding: "4px 16px" }}>{WEAR.map((w) => row(w[0], w[1], "wear"))}</div>
       <p className="kick" style={{ margin: "4px 2px 6px" }}>Calendars</p>
@@ -503,7 +504,7 @@ export function ConnectSheet() {
         <div className="it">
           <div className="grow">
             <b>Alexa, Apple, Android, and smart locks</b>
-            <small>{Object.values(homeConn).filter(Boolean).length} connected</small>
+            <small>Coming soon</small>
           </div>
           <button
             className="btn p"
@@ -513,7 +514,7 @@ export function ConnectSheet() {
               go("smart");
             }}
           >
-            Set up
+            See more
           </button>
         </div>
       </div>
@@ -541,10 +542,10 @@ export function PermSheet({ k, n }: { k: Kind; n: string }) {
     const ok = await setConsent(`${k}:${n}`, true, P.filter((_, i) => on[i]).map((p) => p[0]));
     setBusy(false);
     if (!ok) return;
-    toast(`${n} connected. HOP saved your choice.`);
+    toast(`Saved. We'll connect ${n} when it's ready.`);
     if (k === "wear" && !profile?.claimed.includes("connect")) {
       const r = await patch({ claim: "connect" });
-      if (r?.added) toast(`${n} connected. +${r.added} points.`);
+      if (r?.added) toast(`Saved. +${r.added} points.`);
     }
     openSheet(<ConnectSheet />);
   }
@@ -554,8 +555,8 @@ export function PermSheet({ k, n }: { k: Kind; n: string }) {
       <div className="row" style={{ marginBottom: 10 }}>
         <div className="ico t">{k === "wear" ? "⌚" : k === "cal" ? "📅" : "🗓️"}</div>
         <div>
-          <h2 className="disp" style={{ ...head, fontSize: 19 }}>Connect {n}</h2>
-          <p style={{ fontSize: 13, color: "var(--muted)" }}>Choose what HOP can read</p>
+          <h2 className="disp" style={{ ...head, fontSize: 19 }}>{n}</h2>
+          <p style={{ fontSize: 13, color: "var(--muted)" }}>Choose what HOP may read once it&apos;s connected</p>
         </div>
       </div>
       <div className="card list" style={{ padding: "4px 16px" }}>
@@ -574,14 +575,14 @@ export function PermSheet({ k, n }: { k: Kind; n: string }) {
         <p>Only totals for whole units, like &quot;ICU sleep is down this week.&quot; Never your name, your data, or your requests.</p>
       </div>
       <button className="btn p w" disabled={busy} onClick={allow}>
-        {busy ? "Connecting..." : "Allow and connect"}
+        {busy ? "Saving…" : "Save my choice"}
       </button>
       <button className="btn o w" style={{ marginTop: 8 }} onClick={() => openSheet(<ConnectSheet />)}>
         Back
       </button>
       {/* TODO(IT): real OAuth / HealthKit / Health Connect flows after the privacy and HIPAA review. Today this only records consent intent. */}
       <p className="mock">
-        HOP saves your choice now. Nothing is read from {n} until our privacy review is done. Turn it off anytime. [CONFIRM final data list with privacy review]
+        We&apos;ll connect this when it&apos;s ready. Nothing is read from {n} until then, and not before our privacy review. Turn it off anytime. [CONFIRM final data list with privacy review]
       </p>
     </div>
   );

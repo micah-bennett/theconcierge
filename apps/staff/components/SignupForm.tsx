@@ -15,6 +15,13 @@ export function SignupForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // A colleague's invite link: /signup?ref=CODE. Linked right after sign-up (POST /api/me?action=referred).
+  const [ref, setRef] = useState<string | null>(null);
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("ref")?.trim().toUpperCase() ?? "";
+    if (/^[A-Z0-9]{8}$/.test(code)) setRef(code);
+  }, []);
+
   useEffect(() => {
     j<{ facilities: Fac[] }>("/api/auth?action=facilities")
       .then((r) => {
@@ -36,6 +43,8 @@ export function SignupForm() {
     setError(null);
     try {
       await j("/api/auth?action=signup", { method: "POST", body: JSON.stringify({ ...f, consent: true }) });
+      // Signed in now; credit the colleague who invited you. A bad or old code is simply ignored.
+      if (ref) await j("/api/me?action=referred", { method: "POST", body: JSON.stringify({ code: ref }) }).catch(() => {});
       window.location.href = "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -48,8 +57,9 @@ export function SignupForm() {
       <form className="auth-card" onSubmit={submit}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="HOP" className="auth-logo" />
-        <h1 className="disp">Join HOP</h1>
+        <h1 className="disp">Join HOP Client</h1>
         <p className="auth-sub">You take care of everyone else. We take care of the errands.</p>
+        {ref && <p className="auth-sub" style={{ marginTop: -6 }}>A colleague invited you. Welcome.</p>}
         <div className="row" style={{ gap: 10 }}>
           <label className="dl" style={{ flex: 1 }}>
             <span>First name</span>

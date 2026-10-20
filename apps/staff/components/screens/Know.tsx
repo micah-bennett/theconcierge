@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { usePhone } from "@hop/shared/ui/Phone";
 import { LEARN_SOURCES, TAUGHT_KEY } from "@/lib/content";
+import { ComingSoon } from "../bits";
 import { useStaff } from "../store";
 
 /** Mockup `know`: learned preferences (real, portal_staff_profiles.prefs), editable and forgettable. */
@@ -35,7 +36,7 @@ export function Know() {
       <div className="sub">What HOP has learned, so you never have to explain yourself twice. You can fix or forget anything.</div>
       <div className="card list" style={{ padding: "4px 16px" }}>
         {!profile && <p className="mock" style={{ textAlign: "left" }}>Loading…</p>}
-        {profile && !prefs.length && <p className="mock" style={{ textAlign: "left" }}>Nothing yet. Teach HOP something below.</p>}
+        {profile && !prefs.length && <p className="mock" style={{ textAlign: "left" }}>Nothing yet. HOP only remembers what you teach it below.</p>}
         {prefs.map((p, i) => (
           <div className="it" key={`${p.k}-${p.v}-${i}`} style={{ alignItems: "flex-start" }}>
             <div className="ico t">{p.i}</div>
@@ -77,7 +78,7 @@ export function Know() {
       <div className="card">
         <h3>Teach HOP something</h3>
         <p>Allergies, a favorite flower, your kid&apos;s shoe size. Anything that helps.</p>
-        <textarea className="field" rows={2} maxLength={300} style={{ marginTop: 10 }} value={teach} onChange={(e) => setTeach(e.target.value)} placeholder="For example: Leo is allergic to tree nuts" />
+        <textarea className="field" rows={2} maxLength={300} style={{ marginTop: 10 }} value={teach} onChange={(e) => setTeach(e.target.value)} placeholder="For example: allergic to tree nuts" />
         <button className="btn n w" style={{ marginTop: 10 }} disabled={busy || !teach.trim()} onClick={save}>
           {busy ? "Saving…" : "Save to my profile"}
         </button>
@@ -97,16 +98,8 @@ export function Know() {
           );
         })}
       </div>
-      <div className="card" style={{ background: "var(--soft-sky)", borderColor: "#cfe3f7" }}>
-        <div className="row" style={{ alignItems: "flex-start" }}>
-          <div className="ico" style={{ background: "#fff" }}>🔖</div>
-          <div>
-            <h3>Saved with HOP</h3>
-            {/* TODO(IT): the "Saved with HOP" share target and browser button. */}
-            <p>See a gift, a recipe, or a class you like anywhere online? Tap Share, then HOP, or use the HOP browser button. HOP saves it and suggests it at the right moment.</p>
-          </div>
-        </div>
-      </div>
+      {/* TODO(IT): the "Saved with HOP" share target and browser button. */}
+      <ComingSoon feature="saved-with-hop" icon="🔖" text="See a gift, a recipe, or a class you like anywhere online? Tap Share, then HOP, and HOP saves it for the right moment." />
       <div className="card" style={{ background: "var(--soft-teal)", borderColor: "#bfe6e6" }}>
         <h3>Our promise</h3>
         <p>HOP only learns from what you turn on here or tell us. We never follow you around other websites or apps, and we never sell your data. Your hospital only sees unit totals.</p>
