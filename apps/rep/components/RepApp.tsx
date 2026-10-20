@@ -1,61 +1,94 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, j as api, useJobs } from "@hop/shared/client";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { ApiError, j as api, messagesApi, useJobs } from "@hop/shared/client";
 import { nowT } from "@hop/shared/time";
-import type { Job, JobStatus, LogEntry } from "@hop/shared/types";
+import type { Door, Job, JobStatus, LogEntry, ThreadKind, ThreadSummary } from "@hop/shared/types";
 import { SignOutButton } from "@hop/shared/ui/AppHeader";
+import { MessageThread } from "@hop/shared/ui/MessageThread";
 import { ICONS, Phone, usePhone } from "@hop/shared/ui/Phone";
 import { SignaturePad } from "@hop/shared/ui/SignaturePad";
 import { StatusSteps, statusPill } from "@hop/shared/ui/StatusSteps";
-import { downscalePhoto, samplePhoto } from "@/lib/image";
+import { downscalePhoto } from "@/lib/image";
 
 /*
  * Concierge Rep App, ported from prototype/starter/components/rep/RepApp.tsx.
- * Changes from the starter: no rep picker (identity is the session), the server filters jobs,
- * failed saves show the server's message, photos are downscaled before upload, and the mockup's
- * extras (Sample photo, chat sheet, done-today tiles, start-of-shift checklist, proof on the
- * completed card) are built in the starter's style.
+ * Everything on screen comes from the server: jobs (GET /api/jobs, 4 s poll), the rep's
+ * availability, rating and done-today count (GET /api/me), and messages (/api/messages).
+ * Door access goes through POST /api/door; the member approves it in HOP Client.
  */
 
-type Me = { first: string; name: string; initials: string };
+type Me = { id: string; first: string; name: string; initials: string };
+type Availability = "online" | "offline";
+type Stats = { availability: Availability; rating: { avg: number | null; count: number }; doneToday: number; supportPhone: string | null };
 type Update = (id: string, p: Partial<Job>) => Promise<Job>;
-/** Sample in-app chat threads, kept in memory only. TODO(IT): realtime messaging provider. */
-type Threads = Record<string, ["me" | "them", string][]>;
 
-const TABS = [
-  { key: "jobs", label: "Jobs", icon: ICONS.plan },
-  { key: "job", label: "Active", icon: ICONS.check },
-  { key: "inbox", label: "Inbox", icon: ICONS.chat },
-  { key: "me", label: "Me", icon: ICONS.heart }
-];
 const ATTN = ["Item out of stock", "Cannot reach client", "Address or entry issue", "Door access problem", "Need more details", "Safety concern"];
 const QUICK = ["On my way", "Picked up", "Arrived", "Running 10 min late", "All done"];
 const SHIFT = ["Badge and ID on", "Phone charged, car charger in", "Vehicle check done", "Insulated bags in the car"];
 const MAX_PHOTOS = 6;
+const ACTIVE: JobStatus[] = ["accepted", "started", "in_progress"];
 const maps = (q: string) => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
 const firstName = (s: string) => s.split(" ")[0];
 const errMsg = (e: unknown) => (e instanceof ApiError || e instanceof Error ? e.message : "Something went wrong. Try again.");
-const isToday = (ms: number) => new Date(ms).toDateString() === new Date().toDateString();
+const big = { fontSize: 22, fontFamily: "Montserrat" } as const;
 
 function upload(dataUrl: string, kind: "photo" | "signature", jobId: string) {
   return api<{ url: string }>("/api/uploads", { method: "POST", body: JSON.stringify({ dataUrl, kind, jobId }) });
 }
 
+/** GET /api/me every 30 s (and on demand): availability, rating, done today, HOP line. */
+function useStats() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const refresh = useCallback(async () => {
+    try {
+      setStats(await api<Stats>("/api/me"));
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) window.location.href = "/login";
+    }
+  }, []);
+  useEffect(() => {
+    refresh();
+    const t = setInterval(refresh, 30000);
+    return () => clearInterval(t);
+  }, [refresh]);
+  return { stats, setStats, refresh };
+}
+
+/** The inbox list, polled every 6 s for unread counts. */
+function useThreads() {
+  const [threads, setThreads] = useState<ThreadSummary[] | null>(null);
+  const refresh = useCallback(async () => {
+    try {
+      setThreads((await messagesApi.threads()).threads);
+    } catch {
+      /* keep the last list; the jobs poll shows the connection state */
+    }
+  }, []);
+  useEffect(() => {
+    refresh();
+    const t = setInterval(refresh, 6000);
+    return () => clearInterval(t);
+  }, [refresh]);
+  return { threads, refresh };
+}
+
 export default function RepApp({ me }: { me: Me }) {
   const [tab, setTab] = useState("jobs");
   const [cur, setCur] = useState<string | null>(null);
-  const [threads, setThreads] = useState<Threads>({});
-  const { jobs, online, update, loaded } = useJobs();
+  const { jobs, setJobs, online, update, loaded } = useJobs();
+  const { stats, setStats, refresh: refreshStats } = useStats();
+  const { threads, refresh: refreshThreads } = useThreads();
   const mine = jobs.filter((j) => j.status !== "declined");
   const job = mine.find((j) => j.id === cur) ?? mine.find((j) => j.status !== "offer" && j.status !== "completed") ?? mine[0];
-  const doneToday = mine.filter((j) => j.status === "completed" && isToday(j.updatedAt)).length;
+  const unread = (threads ?? []).reduce((n, t) => n + t.unread, 0);
+  const replace = useCallback((saved: Job) => setJobs((all) => all.map((x) => (x.id === saved.id ? saved : x))), [setJobs]);
 
-  const thread = useCallback((j: Job) => threads[j.id] ?? [["them", firstName(j.client) + ": Thank you for taking this!"]], [threads]);
-  const say = useCallback(
-    (j: Job, who: "me" | "them", text: string) =>
-      setThreads((t) => ({ ...t, [j.id]: [...(t[j.id] ?? [["them", firstName(j.client) + ": Thank you for taking this!"]]), [who, text]] })),
-    []
-  );
+  const tabs = [
+    { key: "jobs", label: "Jobs", icon: ICONS.plan },
+    { key: "job", label: "Active", icon: ICONS.check },
+    { key: "inbox", label: unread ? `Inbox (${unread})` : "Inbox", icon: ICONS.chat },
+    { key: "me", label: "Me", icon: ICONS.heart }
+  ];
 
   return (
     <div className="stage" style={{ display: "flex" }}>
@@ -65,40 +98,69 @@ export default function RepApp({ me }: { me: Me }) {
         <p style={{ fontWeight: 700, color: "var(--navy)", marginBottom: 6 }}>Signed in as {me.name}</p>
         <SignOutButton />
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>
-          {online === null ? "Connecting to dispatch..." : online ? "Live · connected to dispatch" : "Dispatch offline"}
+          {online === null ? "Connecting to dispatch..." : online ? "Live · connected to dispatch" : "Reconnecting to dispatch..."}
         </p>
       </aside>
-      <Phone tabs={TABS} tab={tab} onTab={setTab}>
-        <Top online={online !== false} initials={me.initials} />
-        {tab === "jobs" && <JobsList loaded={loaded} rep={me.first} jobs={mine} doneToday={doneToday} onOpen={(id) => { setCur(id); setTab("job"); }} update={update} />}
+      <Phone tabs={tabs} tab={tab} onTab={setTab}>
+        <Top availability={stats?.availability ?? null} live={online} initials={me.initials} />
+        {tab === "jobs" && (
+          <JobsList loaded={loaded} rep={me.first} jobs={mine} stats={stats} onOpen={(id) => { setCur(id); setTab("job"); }} update={update} goMe={() => setTab("me")} />
+        )}
         {tab === "job" &&
           (job ? (
-            <JobDetail key={job.id} job={job} repFirst={me.first} update={update} say={say} thread={thread(job)} />
+            <JobDetail key={job.id} job={job} meId={me.id} update={update} replace={replace} onCompleted={refreshStats} />
           ) : (
             <p className="sub">{loaded ? "No jobs yet. New jobs from dispatch land on the Jobs tab." : "Loading your jobs..."}</p>
           ))}
-        {tab === "inbox" && <Inbox jobs={mine} thread={thread} say={say} />}
-        {tab === "me" && <MeTab name={me.name} done={doneToday} />}
+        {tab === "inbox" && <Inbox meId={me.id} jobs={mine} threads={threads} onSeen={refreshThreads} />}
+        {tab === "me" && <MeTab me={me} stats={stats} setStats={setStats} />}
       </Phone>
       <aside className="side right" />
     </div>
   );
 }
 
-function Top({ online, initials }: { online: boolean; initials: string }) {
+function Top({ availability, live, initials }: { availability: Availability | null; live: boolean | null; initials: string }) {
   return (
     <div className="top">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="HOP" />
       <div className="row" style={{ gap: 8 }}>
-        <span className={`tag ${online ? "" : "g"}`}>{online ? "● Online" : "Offline"}</span>
+        <small style={{ fontSize: 11, fontWeight: 700, color: live === false ? "var(--coral)" : "var(--muted)" }}>{live === false ? "Reconnecting" : live ? "Live" : ""}</small>
+        {availability && <span className={`tag ${availability === "online" ? "" : "g"}`}>{availability === "online" ? "● Online" : "Offline"}</span>}
         <div className="avatar" style={{ background: "var(--teal)" }}>{initials}</div>
       </div>
     </div>
   );
 }
 
-function JobsList({ rep, jobs, loaded, doneToday, onOpen, update }: { rep: string; jobs: Job[]; loaded: boolean; doneToday: number; onOpen: (id: string) => void; update: Update }) {
+function RatingTile({ stats, label = "Member rating" }: { stats: Stats | null; label?: string }) {
+  const r = stats?.rating;
+  return (
+    <div className="tile">
+      <b style={{ ...big, fontSize: r?.count ? 22 : 15 }}>{!stats ? "…" : r?.count ? `${r.avg?.toFixed(1)} ★` : "No ratings yet"}</b>
+      <span>{r?.count ? `${label} · ${r.count} ${r.count === 1 ? "rating" : "ratings"}` : label}</span>
+    </div>
+  );
+}
+
+function JobsList({
+  rep,
+  jobs,
+  loaded,
+  stats,
+  onOpen,
+  update,
+  goMe
+}: {
+  rep: string;
+  jobs: Job[];
+  loaded: boolean;
+  stats: Stats | null;
+  onOpen: (id: string) => void;
+  update: Update;
+  goMe: () => void;
+}) {
   const { toast } = usePhone();
   const seen = useRef<Set<string> | null>(null);
   useEffect(() => {
@@ -139,7 +201,7 @@ function JobsList({ rep, jobs, loaded, doneToday, onOpen, update }: { rep: strin
               onClick={(e) => {
                 e.stopPropagation();
                 update(j.id, { status: "accepted", log: [...j.log, [nowT(), "Accepted"]] })
-                  .then(() => toast("Job accepted. " + firstName(j.client) + " was notified."))
+                  .then(() => toast("Job accepted. " + firstName(j.client) + " can see it in HOP Client."))
                   .catch((err) => toast(errMsg(err)));
                 onOpen(j.id);
               }}
@@ -151,7 +213,7 @@ function JobsList({ rep, jobs, loaded, doneToday, onOpen, update }: { rep: strin
               onClick={(e) => {
                 e.stopPropagation();
                 update(j.id, { status: "declined", log: [...j.log, [nowT(), "Passed by " + rep]] })
-                  .then(() => toast("Passed. Dispatch was told."))
+                  .then(() => toast("Passed. It's back with dispatch."))
                   .catch((err) => toast(errMsg(err)));
               }}
             >
@@ -166,10 +228,15 @@ function JobsList({ rep, jobs, loaded, doneToday, onOpen, update }: { rep: strin
     <>
       <div className="hello disp">Hi {rep}</div>
       <div className="sub">HOP Concierge Rep · You only see jobs dispatch sends you</div>
+      {stats?.availability === "offline" && (
+        <div className="card" style={{ background: "#fbf0dc", borderColor: "#f1d9a8", cursor: "pointer" }} onClick={goMe}>
+          <h3>You&apos;re offline</h3>
+          <p>Dispatch sees you as offline. Your current jobs stay here. Go online in Me when you&apos;re ready for offers.</p>
+        </div>
+      )}
       <div className="grid2">
-        <div className="tile"><b style={{ fontSize: 22, fontFamily: "Montserrat" }}>{doneToday}</b><span>Done today</span></div>
-        {/* Sample: no ratings are collected yet. */}
-        <div className="tile"><b style={{ fontSize: 22, fontFamily: "Montserrat" }}>4.9</b><span>Member rating</span></div>
+        <div className="tile"><b style={big}>{stats ? stats.doneToday : "…"}</b><span>Done today</span></div>
+        <RatingTile stats={stats} />
       </div>
       <div className="sect"><h2>New offers</h2><span className="tag g">{offers.length}</span></div>
       {offers.length ? offers.map(card) : <p className="mock" style={{ textAlign: "left" }}>{loaded ? "No new offers right now. New jobs from dispatch land here." : "Loading your jobs..."}</p>}
@@ -179,13 +246,15 @@ function JobsList({ rep, jobs, loaded, doneToday, onOpen, update }: { rep: strin
   );
 }
 
-function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFirst: string; update: Update; say: (j: Job, who: "me" | "them", t: string) => void; thread: Threads[string] }) {
+const DOOR_TAG: Record<Door["state"], string> = { idle: "g", asked: "g", ok: "s", denied: "c", open: "c", closed: "" };
+
+function JobDetail({ job: j, meId, update, replace, onCompleted }: { job: Job; meId: string; update: Update; replace: (j: Job) => void; onCompleted: () => void }) {
   const { toast, openSheet, closeSheet } = usePhone();
   const [upx, setUpx] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  // The latest job, for async callbacks (uploads, the door approval timer) that outlive a render.
+  // The latest job, for async callbacks (uploads) that outlive a render.
   const latest = useRef(j);
   latest.current = j;
   const first = firstName(j.client);
@@ -202,7 +271,7 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
 
   const next: Record<string, [string, () => void]> = {
     offer: ["Accept job", () => step("accepted", "Accepted")],
-    accepted: ["Start task", () => step("started", "Started", "Task started. Client is tracking you.")],
+    accepted: ["Start task", () => step("started", "Started", `Task started. ${first} can follow along in HOP Client.`)],
     started: ["Arrived · in progress", () => step("in_progress", "In progress · arrived")],
     in_progress: [
       "Complete task",
@@ -210,9 +279,10 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
         if (j.needPhoto && !j.photos.length) return toast("Add a completion photo first.");
         if (j.needSig && !j.sig) return toast("Get a delivery signature first.");
         quiet(
-          set({ status: "completed", attn: null, log: [...j.log, [nowT(), "Completed and verified"]], updates: [...j.updates, [nowT(), "Client notified: Completed and verified"]] }).then(() =>
-            toast("Done. Proof sent to " + first + ".")
-          )
+          set({ status: "completed", attn: null, log: [...j.log, [nowT(), "Completed and verified"]], updates: [...j.updates, [nowT(), "Client notified: Completed and verified"]] }).then(() => {
+            toast("Done. Proof sent to " + first + ".");
+            onCompleted();
+          })
         );
       }
     ]
@@ -240,25 +310,35 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
   };
 
   const door = j.door;
-  const doorAct = (state: NonNullable<Job["door"]>["state"], text: string, upd?: string) => {
-    const d = latest.current.door;
-    if (!d) return Promise.reject(new Error("No door"));
-    const log: LogEntry[] = [...(d.log || []), [nowT(), text]];
-    return set({ door: { ...d, state, log }, ...(upd ? { updates: [...latest.current.updates, [nowT(), upd]] } : {}) });
-  };
-  const doorApi = async (action: "unlock" | "lock") => {
+  /** POST /api/door. The server moves the door state; the reply carries the saved job. */
+  const doorApi = async (action: "ask" | "unlock" | "lock", done: string) => {
     setBusy(true);
     try {
-      await api("/api/door", { method: "POST", body: JSON.stringify({ jobId: j.id, action }) });
-      return true;
+      const res = await api<{ job: Job }>("/api/door", { method: "POST", body: JSON.stringify({ jobId: j.id, action }) });
+      replace(res.job);
+      toast(done);
     } catch (e) {
       toast(errMsg(e));
-      return false;
     } finally {
       setBusy(false);
     }
   };
-  const active = j.status === "accepted" || j.status === "started" || j.status === "in_progress";
+  // Tell the rep when the member answers (picked up by the 4 s job poll).
+  const prevDoor = useRef(door?.state);
+  useEffect(() => {
+    if (prevDoor.current === "asked" && door?.state === "ok") toast(`${first} approved door access.`);
+    if (prevDoor.current === "asked" && door?.state === "denied") toast(`${first} declined door access.`);
+    prevDoor.current = door?.state;
+  }, [door?.state, first, toast]);
+  const active = ACTIVE.includes(j.status);
+  const doorLabel: Record<Door["state"], string> = {
+    idle: "Access not requested",
+    asked: `Waiting for ${first}`,
+    ok: `Approved by ${first}`,
+    denied: "Declined",
+    open: "Unlocked",
+    closed: "Locked again"
+  };
 
   return (
     <>
@@ -273,7 +353,7 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
       {j.attn && (
         <div className="card" style={{ background: "#fff7ec", borderColor: "#f1d9a8" }}>
           <h3>⚠️ {j.attn.r}</h3>
-          <p>{j.attn.n || "Concierge lead and client were alerted."}</p>
+          <p>{j.attn.n || "Dispatch can see this on the job."}</p>
           <button className="btn o" style={{ marginTop: 10, padding: "7px 12px", fontSize: 12 }} onClick={() => quiet(addUpdate("Resolved: " + j.attn!.r, { attn: null }))}>Resolved, continue</button>
         </div>
       )}
@@ -302,9 +382,9 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
               onClick={() =>
                 openSheet(
                   <AttnSheet
+                    first={first}
                     onSend={(r, n) => {
-                      say(j, "me", "Heads up: " + r + (n ? ". " + n : ""));
-                      quiet(addUpdate("Needs attention: " + r + (n ? " · " + n : ""), { attn: n ? { r, n } : { r } }).then(() => toast("Alert sent to the client and concierge lead.")));
+                      quiet(addUpdate("Needs attention: " + r + (n ? " · " + n : ""), { attn: n ? { r, n } : { r } }).then(() => toast("Flagged for dispatch and " + first + ".")));
                       closeSheet();
                     }}
                   />
@@ -321,15 +401,15 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
       <div className="card">
         <small className="kick">Client</small>
         <h3 style={{ marginTop: 6 }}>{j.client}</h3>
-        <p style={{ fontSize: 12.5 }}>{j.crole} · {j.phoneTxt}</p>
-        <div className="moods" style={{ margin: "8px 0" }}>{j.prefs.map((p) => <span key={p} className="chip" style={{ cursor: "default", fontSize: 12, padding: "5px 10px" }}>{p}</span>)}</div>
+        <p style={{ fontSize: 12.5 }}>{j.crole}{j.phoneTxt ? " · " + j.phoneTxt : ""}</p>
+        {j.prefs.length > 0 && <div className="moods" style={{ margin: "8px 0" }}>{j.prefs.map((p) => <span key={p} className="chip" style={{ cursor: "default", fontSize: 12, padding: "5px 10px" }}>{p}</span>)}</div>}
         {/* TODO(IT): swap tel:/sms: for the masked number from POST /api/calls once Twilio is wired. */}
         <div className="cact">
-          <a className="btn n" href={`tel:${j.phone}`}>📞 Call</a>
-          <a className="btn o" href={`sms:${j.phone}`}>💬 Text</a>
-          <button className="btn o" onClick={() => openSheet(<ChatSheet job={j} thread={thread} say={say} />)}>Chat</button>
+          {j.phone && <a className="btn n" href={`tel:${j.phone}`}>📞 Call</a>}
+          {j.phone && <a className="btn o" href={`sms:${j.phone}`}>💬 Text</a>}
+          <button className="btn o" onClick={() => openSheet(<ChatSheet job={j} meId={meId} onError={toast} />)}>Chat</button>
         </div>
-        <p className="mock" style={{ textAlign: "left" }}>Calls and texts go through a masked HOP number so personal numbers stay private. [CONFIRM phone provider]</p>
+        {j.phone && <p className="mock" style={{ textAlign: "left" }}>Call and Text use the member&apos;s own number for now. TODO(IT): masked HOP numbers. [CONFIRM phone provider]</p>}
       </div>
 
       {j.vendor && (
@@ -337,7 +417,7 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
           <small className="kick">Vendor</small>
           <div className="row between" style={{ marginTop: 6 }}>
             <div><h3>{j.vendor.name}</h3><p style={{ fontSize: 12.5 }}>{j.vendor.contact} · {j.vendor.phoneTxt}</p></div>
-            <a className="btn o" style={{ padding: "8px 12px" }} href={`tel:${j.vendor.phone}`}>📞 Call</a>
+            {j.vendor.phone && <a className="btn o" style={{ padding: "8px 12px" }} href={`tel:${j.vendor.phone}`}>📞 Call</a>}
           </div>
         </div>
       )}
@@ -364,65 +444,40 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
         <div className="card door">
           <div className="row between">
             <div className="row"><div className="ico nv">🚪</div><div><h3>Smart door access</h3><p style={{ fontSize: 12.5 }}>{door.kind}</p></div></div>
-            <span className={`tag ${{ idle: "g", asked: "g", ok: "s", open: "c", closed: "" }[door.state]}`}>
-              {{ idle: "Access not requested", asked: "Waiting for client approval", ok: "Approved for this delivery window", open: "Unlocked · relocks in 10 min", closed: "Locked again" }[door.state]}
-            </span>
+            <span className={`tag ${DOOR_TAG[door.state]}`}>{doorLabel[door.state]}</span>
           </div>
           <div style={{ marginTop: 12 }}>
             {!active && j.status !== "completed" && <p className="mock" style={{ textAlign: "left", marginTop: 0 }}>Accept the job to use door access.</p>}
             {active && door.state === "idle" && (
-              <button
-                className="btn n w"
-                onClick={() => {
-                  quiet(doorAct("asked", "Access requested from " + first));
-                  // TODO(IT): real approval comes from the member's app or watch. Simulated here.
-                  setTimeout(() => {
-                    quiet(doorAct("ok", first + " approved access for this window").then(() => toast("Client approved door access.")));
-                  }, 1800);
-                }}
-              >
-                Request access from client
-              </button>
+              <button className="btn n w" disabled={busy} onClick={() => doorApi("ask", `Asked ${first} for door access.`)}>Ask the member</button>
             )}
-            {active && door.state === "asked" && <button className="btn o w" disabled>Waiting...</button>}
+            {active && door.state === "asked" && <p style={{ fontSize: 13.5 }}>Waiting for {first} to approve in HOP Client…</p>}
+            {active && door.state === "denied" && (
+              <>
+                <p style={{ fontSize: 13.5, marginBottom: 10 }}>The member declined door access. Leave it with them or ask dispatch.</p>
+                <button className="btn o w" disabled={busy} onClick={() => doorApi("ask", `Asked ${first} again.`)}>Ask again</button>
+              </>
+            )}
             {active && (door.state === "ok" || door.state === "closed") && (
-              <button
-                className="btn p w"
-                disabled={busy}
-                onClick={async () => {
-                  if (!(await doorApi("unlock"))) return;
-                  quiet(doorAct("open", "Door unlocked by " + repFirst + ", HOP rep", "Door unlocked, entering now"));
-                  toast("Door unlocked. It relocks in 10 minutes.");
-                }}
-              >
-                🔓 Unlock door
-              </button>
+              <button className="btn p w" disabled={busy} onClick={() => doorApi("unlock", "Door unlock logged for " + first + ".")}>🔓 Unlock door</button>
             )}
             {active && door.state === "open" && (
-              <button
-                className="btn n w"
-                disabled={busy}
-                onClick={async () => {
-                  if (!(await doorApi("lock"))) return;
-                  quiet(doorAct("closed", "Door locked", "Door locked behind me"));
-                  toast("Door locked. Logged for the client.");
-                }}
-              >
-                🔒 Lock door now
-              </button>
+              <button className="btn n w" disabled={busy} onClick={() => doorApi("lock", "Door lock logged for " + first + ".")}>🔒 Lock door now</button>
             )}
           </div>
           {door.log && <Timeline items={door.log} />}
-          <p className="mock" style={{ textAlign: "left" }}>Access works only inside the approved window, and every unlock is logged and shared with the client. [CONFIRM smart lock partners]</p>
+          <p className="mock" style={{ textAlign: "left" }}>
+            {first} approves each request in HOP Client, and every unlock and lock is logged for them. TODO(IT): the smart lock itself isn&apos;t connected yet, so use the entry the member gave you. [CONFIRM smart lock partners]
+          </p>
         </div>
       )}
 
       <div className="card">
-        <div className="row between"><small className="kick">Tracking updates to client</small><button className={`toggle ${j.share ? "on" : ""}`} aria-label="Share live location" onClick={() => quiet(set({ share: !j.share }))} /></div>
-        <p style={{ fontSize: 12, margin: "4px 0 8px" }}>{j.share ? "Live location shared while this job is active" : "Live location off"}</p>
+        <small className="kick">Updates to {first}</small>
+        <p style={{ fontSize: 12, margin: "4px 0 8px" }}>{first} sees these in HOP Client.</p>
         <div className="moods" style={{ margin: "0 0 8px" }}>
           {QUICK.map((u) => (
-            <button key={u} className="chip" style={{ fontSize: 12, padding: "6px 10px" }} onClick={() => { say(j, "me", u); quiet(addUpdate("Sent: " + u).then(() => toast("Update sent to " + first + "."))); }}>{u}</button>
+            <button key={u} className="chip" style={{ fontSize: 12, padding: "6px 10px" }} onClick={() => quiet(addUpdate(u).then(() => toast("Update sent to " + first + ".")))}>{u}</button>
           ))}
         </div>
         <div className="row" style={{ gap: 6 }}>
@@ -433,8 +488,7 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
             onClick={() => {
               const v = upx.trim();
               if (!v) return;
-              say(j, "me", v);
-              quiet(addUpdate("Sent: " + v).then(() => toast("Update sent.")));
+              quiet(addUpdate(v).then(() => toast("Update sent to " + first + ".")));
               setUpx("");
             }}
           >
@@ -449,10 +503,7 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
         <div className="row between" style={{ marginTop: 8 }}>
           <div><b style={{ fontSize: 14 }}>📷 Photo verification</b><small style={{ display: "block", fontSize: 12, color: "var(--muted)" }}>{j.needPhoto ? "Required" : "Optional"} · {j.photos.length} added</small></div>
           {active && (
-            <div className="row" style={{ gap: 6 }}>
-              <button className="btn p" style={{ padding: "7px 12px", fontSize: 12 }} disabled={busy} onClick={() => fileRef.current?.click()}>{busy ? "Saving..." : "Take photo"}</button>
-              <button className="btn o" style={{ padding: "7px 10px", fontSize: 12 }} disabled={busy} onClick={() => addPhoto(samplePhoto())}>Sample</button>
-            </div>
+            <button className="btn p" style={{ padding: "7px 12px", fontSize: 12 }} disabled={busy} onClick={() => fileRef.current?.click()}>{busy ? "Saving..." : "Take photo"}</button>
           )}
         </div>
         <input
@@ -525,13 +576,13 @@ function JobDetail({ job: j, repFirst, update, say, thread }: { job: Job; repFir
   );
 }
 
-function AttnSheet({ onSend }: { onSend: (r: string, n: string) => void }) {
+function AttnSheet({ first, onSend }: { first: string; onSend: (r: string, n: string) => void }) {
   const [r, setR] = useState(ATTN[4]);
   const [n, setN] = useState("");
   return (
     <div>
       <h2 className="disp" style={{ color: "var(--navy)", fontSize: 20 }}>Needs special attention</h2>
-      <p style={{ color: "var(--muted)", fontSize: 14, margin: "4px 0 12px" }}>The client and concierge lead get an alert right away.</p>
+      <p style={{ color: "var(--muted)", fontSize: 14, margin: "4px 0 12px" }}>Dispatch and {first} see this on the job right away.</p>
       <div className="moods" style={{ margin: "0 0 10px" }}>{ATTN.map((x) => <button key={x} className={`chip ${x === r ? "on" : ""}`} onClick={() => setR(x)}>{x}</button>)}</div>
       <textarea className="field" rows={3} value={n} maxLength={600} onChange={(e) => setN(e.target.value)} placeholder="What do you need? For example: pharmacy says refill is not ready until 4:30" />
       <button className="btn c w" style={{ marginTop: 10 }} onClick={() => onSend(r, n.trim())}>Send alert</button>
@@ -539,37 +590,30 @@ function AttnSheet({ onSend }: { onSend: (r: string, n: string) => void }) {
   );
 }
 
-/** Sample in-app chat from the mockup. Messages live in memory only. TODO(IT): realtime messaging. */
-function ChatSheet({ job: j, thread, say }: { job: Job; thread: Threads[string]; say: (j: Job, who: "me" | "them", t: string) => void }) {
-  const [msgs, setMsgs] = useState(thread);
-  const [v, setV] = useState("");
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (box.current) box.current.scrollTop = box.current.scrollHeight;
-  }, [msgs]);
-  const send = () => {
-    const t = v.trim();
-    if (!t) return;
-    setMsgs((m) => [...m, ["me", t]]);
-    say(j, "me", t);
-    setV("");
-    setTimeout(() => {
-      setMsgs((m) => [...m, ["them", "Thank you so much!"]]);
-      say(j, "them", "Thank you so much!");
-    }, 900);
-  };
+/** The job's chat with the member (thread job/<job id>), live from /api/messages. */
+function ChatSheet({ job: j, meId, onError }: { job: Job; meId: string; onError: (m: string) => void }) {
+  const first = firstName(j.client);
   return (
     <div>
       <div className="row" style={{ marginBottom: 10 }}>
         <div className="avatar" style={{ background: "var(--sky)" }}>{j.client[0]}</div>
         <div><h2 className="disp" style={{ color: "var(--navy)", fontSize: 18 }}>{j.client}</h2><p style={{ fontSize: 12.5, color: "var(--muted)" }}>{j.title}</p></div>
       </div>
-      <div className="chat" ref={box}>{msgs.map(([who, t], i) => <div key={i} className={`bub ${who === "me" ? "me" : "ai"}`}>{t}</div>)}</div>
-      <div className="row" style={{ gap: 6 }}>
-        <input className="field" value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={"Message " + firstName(j.client)} style={{ padding: "10px 12px" }} />
-        <button className="btn n" onClick={send}>Send</button>
+      <MessageThread kind="job" threadKey={j.id} meId={meId} placeholder={"Message " + first} emptyText={`No messages yet. Say hello to ${first}.`} onError={onError} />
+      <p className="mock">Messages go to {first} in HOP Client.</p>
+    </div>
+  );
+}
+
+/** The rep's own HQ thread (rep/<my id>) with the Console team. */
+function HqSheet({ meId, onError }: { meId: string; onError: (m: string) => void }) {
+  return (
+    <div>
+      <div className="row" style={{ marginBottom: 10 }}>
+        <div className="avatar" style={{ background: "var(--navy)" }}>HQ</div>
+        <div><h2 className="disp" style={{ color: "var(--navy)", fontSize: 18 }}>HOP HQ</h2><p style={{ fontSize: 12.5, color: "var(--muted)" }}>The Console team</p></div>
       </div>
-      <p className="mock">Sample conversation. In-app chat isn&apos;t connected yet.</p>
+      <MessageThread kind="rep" threadKey={meId} meId={meId} placeholder="Message HOP HQ" emptyText="No messages yet. HOP HQ answers here." onError={onError} />
     </div>
   );
 }
@@ -579,63 +623,170 @@ export function Timeline({ items }: { items: LogEntry[] }) {
   return <div className="tl" style={{ marginTop: 12 }}>{items.map(([t, x], i) => <div key={i}><small>{t}</small>{x}</div>)}</div>;
 }
 
-function Inbox({ jobs, thread, say }: { jobs: Job[]; thread: (j: Job) => Threads[string]; say: (j: Job, who: "me" | "them", t: string) => void }) {
-  const { openSheet } = usePhone();
+function Inbox({ meId, jobs, threads, onSeen }: { meId: string; jobs: Job[]; threads: ThreadSummary[] | null; onSeen: () => void }) {
+  const { openSheet, toast } = usePhone();
+  const byKey = (kind: ThreadKind, key: string) => threads?.find((t) => t.threadKind === kind && t.threadKey === key);
+  const hq = byKey("rep", meId);
+  // Job chats: every job thread with messages, plus my live jobs that don't have one yet.
+  const jobIds = [
+    ...(threads ?? []).filter((t) => t.threadKind === "job").map((t) => t.threadKey),
+    ...jobs.filter((j) => ACTIVE.includes(j.status) && !byKey("job", j.id)).map((j) => j.id)
+  ];
+  const open = (node: ReactNode) => {
+    openSheet(node);
+    setTimeout(onSeen, 1500); // the thread marks itself read on load; refresh the badges
+  };
+  const row = (key: string, avatar: string, bg: string, title: string, t: ThreadSummary | undefined, empty: string, onClick: () => void) => (
+    <div className="it" key={key} style={{ cursor: "pointer" }} onClick={onClick}>
+      <div className="avatar" style={{ background: bg }}>{avatar}</div>
+      <div className="grow">
+        <b>{title}</b>
+        <small style={t?.unread ? { fontWeight: 700, color: "var(--ink)" } : undefined}>{t ? (t.last.senderId === meId ? "You: " : "") + t.last.body.slice(0, 60) : empty}</small>
+      </div>
+      {t?.unread ? <span className="tag c">{t.unread}</span> : <span style={{ color: "var(--muted)" }}>›</span>}
+    </div>
+  );
   return (
     <>
       <div className="hello disp">Inbox</div>
-      <div className="sub">Messages with members and the concierge lead.</div>
+      <div className="sub">HOP HQ and your members.</div>
       <div className="card list" style={{ padding: "4px 16px" }}>
-        {jobs.filter((j) => j.status !== "offer").map((j) => {
-          const t = thread(j);
-          return (
-            <div className="it" key={j.id} style={{ cursor: "pointer" }} onClick={() => openSheet(<ChatSheet job={j} thread={t} say={say} />)}>
-              <div className="avatar" style={{ background: "var(--sky)" }}>{j.client[0]}</div>
-              <div className="grow"><b>{j.client}</b><small>{t[t.length - 1][1].slice(0, 48)}</small></div>
-              <span style={{ color: "var(--muted)" }}>›</span>
-            </div>
-          );
+        {row("hq", "HQ", "var(--navy)", "HOP HQ", hq, "Message the Console team any time", () => open(<HqSheet meId={meId} onError={toast} />))}
+        {jobIds.map((id) => {
+          const job = jobs.find((x) => x.id === id);
+          const t = byKey("job", id);
+          const title = job ? `${job.client} · ${job.title}` : t?.title ?? "Job chat";
+          return row(id, (job?.client ?? title)[0], "var(--sky)", title, t, "No messages yet", () => {
+            if (job) open(<ChatSheet job={job} meId={meId} onError={toast} />);
+            else toast("This job isn't on your list anymore.");
+          });
         })}
-        <div className="it">
-          <div className="avatar" style={{ background: "var(--navy)" }}>HQ</div>
-          <div className="grow"><b>Concierge lead</b><small>Great work today. Two more offers coming at 4.</small></div>
-        </div>
       </div>
-      <p className="mock">Sample messages. TODO(IT): connect to your realtime messaging provider.</p>
+      {threads === null && <p className="mock">Loading messages...</p>}
     </>
   );
 }
 
-function MeTab({ name, done }: { name: string; done: number }) {
-  const { toast } = usePhone();
-  // UI only: availability isn't sent to dispatch yet. [CONFIRM how reps go on/off shift]
-  const [on, setOn] = useState(true);
+/** The start-of-shift checklist is personal and lives only on this phone, reset each day. */
+const shiftKey = (meId: string) => `hop-rep-shift:${meId}:${new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" })}`;
+function useShiftChecklist(meId: string) {
   const [shift, setShift] = useState<Record<number, boolean>>({});
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(shiftKey(meId));
+      if (v) setShift(JSON.parse(v));
+    } catch {
+      /* storage blocked: start empty */
+    }
+  }, [meId]);
+  const toggle = (i: number) =>
+    setShift((s) => {
+      const n = { ...s, [i]: !s[i] };
+      try {
+        localStorage.setItem(shiftKey(meId), JSON.stringify(n));
+      } catch {
+        /* storage blocked: keep it in memory */
+      }
+      return n;
+    });
+  return { shift, toggle };
+}
+
+function MeTab({ me, stats, setStats }: { me: Me; stats: Stats | null; setStats: (s: Stats) => void }) {
+  const { toast, openSheet } = usePhone();
+  const { shift, toggle } = useShiftChecklist(me.id);
+  const [saving, setSaving] = useState(false);
+  const on = stats?.availability === "online";
+  const setAvailability = async () => {
+    if (!stats || saving) return;
+    const want: Availability = on ? "offline" : "online";
+    setSaving(true);
+    setStats({ ...stats, availability: want });
+    try {
+      await api("/api/me?action=availability", { method: "POST", body: JSON.stringify({ availability: want }) });
+      toast(want === "online" ? "You're online. Dispatch can see you." : "You're offline. Your current jobs stay with you.");
+    } catch (e) {
+      setStats({ ...stats });
+      toast(errMsg(e));
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <>
-      <div className="hello disp">{name}</div>
+      <div className="hello disp">{me.name}</div>
       <div className="sub">HOP Concierge Rep</div>
       <div className="card">
         <div className="row between">
-          <div><h3>{on ? "You are online" : "You are offline"}</h3><p>{on ? "New job offers will come to you." : "Go online to get offers."}</p></div>
-          <button className={`toggle ${on ? "on" : ""}`} aria-label="Online" onClick={() => setOn(!on)} />
+          <div>
+            <h3>{!stats ? "Loading..." : on ? "You are online" : "You are offline"}</h3>
+            <p>{on ? "Dispatch sees you as available for new offers." : "Go online so dispatch knows you're available. Current jobs stay with you either way."}</p>
+          </div>
+          <button className={`toggle ${on ? "on" : ""}`} aria-label={on ? "Go offline" : "Go online"} aria-pressed={on} disabled={!stats || saving} onClick={setAvailability} />
         </div>
       </div>
       <div className="grid2">
-        <div className="tile"><b style={{ fontSize: 20, fontFamily: "Montserrat" }}>{done}</b><span>Completed today</span></div>
-        <div className="tile"><b style={{ fontSize: 20, fontFamily: "Montserrat" }}>4.9</b><span>Member rating · sample</span></div>
+        <div className="tile"><b style={{ ...big, fontSize: 20 }}>{stats ? stats.doneToday : "…"}</b><span>Completed today</span></div>
+        <RatingTile stats={stats} />
       </div>
       <div className="sect"><h2>Start of shift</h2></div>
+      <p className="mock" style={{ textAlign: "left", margin: "-4px 0 8px" }}>Your personal checklist (saved on this device)</p>
       <div className="card list">
         {SHIFT.map((x, i) => (
-          <button key={x} className={`chk ${shift[i] ? "on" : ""}`} style={{ border: 0 }} onClick={() => setShift((s) => ({ ...s, [i]: !s[i] }))}>
+          <button key={x} className={`chk ${shift[i] ? "on" : ""}`} style={{ border: 0 }} onClick={() => toggle(i)}>
             <span>{shift[i] ? "✓" : ""}</span>{x}
           </button>
         ))}
       </div>
-      <button className="btn c w" style={{ marginTop: 4 }} onClick={() => toast("Concierge lead is calling you now. Location shared.")}>Safety help</button>
-      <p className="mock">Connects you to the concierge lead and shares your location. [CONFIRM safety process]</p>
+      <button className="btn c w" style={{ marginTop: 4 }} onClick={() => openSheet(<SafetySheet supportPhone={stats?.supportPhone ?? null} />)}>Safety help</button>
+      <p className="mock">Alerts HOP HQ right away with an urgent message and a Console alert. [CONFIRM safety process]</p>
       <SignOutButton className="btn o w" style={{ marginTop: 12, padding: "12px 16px", fontSize: 14 }} />
     </>
+  );
+}
+
+const telHref = (n: string) => "tel:" + n.replace(/[^\d+]/g, "");
+
+function SafetySheet({ supportPhone }: { supportPhone: string | null }) {
+  const [note, setNote] = useState("");
+  const [state, setState] = useState<"confirm" | "sending" | "sent">("confirm");
+  const [err, setErr] = useState("");
+  const [phone, setPhone] = useState(supportPhone);
+  const send = async () => {
+    setState("sending");
+    setErr("");
+    try {
+      const res = await api<{ ok: true; supportPhone: string | null }>("/api/me?action=safety", { method: "POST", body: JSON.stringify(note.trim() ? { note: note.trim() } : {}) });
+      setPhone(res.supportPhone);
+      setState("sent");
+    } catch (e) {
+      setErr(errMsg(e));
+      setState("confirm");
+    }
+  };
+  const calls = (
+    <>
+      {phone && <a className="btn n w" style={{ marginTop: 10, display: "block", textAlign: "center" }} href={telHref(phone)}>📞 Call the HOP line</a>}
+      <a className="btn o w" style={{ marginTop: 8, display: "block", textAlign: "center" }} href="tel:911">If you&apos;re in danger call 911</a>
+    </>
+  );
+  if (state === "sent") {
+    return (
+      <div>
+        <h2 className="disp" style={{ color: "var(--navy)", fontSize: 20 }}>HOP HQ has been alerted</h2>
+        <p style={{ color: "var(--muted)", fontSize: 14, margin: "4px 0 6px" }}>The Console team has your urgent message and will reach you in your HOP HQ thread.</p>
+        {calls}
+      </div>
+    );
+  }
+  return (
+    <div>
+      <h2 className="disp" style={{ color: "var(--navy)", fontSize: 20 }}>Need help?</h2>
+      <p style={{ color: "var(--muted)", fontSize: 14, margin: "4px 0 12px" }}>This sends HOP HQ an urgent alert with your current job. Add a short note if you can.</p>
+      <textarea className="field" rows={3} value={note} maxLength={400} onChange={(e) => setNote(e.target.value)} placeholder="What's happening? (optional)" />
+      {err && <p style={{ color: "var(--coral)", fontSize: 13, marginTop: 6 }}>{err}</p>}
+      <button className="btn c w" style={{ marginTop: 10 }} disabled={state === "sending"} onClick={send}>{state === "sending" ? "Alerting HOP HQ..." : "Alert HOP HQ now"}</button>
+      {calls}
+    </div>
   );
 }
