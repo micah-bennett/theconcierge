@@ -8,7 +8,8 @@ import { loadFacilityView, resolveSupport, sendSupport } from "@/lib/server/faci
 export const dynamic = "force-dynamic";
 
 /*
- * GET  /api/facility?metric=strain|stress|missed_breaks|requests&range=today|week|next
+ * GET  /api/facility?metric=strain|stress|missed_breaks|requests|mood&range=today|week|next
+ *      → FacilityResponse (lib/server/facility.ts). Built from portal_checkins + portal_requests.
  * POST /api/facility?action=support  { unitId, actions: string[] }
  * POST /api/facility?action=resolve  { unitId }
  *
