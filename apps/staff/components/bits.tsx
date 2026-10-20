@@ -1,7 +1,9 @@
 "use client";
-import { nowT } from "@hop/shared/time";
-import { CATS } from "@/lib/roles";
+import { useState } from "react";
+import { usePhone } from "@hop/shared/ui/Phone";
+import { COMING_SOON, type FeatureKey } from "@/lib/content";
 import type { MyReq } from "@/lib/types";
+import { useStaff } from "./store";
 
 /** The mockup's icon paths (tabs and top bar). */
 export const ic = {
@@ -32,30 +34,54 @@ export function Svg({ p, size, style }: { p: string; size?: number; style?: Reac
   );
 }
 
-/** The mockup's readiness ring. */
-export function Ring({ v }: { v: number }) {
-  const r = 26;
-  const c = 2 * Math.PI * r;
-  return (
-    <svg className="rring" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r={r} fill="none" stroke="#e6ebf3" strokeWidth="7" />
-      <circle cx="32" cy="32" r={r} fill="none" stroke="#04a6a8" strokeWidth="7" strokeLinecap="round" strokeDasharray={`${(c * v) / 100} ${c}`} transform="rotate(-90 32 32)" />
-      <text x="32" y="37" textAnchor="middle" fontFamily="Montserrat" fontWeight="800" fontSize="16" fill="#012f6c">
-        {v}
-      </text>
-    </svg>
-  );
-}
-
-export function Bars({ arr, max, col }: { arr: [string, number][]; max: number; col: string }) {
+/** Bars for a small chart. A null value draws an empty slot (no check-in that day). */
+export function Bars({ arr, max, col }: { arr: [string, number | null][]; max: number; col: string }) {
   return (
     <div className="bars">
       {arr.map(([d, v], i) => (
         <div key={i}>
-          <i style={{ height: `${(v / max) * 100}%`, background: col }} />
+          <i style={{ height: v ? `${(v / max) * 100}%` : 3, background: v ? col : "var(--line)" }} title={v ? String(v) : "No check-in"} />
           <small>{d}</small>
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * An honest placeholder for something that isn't built yet. "Tell me when" writes portal_interest,
+ * so HOP can see what members want first.
+ */
+export function ComingSoon({ feature, icon, text, compact }: { feature: FeatureKey; icon: string; text: string; compact?: boolean }) {
+  const { me, act } = useStaff();
+  const { toast } = usePhone();
+  const [busy, setBusy] = useState(false);
+  const asked = me?.interest.includes(feature);
+  return (
+    <div className="card" style={{ background: "var(--soft-sky)", borderColor: "#cfe3f7" }}>
+      <div className="row between" style={{ alignItems: "flex-start" }}>
+        <div className="row" style={{ alignItems: "flex-start" }}>
+          <div className="ico" style={{ background: "#fff" }}>{icon}</div>
+          <div>
+            <span className="tag s">Coming soon</span>
+            <h3 style={{ marginTop: 6 }}>{COMING_SOON[feature]}</h3>
+            {!compact && <p>{text}</p>}
+          </div>
+        </div>
+      </div>
+      <button
+        className={`btn ${asked ? "o" : "n"} w`}
+        style={{ marginTop: 12 }}
+        disabled={!me || asked || busy}
+        onClick={async () => {
+          setBusy(true);
+          const r = await act("interest", { feature });
+          setBusy(false);
+          if (r) toast("Thanks. We'll let you know when it's ready.");
+        }}
+      >
+        {asked ? "We'll let you know ✓" : "Tell me when"}
+      </button>
     </div>
   );
 }
@@ -79,7 +105,7 @@ export function reqView(r: MyReq): { label: string; cls: string; eta: string } {
     case "in_progress":
       return { label: "In progress", cls: "en_route", eta: `${rep} is on it now` };
     case "completed":
-      return { label: "Completed", cls: "verified", eta: "Done and verified" };
+      return { label: "Completed", cls: "verified", eta: r.rating ? `Done · you rated it ${r.rating} of 5` : "Done · tap to rate it" };
     case "declined":
       return { label: "Received", cls: "matching", eta: "Finding another rep" };
     default:
@@ -88,35 +114,5 @@ export function reqView(r: MyReq): { label: string; cls: string; eta: string } {
   }
 }
 
-/** One row of "Your requests" (mockup reqRow). Tap to see its timeline. */
-export function ReqRow({ r, open, onToggle }: { r: MyReq; open: boolean; onToggle: () => void }) {
-  const v = reqView(r);
-  const steps: [string, string][] = [[nowT(new Date(r.createdAt)), r.urgent ? "Clutch request received" : "Request received"]];
-  if (r.window) steps.push(["", `When: ${r.window}`]);
-  if (r.jobStatus && !r.updates.length) steps.push(["", `${r.repFirst || "A rep"} assigned`]);
-  for (const [t, x] of r.updates) steps.push([t, x.replace(/^Client notified:\s*/, "")]);
-  return (
-    <div className="req" role="button" tabIndex={0} onClick={onToggle} onKeyDown={(e) => e.key === "Enter" && onToggle()}>
-      <div className="row between">
-        <div className="row" style={{ minWidth: 0 }}>
-          <div className="ico t">{CATS[r.cat]?.[0] ?? "🧾"}</div>
-          <div style={{ minWidth: 0 }}>
-            <h3 style={{ fontSize: 14, color: "var(--navy)" }}>{r.text}</h3>
-            <p style={{ fontSize: 12 }}>{v.eta}</p>
-          </div>
-        </div>
-        <span className={`st ${v.cls}`}>{v.label}</span>
-      </div>
-      {open && (
-        <div className="tl">
-          {steps.map((s, i) => (
-            <div key={i}>
-              <small>{s[0]}</small>
-              {s[1]}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+/** True while a rep is working the request (job chat makes sense). */
+export const isActive = (r: MyReq) => !!r.jobId && (r.jobStatus === "accepted" || r.jobStatus === "started" || r.jobStatus === "in_progress");

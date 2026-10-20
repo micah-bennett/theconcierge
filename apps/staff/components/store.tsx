@@ -4,24 +4,33 @@ import { ApiError, j } from "@hop/shared/client";
 import { usePhone } from "@hop/shared/ui/Phone";
 import type { JobCat } from "@hop/shared/types";
 import { LEARN_SOURCES, type Pref } from "@/lib/content";
-import { pickRole, type SampleRole } from "@/lib/roles";
-import type { Profile, MyReq } from "@/lib/types";
+import type { MeState, MyReq, Profile } from "@/lib/types";
 
 export type Screen = "home" | "plan" | "life" | "me" | "crew" | "you" | "know" | "smart";
-export type AskSource = "ask" | "clutch" | "rescue" | "voice" | "chat" | "welcome" | "life";
+export type RechargeTab = "points" | "play" | "wellbeing";
+export type AskSource = "ask" | "clutch" | "rescue" | "voice" | "chat" | "life";
 export type AskInput = { cat: JobCat; text: string; urgent?: boolean; window?: string; source: AskSource };
 type PatchBody = { prefs: Pref[] } | { claim: string } | { consent: { source: string; granted: boolean; scopes?: string[] } };
-export type ChatMsg = ["ai" | "me", string];
+/** Response of POST /api/me?action=… : the fresh state plus action-specific fields. */
+export type ActResult = { me: MeState; added?: number } & Record<string, unknown>;
 
 type Ctx = {
   profile: Profile | null;
-  role: SampleRole;
+  /** GET /api/me: check-ins, shift, life items, rewards, leaderboard… (null while loading). */
+  me: MeState | null;
   requests: MyReq[] | null;
   screen: Screen;
   go: (s: Screen) => void;
+  rechargeTab: RechargeTab;
+  setRechargeTab: (t: RechargeTab) => void;
   /** Sends a real request to the Console queue. Resolves true when it was saved. */
   ask: (input: AskInput, okMsg?: string) => Promise<boolean>;
   patch: (body: PatchBody) => Promise<{ profile: Profile; added?: number } | null>;
+  /** POST /api/me?action=…; updates `me` (and the points balance). Resolves null on error (toasted). */
+  act: (action: string, body: unknown) => Promise<ActResult | null>;
+  refreshProfile: () => void;
+  refreshRequests: () => void;
+  refreshMe: () => void;
   setPrefs: (prefs: Pref[]) => void;
   /** A Week delivery window picked by the member; attached to their next request. */
   pickedWindow: string | null;
@@ -29,11 +38,6 @@ type Ctx = {
   /** Consent switch (learn:/priv:/wear:/cal:/work:) with its default when never set. */
   consentOn: (key: string, dflt?: boolean) => boolean;
   setConsent: (key: string, granted: boolean, scopes?: string[]) => Promise<boolean>;
-  // Sample, this session only.
-  homeConn: Record<string, boolean>;
-  setHomeConn: (v: Record<string, boolean>) => void;
-  thread: ChatMsg[];
-  setThread: (fn: (t: ChatMsg[]) => ChatMsg[]) => void;
 };
 
 const StaffCtx = createContext<Ctx | null>(null);
@@ -55,28 +59,22 @@ export function useStaff(): Ctx {
   return c;
 }
 
-const THREAD0: ChatMsg[] = [
-  ["ai", "Hi, I am Hop, your single point of contact. I watch your day so you can focus on care. How are you feeling?"],
-  ["me", "A little wiped, honestly. Rough night."],
-  ["ai", "I hear you. Sleep came in at 5h 12m. I lined up a ride so the commute is one less thing, and I will protect a lunch window at 12:30. Sound good?"]
-];
-
 const LEARN_DEFAULTS = Object.fromEntries(LEARN_SOURCES.map(([k, , d]) => [`learn:${k}`, d]));
 
 /**
- * Holds the member's real profile and requests (polled), plus the session-only sample state.
- * It wraps <Phone> so the bottom sheets (rendered by Phone outside its children) can use it too;
- * <PhoneBridge /> inside Phone hands this provider the phone's toast.
+ * Holds the member's real profile, requests (polled every 5 s) and /api/me state (every 60 s and
+ * after each action). It wraps <Phone> so the bottom sheets (rendered by Phone outside its
+ * children) can use it too; <PhoneBridge /> inside Phone hands this provider the phone's toast.
  */
 export function StaffProvider({ children }: { children: ReactNode }) {
   const toastRef = useRef<(m: string) => void>(() => {});
   const toast = useCallback((m: string) => toastRef.current(m), []);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [me, setMe] = useState<MeState | null>(null);
   const [requests, setRequests] = useState<MyReq[] | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
+  const [rechargeTab, setRechargeTab] = useState<RechargeTab>("points");
   const [pickedWindow, setPickedWindow] = useState<string | null>(null);
-  const [homeConn, setHomeConn] = useState<Record<string, boolean>>({});
-  const [thread, setThreadState] = useState<ChatMsg[]>(THREAD0);
   const pickedRef = useRef(pickedWindow);
   pickedRef.current = pickedWindow;
 
@@ -100,13 +98,31 @@ export function StaffProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
+  const loadProfile = useCallback(() => {
     j<{ profile: Profile }>("/api/profile").then((r) => setProfile(r.profile)).catch(onErr);
+  }, [onErr]);
+
+  const loadMe = useCallback(async () => {
+    try {
+      const r = await j<{ me: MeState }>("/api/me");
+      setMe(r.me);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) window.location.href = "/login";
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProfile();
     loadRequests();
+    loadMe();
     // Live status of "My requests". TODO(IT): swap polling for SSE/Pusher/Ably with the other apps.
     const t = setInterval(loadRequests, 5000);
-    return () => clearInterval(t);
-  }, [loadRequests, onErr]);
+    const t2 = setInterval(loadMe, 60000);
+    return () => {
+      clearInterval(t);
+      clearInterval(t2);
+    };
+  }, [loadRequests, loadProfile, loadMe]);
 
   const go = useCallback((s: Screen) => {
     setScreen(s);
@@ -148,6 +164,22 @@ export function StaffProvider({ children }: { children: ReactNode }) {
     [onErr]
   );
 
+  const act = useCallback(
+    async (action: string, body: unknown) => {
+      try {
+        const r = await j<ActResult>(`/api/me?action=${encodeURIComponent(action)}`, { method: "POST", body: JSON.stringify(body ?? {}) });
+        setMe(r.me);
+        // Points may have moved (check-in, rating, redeem, social): refresh the balance.
+        loadProfile();
+        return r;
+      } catch (e) {
+        onErr(e);
+        return null;
+      }
+    },
+    [onErr, loadProfile]
+  );
+
   const setPrefs = useCallback(
     (prefs: Pref[]) => {
       setProfile((p) => (p ? { ...p, prefs } : p));
@@ -178,23 +210,25 @@ export function StaffProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(
     () => ({
       profile,
-      role: pickRole(profile?.jobTitle || ""),
+      me,
       requests,
       screen,
       go,
+      rechargeTab,
+      setRechargeTab,
       ask,
       patch,
+      act,
+      refreshProfile: loadProfile,
+      refreshRequests: loadRequests,
+      refreshMe: loadMe,
       setPrefs,
       pickedWindow,
       setPickedWindow,
       consentOn,
-      setConsent,
-      homeConn,
-      setHomeConn,
-      thread,
-      setThread: (fn) => setThreadState(fn)
+      setConsent
     }),
-    [profile, requests, screen, go, ask, patch, setPrefs, pickedWindow, consentOn, setConsent, homeConn, thread]
+    [profile, me, requests, screen, go, rechargeTab, ask, patch, act, loadProfile, loadRequests, loadMe, setPrefs, pickedWindow, consentOn, setConsent]
   );
 
   return (

@@ -1,7 +1,7 @@
 import "server-only";
 import type { SignupInput } from "@hop/shared/server/auth";
 import { json, sql } from "@hop/shared/server/db";
-import { EARN_PERIOD, PREFS0, TAUGHT_KEY, findEarn, type Pref } from "../content";
+import { EARN_PERIOD, LEGACY_SAMPLE_PREFS, PREFS0, TAUGHT_KEY, findEarn, type Pref } from "../content";
 import type { Consent, Profile } from "../types";
 
 /*
@@ -10,7 +10,7 @@ import type { Consent, Profile } from "../types";
  */
 
 /** Earn periods are counted in the facility's local time. [CONFIRM per-facility time zones] */
-const TZ = "America/New_York";
+export const TZ = "America/New_York";
 
 /** sign-up hook: the unit must belong to the chosen facility, then the profile row is written. */
 export async function createProfileOnSignup(userId: string, input: SignupInput): Promise<void> {
@@ -24,7 +24,7 @@ export async function createProfileOnSignup(userId: string, input: SignupInput):
 }
 
 /** A staff user created some other way (or before Phase 4) gets an empty profile on first use. */
-async function ensureProfile(userId: string): Promise<void> {
+export async function ensureProfile(userId: string): Promise<void> {
   await sql()`INSERT INTO portal_staff_profiles (user_id, prefs) VALUES (${userId}, ${JSON.stringify(PREFS0)}::jsonb) ON CONFLICT (user_id) DO NOTHING`;
 }
 
@@ -80,6 +80,7 @@ export async function getProfile(userId: string): Promise<Profile> {
     })
     .map((c) => c.earn_key);
   return {
+    id: userId,
     firstName: r.first_name,
     lastName: r.last_name,
     email: r.email,
@@ -87,7 +88,8 @@ export async function getProfile(userId: string): Promise<Profile> {
     facilityName: r.facility_name,
     unitName: r.unit_name,
     memberSince: new Date(r.created_at).toISOString(),
-    prefs: Array.isArray(r.prefs) ? r.prefs : [],
+    // The prototype seeded sample prefs on sign-up; hide them unless the member confirmed one.
+    prefs: Array.isArray(r.prefs) ? r.prefs.filter((x) => x.ok || !LEGACY_SAMPLE_PREFS.includes(x.v)) : [],
     consents: r.consents && typeof r.consents === "object" ? r.consents : {},
     points: r.points ?? 0,
     lifetimePoints: r.lifetime_points ?? 0,
@@ -110,6 +112,28 @@ export async function savePrefs(userId: string, prefs: Pref[]): Promise<void> {
  * so two taps (or two devices) can't add the points twice.
  * TODO(IT): server-verify earn events (watch, shift system, CEU provider) before points have cash value.
  */
+/**
+ * Adds points for a server-checked action (games, social) once per (key, period), in one statement.
+ * Returns the points added (0 if this key was already claimed for the period).
+ */
+export async function grantPoints(userId: string, key: string, period: string, points: number): Promise<number> {
+  if (points <= 0) return 0;
+  await ensureProfile(userId);
+  const rows = (await sql()`
+    WITH c AS (
+      INSERT INTO portal_point_claims (user_id, earn_key, period, points)
+      VALUES (${userId}, ${key}, ${period}, ${points})
+      ON CONFLICT DO NOTHING
+      RETURNING points
+    )
+    UPDATE portal_staff_profiles s
+    SET points = s.points + c.points, lifetime_points = s.lifetime_points + c.points, updated_at = NOW()
+    FROM c WHERE s.user_id = ${userId}
+    RETURNING c.points
+  `) as { points: number }[];
+  return rows[0]?.points ?? 0;
+}
+
 export async function claimEarn(userId: string, earnKey: string): Promise<{ added: number }> {
   const earn = findEarn(earnKey);
   if (!earn) throw json({ error: "Unknown earn action" }, 400);

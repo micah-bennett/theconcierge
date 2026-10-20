@@ -1,44 +1,46 @@
 "use client";
 import { useState } from "react";
+import { MIN_GROUP_SIZE } from "@hop/shared/brand";
 import { usePhone } from "@hop/shared/ui/Phone";
-import { initials } from "@/lib/roles";
+import { PULSE_WORDS, SOCIAL_POINTS } from "@/lib/content";
+import { ComingSoon } from "../bits";
 import { useStaff } from "../store";
 
-const SUB: [string, string][] = [["groups", "Groups"], ["feed", "Feed"], ["news", "News"], ["pulse", "Pulse"], ["refer", "Refer"]];
-const GROUPS: [string, string][] = [["Night Shift Crew", "142 members · for the 7p to 7a team"], ["New Parents at Work", "88 members · shifts and little ones"], ["Run Club", "61 members · trails and 5Ks"], ["Mindfulness and Reset", "110 members · breathing and calm"]];
+const SUB: [string, string][] = [["pulse", "Pulse"], ["refer", "Invite"], ["community", "Community"]];
 
 /**
- * Mockup `crewV`: Groups, Feed, News, Pulse, Refer. All sample (community is not built), except
- * that submitting the Pulse claims the real weekly "Answer the weekly pulse" points.
+ * Crew: the weekly pulse (stored as a 'pulse' check-in; unit results only at 5+ people), your
+ * invite link with the real count of people who joined with it, and a Coming soon card for the
+ * community (groups, feed, news).
  */
 export function Crew() {
-  const { profile, patch } = useStaff();
+  const { me, act } = useStaff();
   const { toast } = usePhone();
-  const [crew, setCrew] = useState("groups");
-  const [groups, setGroups] = useState<Record<string, boolean>>({ "Night Shift Crew": true, "New Parents at Work": false, "Run Club": false, "Mindfulness and Reset": true });
+  const [crew, setCrew] = useState("pulse");
+  const [editing, setEditing] = useState(false);
   const [scale, setScale] = useState<number | null>(null);
-  const [mood, setMood] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [mood, setMood] = useState<string>("");
   const [busy, setBusy] = useState(false);
-  const code = profile ? `${initials(profile.firstName, profile.lastName)}-HOP` : "HOP";
+  const pulse = me?.pulse;
 
   async function submit() {
+    if (!scale) return toast("Pick how supported you felt, 1 to 5.");
     setBusy(true);
-    // TODO(IT): store pulse answers (anonymous, unit totals only) once the Facility View reads them.
-    const r = await patch({ claim: "pulse" });
+    const r = await act("pulse", { supported: scale, word: mood.trim() });
     setBusy(false);
     if (!r) return;
-    setDone(true);
-    toast(r.added ? `Thanks. +${r.added} points for checking in.` : "Thanks for checking in.");
+    setEditing(false);
+    toast(r.added ? `Thanks. +${r.added} points for answering.` : "Thanks. Your answer is updated.");
   }
 
   async function share() {
-    const text = `Join me on HOP. Use my code ${code}.`;
+    if (!me) return;
+    const text = `Join me on HOP. Sign up with my link: ${me.referral.url}`;
     try {
-      if (navigator.share) await navigator.share({ title: "HOP", text });
+      if (navigator.share) await navigator.share({ title: "HOP", text, url: me.referral.url });
       else {
         await navigator.clipboard.writeText(text);
-        toast("Invite copied. Paste it anywhere.");
+        toast("Invite link copied. Paste it anywhere.");
       }
     } catch {
       /* cancelled */
@@ -48,79 +50,63 @@ export function Crew() {
   return (
     <>
       <div className="hello disp">Crew</div>
-      <div className="sub">Connect with colleagues who get it.</div>
+      <div className="sub">Your team, your voice, and colleagues who get it.</div>
       <div className="subtabs">
         {SUB.map(([k, l]) => (
           <button key={k} className={crew === k ? "on" : ""} onClick={() => setCrew(k)}>{l}</button>
         ))}
       </div>
-      {crew === "groups" && (
-        <>
-          <div className="card list">
-            {GROUPS.map(([g, d]) => (
-              <div className="it" key={g}>
-                <div className="grow">
-                  <b>{g}</b>
-                  <small>{d}</small>
-                </div>
-                <button className={`btn ${groups[g] ? "p" : "o"}`} style={{ padding: "7px 12px", fontSize: 12 }} onClick={() => setGroups({ ...groups, [g]: !groups[g] })}>
-                  {groups[g] ? "Joined" : "Join"}
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="mock">Community is opt in. You choose what to join and share.</p>
-        </>
-      )}
-      {crew === "feed" && (
-        <div className="card" style={{ padding: "4px 16px" }}>
-          {[
-            ["L. Santos · Peds", "Night Shift Crew", "18m", "Shout out to whoever set up the coffee cart on 4 today. Made my double bearable.", 24],
-            ["R. Mehta · Cardiology", "Run Club", "1h", "Anyone else doing the 5K next month? Looking for a few more for the HOP team.", 17],
-            ["T. Brooks · Ortho", "New Parents at Work", "3h", "First week back from parental leave. This group made it so much less lonely. Thank you all.", 41]
-          ].map((p) => (
-            <div className="post" key={p[0] as string}>
-              <div className="row between">
-                <b style={{ fontSize: 13.5 }}>{p[0]}</b>
-                <small>{p[2]}</small>
-              </div>
-              <span className="tag s">{p[1]}</span>
-              <p style={{ fontSize: 13.5, lineHeight: 1.45 }}>{p[3]}</p>
-              <small>♥ {p[4]} · Reply</small>
-            </div>
-          ))}
-        </div>
-      )}
-      {crew === "news" &&
-        [
-          ["New", "One request bar for everything", "Rides, food, errands, and family help all start in one place."],
-          ["Wellness", "Quiet rooms on floors 3 and 5", "Based on your feedback, two reset rooms are now bookable through Hop."],
-          ["Rewards", "Seasonal rewards refresh", "Redeem points for family experiences and local day trips."],
-          ["Community", "Unit mixer this month", "Opt in through Crew. Food and rides handled by HOP."]
-        ].map((x) => (
-          <div className="card" key={x[1]}>
-            <span className="tag">{x[0]}</span>
-            <h3 style={{ marginTop: 8 }}>{x[1]}</h3>
-            <p>{x[2]}</p>
-          </div>
-        ))}
+      {crew === "pulse" && !pulse && <p className="mock">Loading…</p>}
       {crew === "pulse" &&
-        (done ? (
+        pulse &&
+        (pulse.mine && !editing ? (
           <>
             <div className="card" style={{ textAlign: "center" }}>
               <div style={{ fontSize: 34 }}>💙</div>
-              <h3>Thank you for checking in</h3>
-              <p>Your honesty shapes what we do next. Answers are anonymous.</p>
+              <h3>Thanks for answering this week</h3>
+              <p>
+                You said {pulse.mine.supported} of 5{pulse.mine.word ? ` · "${pulse.mine.word}"` : ""}. Your unit only ever sees totals.
+              </p>
+              <button
+                className="btn o"
+                style={{ marginTop: 10, padding: "7px 12px", fontSize: 12 }}
+                onClick={() => {
+                  setScale(pulse.mine!.supported);
+                  setMood(pulse.mine!.word);
+                  setEditing(true);
+                }}
+              >
+                Change my answer
+              </button>
             </div>
             <div className="card">
-              <h3>Facility pulse</h3>
-              <p style={{ fontSize: 12, marginBottom: 8 }}>Sample results</p>
-              {[["Felt supported", "84%"], ["Stress reduced", "78%"], ["Would recommend", "92%"]].map((r) => (
-                <div className="row between" style={{ padding: "6px 0" }} key={r[0]}>
-                  <span style={{ fontSize: 13.5 }}>{r[0]}</span>
-                  <b style={{ color: "var(--navy)" }}>{r[1]}</b>
-                </div>
-              ))}
+              <h3>Your unit this week</h3>
+              {pulse.results ? (
+                <>
+                  <p style={{ fontSize: 12, marginBottom: 8 }}>{pulse.respondents} people answered</p>
+                  <div className="row between" style={{ padding: "6px 0" }}>
+                    <span style={{ fontSize: 13.5 }}>Felt supported (4 or 5)</span>
+                    <b style={{ color: "var(--navy)" }}>{pulse.results.supportedPct}%</b>
+                  </div>
+                  <div className="row between" style={{ padding: "6px 0" }}>
+                    <span style={{ fontSize: 13.5 }}>Average</span>
+                    <b style={{ color: "var(--navy)" }}>{pulse.results.avgSupported} of 5</b>
+                  </div>
+                  {pulse.results.words.length > 0 && (
+                    <div className="moods">
+                      {pulse.results.words.map(([w, n]) => (
+                        <span key={w} className="chip" style={{ cursor: "default" }}>
+                          {w} · {n}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p>
+                  Results show once {MIN_GROUP_SIZE} people on your unit answer. {pulse.respondents} so far.
+                </p>
+              )}
             </div>
           </>
         ) : (
@@ -132,48 +118,51 @@ export function Crew() {
                   <button key={v} className={scale === v ? "on" : ""} onClick={() => setScale(v)}>{v}</button>
                 ))}
               </div>
+              <p style={{ fontSize: 12, marginTop: 6 }}>1 not at all · 5 very supported</p>
             </div>
             <div className="card">
               <h3>A word for how this week felt?</h3>
               <div className="moods">
-                {["Cared for", "Relieved", "Energized", "Neutral", "Stretched thin"].map((m) => (
-                  <button key={m} className={`chip ${mood === m ? "on" : ""}`} onClick={() => setMood(m)}>{m}</button>
+                {PULSE_WORDS.map((m) => (
+                  <button key={m} className={`chip ${mood === m ? "on" : ""}`} onClick={() => setMood(mood === m ? "" : m)}>{m}</button>
                 ))}
               </div>
+              <input
+                className="field"
+                maxLength={24}
+                placeholder="Or your own word (optional)"
+                value={PULSE_WORDS.includes(mood) ? "" : mood}
+                onChange={(e) => setMood(e.target.value.replace(/[^\p{L}' -]/gu, ""))}
+              />
             </div>
-            <div className="card">
-              <h3>How has HOP made your work life better?</h3>
-              <textarea className="field" rows={3} style={{ marginTop: 10 }} placeholder="Share your experience" />
-            </div>
-            <button className="btn p w" disabled={busy} onClick={submit}>{busy ? "Sending…" : "Submit feedback"}</button>
+            <button className="btn p w" disabled={busy || !scale} onClick={submit}>{busy ? "Sending…" : pulse.mine ? "Update my answer" : "Send my answer"}</button>
+            <p className="mock">One answer a week. Your unit sees totals only when {MIN_GROUP_SIZE} or more people answer, never who said what.</p>
           </>
         ))}
       {crew === "refer" && (
         <>
           <div className="points" style={{ background: "linear-gradient(135deg,var(--teal),#028a8c)" }}>
             <small style={{ fontWeight: 700, fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", opacity: 0.85 }}>Your invite code</small>
-            <div className="num" style={{ fontSize: 28 }}>{code}</div>
-            <p style={{ fontSize: 13, opacity: 0.9 }}>Bring a colleague. You both get 150 points when they join. [CONFIRM referral rules]</p>
+            <div className="num" style={{ fontSize: 28, letterSpacing: ".06em" }}>{me?.referral.code ?? "…"}</div>
+            <p style={{ fontSize: 13, opacity: 0.9 }}>Bring a colleague. When they join with your link, you get 150 points. [CONFIRM referral rules]</p>
           </div>
           <div className="grid2">
-            <div className="tile"><b style={{ fontSize: 22, fontFamily: "Montserrat" }}>14</b><span>Invited</span></div>
-            <div className="tile"><b style={{ fontSize: 22, fontFamily: "Montserrat" }}>8</b><span>Joined</span></div>
+            <div className="tile">
+              <b style={{ fontSize: 22, fontFamily: "Montserrat" }}>{me?.referral.joined ?? "…"}</b>
+              <span>Joined with your link</span>
+            </div>
+            <div className="tile">
+              <b style={{ fontSize: 22, fontFamily: "Montserrat" }}>+{SOCIAL_POINTS.share}</b>
+              <span>Points a week for sharing HOP (in Recharge)</span>
+            </div>
           </div>
-          <div className="card list">
-            {[["Priya N.", "Joined", "+150 pts"], ["Kelly W.", "Joined", "+150 pts"], ["Sam O.", "Joined", "+150 pts"], ["Chris (brother)", "Invited", "Pending"]].map((r) => (
-              <div className="it" key={r[0]}>
-                <div className="grow">
-                  <b>{r[0]}</b>
-                  <small>{r[1]}</small>
-                </div>
-                <span className={`tag ${r[1] === "Joined" ? "" : "g"}`}>{r[2]}</span>
-              </div>
-            ))}
-          </div>
-          <button className="btn n w" onClick={share}>Share invite link</button>
+          <button className="btn n w" disabled={!me} onClick={share}>Share invite link</button>
+          {me && <p className="mock" style={{ wordBreak: "break-all" }}>{me.referral.url}</p>}
         </>
       )}
-      <p className="mock">Sample community. Groups, posts, and referrals are not live yet.</p>
+      {crew === "community" && (
+        <ComingSoon feature="crew-community" icon="👥" text="Groups for night shift, new parents and more, a feed for shout outs, and HOP news. Opt in, and you choose what to share." />
+      )}
     </>
   );
 }

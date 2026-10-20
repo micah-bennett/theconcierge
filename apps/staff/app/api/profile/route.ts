@@ -2,7 +2,7 @@ import { z } from "zod";
 import { withAuth } from "@hop/shared/server/auth";
 import { json, readJson, zodMessage } from "@hop/shared/server/db";
 import { APP_ROLE } from "@/lib/app";
-import { CONSENT_KEY } from "@/lib/content";
+import { CONSENT_KEY, SERVER_EARNS } from "@/lib/content";
 import { claimEarn, getProfile, recordConsent, savePrefs } from "@/lib/server/profile";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +44,11 @@ export const PATCH = withAuth(APP_ROLE, async (request, user) => {
   const body = parsed.data;
   let added: number | undefined;
   if ("prefs" in body) await savePrefs(user.id, body.prefs);
-  if ("claim" in body) added = (await claimEarn(user.id, body.claim)).added;
+  if ("claim" in body) {
+    // Check-ins, the pulse, ratings, streaks and referrals are granted when they happen (/api/me).
+    if (SERVER_EARNS.includes(body.claim)) return json({ error: "HOP adds these points for you when it happens." }, 400);
+    added = (await claimEarn(user.id, body.claim)).added;
+  }
   if ("consent" in body) await recordConsent(user.id, body.consent.source, body.consent.granted, body.consent.scopes);
   return json({ profile: await getProfile(user.id), ...(added !== undefined ? { added } : {}) });
 });
