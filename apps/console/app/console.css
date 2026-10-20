@@ -1,0 +1,6 @@
+/* Console-only layout tweaks on top of @hop/shared/styles/portal.css. */
+.kpis.k3{grid-template-columns:repeat(3,1fr)}
+@media (max-width:1100px){.kpis.k3{grid-template-columns:repeat(2,1fr)}}
+.safety{background:#fbe5e3;border:1.5px solid var(--coral);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.safety b.h{color:#b23e36;font-size:15px;display:block}
+.safety p{font-size:13.5px;color:var(--ink);margin:4px 0 10px}

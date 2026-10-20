@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "@hop/shared/styles/portal.css";
+import "./console.css";
 
 export const metadata: Metadata = {
   title: "Concierge Console · HOP",

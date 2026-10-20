@@ -7,7 +7,7 @@ import { createInvitedUser, getFacility, getUser, listFacilities, listUsers, set
 import type { PortalUser, Role } from "@hop/shared/types";
 import { inviteSchema } from "@hop/shared/validate";
 import { APP_ROLE } from "@/lib/app";
-import { enableUser, voidInviteTokens } from "@/lib/server/queries";
+import { enableUser, repAvailability, repRatings, voidInviteTokens } from "@/lib/server/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -37,9 +37,15 @@ async function sendInvite(user: PortalUser, base: string): Promise<boolean> {
   }
 }
 
-/** GET /api/team → every non-staff user (console, rep, facility_admin) plus facilities for the invite picker. */
+/**
+ * GET /api/team → every non-staff user (console, rep, facility_admin) plus facilities for the invite picker.
+ * Reps also carry `availability` ("online" | "offline"), `rating` (average stars, null with none) and `ratings` (count).
+ */
 export const GET = withAuth(APP_ROLE, async () => {
-  const [users, facilities] = await Promise.all([listUsers({ roles: TEAM_ROLES }), listFacilities()]);
+  const [list, facilities, avail, ratings] = await Promise.all([listUsers({ roles: TEAM_ROLES }), listFacilities(), repAvailability(), repRatings()]);
+  const users = list.map((u) =>
+    u.role === "rep" ? { ...u, availability: avail.get(u.id) ?? "offline", rating: ratings.get(u.id)?.rating ?? null, ratings: ratings.get(u.id)?.ratings ?? 0 } : u
+  );
   return json({ users, facilities });
 });
 
