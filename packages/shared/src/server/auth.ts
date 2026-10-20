@@ -2,7 +2,7 @@ import "server-only";
 import { createHmac, randomBytes } from "node:crypto";
 import { parseCookie, stringifySetCookie } from "cookie";
 import bcrypt from "bcryptjs";
-import { APP_FOR_ROLE } from "../brand";
+import { APP_FOR_ROLE, appUrlFor } from "../brand";
 import type { Facility, PortalUser, Role, Unit } from "../types";
 import { forgotSchema, loginSchema, setPasswordSchema, signupSchema } from "../validate";
 import { json, readJson, sql, zodMessage } from "./db";
@@ -214,7 +214,7 @@ export function createAuthRoutes(opts: AuthOptions) {
     if (row.status !== "active") return json({ error: "This account is turned off. Contact HOP." }, 403);
     if (row.role !== role) {
       const app = APP_FOR_ROLE[row.role as Role];
-      return json({ error: `This account is for the ${app.name}.`, appForRole: app.name, appUrl: process.env[app.envKey] || null }, 403);
+      return json({ error: `This account is for the ${app.name}.`, appForRole: app.name, appUrl: appUrlFor(row.role as Role) }, 403);
     }
     const cookie = await signIn(request, row.id);
     return withCookie({ user: toUser(row) }, 200, cookie);

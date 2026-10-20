@@ -32,6 +32,7 @@ export interface RepSummary {
   name: string;
   first: string;
   initials: string;
+  availability: "online" | "offline";
 }
 
 export type JobCat = (typeof JOB_CATS)[number];
@@ -42,7 +43,7 @@ export type LogEntry = [time: string, text: string];
 
 export interface Door {
   kind: string;
-  state: "idle" | "asked" | "ok" | "open" | "closed";
+  state: "idle" | "asked" | "ok" | "denied" | "open" | "closed";
   log?: LogEntry[];
 }
 
@@ -90,7 +91,7 @@ export interface Job {
 }
 
 export type RequestStatus = "new" | "dispatched" | "completed" | "cancelled";
-export type RequestSource = "ask" | "clutch" | "rescue" | "voice" | "chat" | "welcome" | "life" | "facility" | "console";
+export type RequestSource = "ask" | "clutch" | "rescue" | "voice" | "chat" | "welcome" | "life" | "facility" | "console" | "reward" | "safety";
 
 export interface StaffRequest {
   id: string;
@@ -114,4 +115,28 @@ export interface StaffRequest {
 export interface MyRequest extends StaffRequest {
   jobStatus: JobStatus | null;
   repFirst: string | null;
+}
+
+export type ThreadKind = "staff" | "rep" | "job";
+
+/** One chat message. Threads: staff/<staff id> ↔ HOP Console, rep/<rep id> ↔ HQ, job/<job id> rep ↔ member. */
+export interface Message {
+  id: number;
+  threadKind: ThreadKind;
+  threadKey: string;
+  senderId: string | null;
+  senderRole: Role;
+  senderName: string;
+  body: string;
+  urgent: boolean;
+  at: string;
+}
+
+/** A thread as an inbox row. */
+export interface ThreadSummary {
+  threadKind: ThreadKind;
+  threadKey: string;
+  title: string;
+  last: Message;
+  unread: number;
 }

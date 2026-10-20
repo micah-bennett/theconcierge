@@ -37,9 +37,12 @@ export const STATUS_LABEL: Record<string, string> = {
   declined: "Passed"
 };
 
-/** Which Portal app each role signs in to. Used for the "wrong app" message on login. */
+/**
+ * Which Portal app each role signs in to. Used for the "wrong app" message on login and invite links.
+ * The staff app is branded "HOP Client". Its URL env is CLIENT_URL (STAFF_URL is read as a fallback).
+ */
 export const APP_FOR_ROLE = {
-  staff: { name: "Staff App", envKey: "STAFF_URL" },
+  staff: { name: "HOP Client", envKey: "CLIENT_URL" },
   console: { name: "Concierge Console", envKey: "CONSOLE_URL" },
   rep: { name: "Concierge Rep App", envKey: "REP_URL" },
   facility_admin: { name: "Facility View", envKey: "FACILITY_URL" }
@@ -50,3 +53,9 @@ export const APP_FOR_ROLE = {
  * server side, never sent to the browser. [CONFIRM with counsel]
  */
 export const MIN_GROUP_SIZE = 5;
+
+/** Base URL of the app a role signs in to, from env. STAFF_URL is the pre-rename name of CLIENT_URL. */
+export function appUrlFor(role: keyof typeof APP_FOR_ROLE): string | null {
+  const env = process.env[APP_FOR_ROLE[role].envKey] || (role === "staff" ? process.env.STAFF_URL : undefined);
+  return env?.trim().replace(/\/$/, "") || null;
+}

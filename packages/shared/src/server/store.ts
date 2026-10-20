@@ -95,7 +95,49 @@ export async function updateJob(id: string, patch: Partial<Job>, actorId: string
   if (patch.rep && patch.rep !== before.rep) await logJobEvent(id, actorId, "reassigned", { from: before.rep, to: patch.rep });
   if (patch.attn && !before.attn) await logJobEvent(id, actorId, "attention", patch.attn);
   if (next.requestId && patch.status === "completed") await updateRequest(next.requestId, { status: "completed" });
+  // A rep passing on a job sends the request back to the Console queue so it can be dispatched again.
+  if (next.requestId && patch.status === "declined") await updateRequest(next.requestId, { status: "new", jobId: undefined });
   return next;
+}
+
+/**
+ * The only way a job's door state changes. A rep may ask (idle/denied → asked); only the member
+ * whose request the job serves may answer (asked → ok | denied); the rep then opens and closes
+ * (ok/closed → open, open → closed). Returns the updated job, or an error message.
+ */
+export async function setDoorState(
+  jobId: string,
+  to: "asked" | "ok" | "denied" | "open" | "closed",
+  actor: { id: string; role: Role; name: string }
+): Promise<{ job: Job } | { error: string; status: number }> {
+  const job = await getJob(jobId);
+  if (!job?.door) return { error: "This job has no smart door.", status: 404 };
+  const from = job.door.state;
+  const allowed: Record<string, { role: Role; from: string[] }> = {
+    asked: { role: "rep", from: ["idle", "denied"] },
+    ok: { role: "staff", from: ["asked"] },
+    denied: { role: "staff", from: ["asked"] },
+    open: { role: "rep", from: ["ok", "closed"] },
+    closed: { role: "rep", from: ["open"] }
+  };
+  const rule = allowed[to];
+  if (rule.role !== actor.role) return { error: "You can't change this door.", status: 403 };
+  if (actor.role === "rep" && job.rep !== actor.id) return { error: "Job not found", status: 404 };
+  if (actor.role === "staff") {
+    const req = job.requestId ? await getRequest(job.requestId) : null;
+    if (!req || req.memberId !== actor.id) return { error: "Job not found", status: 404 };
+  }
+  if (!rule.from.includes(from)) return { error: `The door is ${from}; it can't move to ${to}.`, status: 409 };
+  const words: Record<string, string> = {
+    asked: "Asked the member for door access",
+    ok: `${actor.name} approved door access`,
+    denied: `${actor.name} declined door access`,
+    open: "Door unlocked",
+    closed: "Door locked"
+  };
+  const now = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+  const next = await updateJob(jobId, { door: { ...job.door, state: to, log: [[now, words[to]]] } }, actor.id);
+  return next ? { job: next } : { error: "Job not found", status: 404 };
 }
 
 export async function logJobEvent(jobId: string, actorId: string | null, kind: string, detail: unknown): Promise<void> {
@@ -158,14 +200,23 @@ export async function updateRequest(id: string, patch: Partial<StaffRequest>): P
 
 const initials = (first: string, last: string) => `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase();
 
-/** Active reps, for the Console's dispatch and reassign pickers. Replaces the starter's REPS. */
+/** Active reps, online first, for the Console's dispatch and reassign pickers. */
 export async function listReps(): Promise<RepSummary[]> {
-  const rows = (await sql()`SELECT id, first_name, last_name FROM portal_users WHERE role = 'rep' AND status = 'active' ORDER BY first_name, last_name`) as {
-    id: string;
-    first_name: string;
-    last_name: string;
-  }[];
-  return rows.map((r) => ({ id: r.id, name: `${r.first_name} ${r.last_name}`, first: r.first_name, initials: initials(r.first_name, r.last_name) }));
+  const rows = (await sql()`
+    SELECT id, first_name, last_name, availability FROM portal_users WHERE role = 'rep' AND status = 'active'
+    ORDER BY (availability = 'online') DESC, first_name, last_name
+  `) as { id: string; first_name: string; last_name: string; availability: string }[];
+  return rows.map((r) => ({
+    id: r.id,
+    name: `${r.first_name} ${r.last_name}`,
+    first: r.first_name,
+    initials: initials(r.first_name, r.last_name),
+    availability: r.availability === "online" ? "online" : "offline"
+  }));
+}
+
+export async function setAvailability(userId: string, availability: "online" | "offline"): Promise<void> {
+  await sql()`UPDATE portal_users SET availability = ${availability}, updated_at = NOW() WHERE id = ${userId} AND role = 'rep'`;
 }
 
 export async function isActiveRep(id: string): Promise<boolean> {

@@ -10,9 +10,6 @@ const img = z
 const entry = z.tuple([safe(40), safe(600)]);
 const cat = z.enum(JOB_CATS);
 const status = z.enum(["offer", "accepted", "started", "in_progress", "completed", "declined"]);
-const door = z
-  .object({ kind: safe(80), state: z.enum(["idle", "asked", "ok", "open", "closed"]), log: z.array(entry).max(100).optional() })
-  .nullable();
 
 export const newJobSchema = z.object({
   rep: z.string().uuid(),
@@ -38,7 +35,10 @@ export const newJobSchema = z.object({
   requestId: safe(40).optional()
 });
 
-/** Fields a rep may change on their own job. No reassigning, no editing what was asked. */
+/**
+ * Fields a rep may change on their own job. No reassigning, no editing what was asked, and no door
+ * state: the member approves door access in HOP Client, and doors change only through setDoorState().
+ */
 const repFields = {
   status,
   log: z.array(entry).max(200),
@@ -49,8 +49,7 @@ const repFields = {
   notesList: z.array(safe(600)).max(100),
   done: z.record(z.boolean()),
   attn: z.object({ r: safe(80), n: safe(600).optional() }).nullable(),
-  share: z.boolean(),
-  door
+  share: z.boolean()
 };
 
 export const repPatchJobSchema = z.object(repFields).partial().strict();
@@ -117,3 +116,5 @@ export const inviteSchema = z
   .refine((v) => v.role !== "facility_admin" || !!v.facilityId, { message: "Pick a facility", path: ["facilityId"] })
   // Only facility admins belong to a facility.
   .transform((v) => (v.role === "facility_admin" ? v : { ...v, facilityId: null }));
+
+export const messageSchema = z.object({ body: safe(1000).pipe(z.string().trim().min(1, "Write a message")) });

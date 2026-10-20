@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Job, PortalUser } from "./types";
+import type { Job, Message, PortalUser, ThreadKind, ThreadSummary } from "./types";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public body: Record<string, unknown> = {}) {
@@ -29,6 +29,15 @@ export const authApi = {
 export const jobsApi = {
   list: () => j<{ jobs: Job[] }>("/api/jobs"),
   patch: (id: string, body: Partial<Job>) => j<Job>(`/api/jobs/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(body) })
+};
+
+/** Messages API (this app's /api/messages). The server decides which threads you may use. */
+export const messagesApi = {
+  threads: () => j<{ threads: ThreadSummary[] }>("/api/messages"),
+  list: (kind: ThreadKind, key: string, after = 0) =>
+    j<{ messages: Message[] }>(`/api/messages?kind=${kind}&key=${encodeURIComponent(key)}&after=${after}`),
+  post: (kind: ThreadKind, key: string, body: string) =>
+    j<{ message: Message }>(`/api/messages?kind=${kind}&key=${encodeURIComponent(key)}`, { method: "POST", body: JSON.stringify({ body }) })
 };
 
 /**
