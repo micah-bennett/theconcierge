@@ -166,10 +166,10 @@ async function main() {
       if (d === 0 && slot > nowEtHour) continue
       const src = c.ui < 6 ? c.ui : 4
       const hi = HOURS.indexOf(slot % 2 ? slot - 1 : slot)
-      const base = BASE.stress[src][hi] / 100 + (surge && c.ui < 2 ? 0.12 : 0)
+      const base = BASE.stress[src][hi] / 100 + (surge && c.ui < 2 ? 0.22 : 0)
       const stress = Math.max(1, Math.min(5, Math.round(1 + base * 4 + (rnd() - 0.5) * 1.6)))
       const mood = Math.max(1, Math.min(5, Math.round(6 - stress + (rnd() - 0.5) * 1.4)))
-      const missed = rnd() < BASE.missed_breaks[src][hi] / 100 + (surge && c.ui < 2 ? 0.1 : 0)
+      const missed = rnd() < BASE.missed_breaks[src][hi] / 100 + (surge && c.ui < 2 ? 0.18 : 0)
       ck.user.push(c.id); ck.unit.push(c.unit); ck.mood.push(mood); ck.stress.push(stress); ck.brk.push(!missed); ck.day.push(day)
       ck.at.push(`${day}T${String(slot).padStart(2, '0')}:${String(Math.floor(rnd() * 50)).padStart(2, '0')}:00-04:00`)
     }
