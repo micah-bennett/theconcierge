@@ -96,8 +96,7 @@ All five are connected to the GitHub repo. A push to `main` deploys to productio
 any other branch makes a preview. If a site deploy ever shows "Ready" but the live site doesn't
 change, an earlier rollback has paused auto-promotion: Deployments → the new one → ⋯ → Promote to
 Production. (`theconcierge.life` is not attached to any project right now; it shows Vercel's
-DEPLOYMENT_NOT_FOUND page.) The four apps skip a build when nothing in their own folder or
-`packages/` changed.
+DEPLOYMENT_NOT_FOUND page.) Every push rebuilds all five.
 
 **Settings each Portal app has** (Vercel → project → Settings → Environment Variables):
 - `DATABASE_URL`: the Neon database.
