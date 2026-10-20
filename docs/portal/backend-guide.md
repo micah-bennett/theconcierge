@@ -14,7 +14,7 @@ for the four Portal apps. Until then, only the landing site section applies.
   | Vercel project | Folder ("Root Directory") | What it is |
   |---|---|---|
   | `theconcierge` | `apps/site` | Public landing site |
-  | `hop-staff` | `apps/staff` | Staff App (created in Phase 6) |
+  | `hop-client` | `apps/staff` | HOP Client |
   | `hop-console` | `apps/console` | Concierge Console (created in Phase 6) |
   | `hop-rep` | `apps/rep` | Concierge Rep App (created in Phase 6) |
   | `hop-facility` | `apps/facility` | Facility View (created in Phase 6) |
@@ -87,7 +87,7 @@ ALLOW_DEMO_SEED=1 DEMO_PASSWORD="…10+ characters…" DATABASE_URL="postgres://
 | Project | Folder (Root Directory) | Live address |
 |---|---|---|
 | `hop_services` | `apps/site` | https://www.hopserves.com (the public site) |
-| `hop-staff` | `apps/staff` | https://hop-staff.vercel.app |
+| `hop-client` | `apps/staff` | https://hop-client.vercel.app (HOP Client; the old hop-staff.vercel.app address still works) |
 | `hop-console` | `apps/console` | https://hop-console.vercel.app |
 | `hop-rep` | `apps/rep` | https://hop-rep.vercel.app |
 | `hop-facility` | `apps/facility` | https://hop-facility.vercel.app |
@@ -103,10 +103,19 @@ DEPLOYMENT_NOT_FOUND page.) The four apps skip a build when nothing in their own
 - `DATABASE_URL`: the Neon database.
 - `SESSION_HASH_SECRET`: one random value, shared by the four apps.
 - `APP_URL`: that app's own address.
-- `STAFF_URL`, `CONSOLE_URL`, `REP_URL`, `FACILITY_URL`: the four addresses above.
+- `CLIENT_URL` (HOP Client; the old name `STAFF_URL` still works), `CONSOLE_URL`, `REP_URL`,
+  `FACILITY_URL`: the four addresses above.
 - `RESEND_API_KEY`: needed for invite and password-reset emails. **Add it by hand** (see below).
 
-**The site** also has `VITE_STAFF_URL`, `VITE_CONSOLE_URL`, `VITE_REP_URL` and
+**HOP Client only:** `SOCIAL_LINKS` turns on the "Follow HOP" reward cards. Paste exactly this
+shape, with only the accounts HOP has (each must start with https://):
+`{"instagram":"https://…","facebook":"https://…","linkedin":"https://…","tiktok":"https://…"}`.
+Leave it unset to show only the blog and share cards. Redeploy HOP Client after changing it.
+
+**Rep App only:** `HOP_SUPPORT_PHONE` (for example `+18455550100`) shows a "Call the HOP line"
+button on the rep's Safety screen.
+
+**The site** also has `VITE_CLIENT_URL`, `VITE_CONSOLE_URL`, `VITE_REP_URL` and
 `VITE_FACILITY_URL`. These are the links on the HOP Portal page.
 
 ### Adding the email key to the four apps (one time)

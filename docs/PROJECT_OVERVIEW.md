@@ -22,12 +22,12 @@ things:
 
    | App | Folder | Role | What it does |
    |---|---|---|---|
-   | Staff App | `apps/staff` | `staff` | Ask HOP for anything, Clutch, rewards, a profile that learns you. Self sign-up |
+   | HOP Client | `apps/staff` | `staff` | Ask HOP for anything, Clutch, rewards, a profile that learns you. Self sign-up |
    | Concierge Console | `apps/console` | `console` | Sees every request, dispatches trips and tasks to one specific rep, tracks jobs, reviews proof, manages rep and facility accounts |
    | Concierge Rep App | `apps/rep` | `rep` | Sees only the jobs sent to them: accept, track, call, photo proof, signature, smart door |
    | Facility View | `apps/facility` | `facility_admin` | Unit heat map and Burnout Radar. Unit totals only, no names |
 
-   The flow: Staff App request → Console queue → Console dispatches a job to one rep → the rep
+   The flow: HOP Client request → Console queue → Console dispatches a job to one rep → the rep
    works it in the Rep App → the Console sees updates live. Details are in
    `docs/portal/architecture.md`.
 

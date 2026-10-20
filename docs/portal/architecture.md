@@ -10,7 +10,7 @@ same change.
 ```
 apps/
   site/        Vite landing site (not part of the Portal; links to it from /portal)
-  staff/       Next.js: Staff App                 role: staff
+  staff/       Next.js: HOP Client                role: staff
   console/     Next.js: Concierge Console         role: console
   rep/         Next.js: Concierge Rep App         role: rep
   facility/    Next.js: Facility View             role: facility_admin
@@ -70,7 +70,7 @@ bundle.
   role. A rep who signs in on the Console gets "This account is for the Rep App" with a link to
   it, not a session.
 - **How accounts are created**:
-  - `staff`: self sign-up on the Staff App (`/signup`) with name, email, password, job title,
+  - `staff`: self sign-up on HOP Client (`/signup`) with name, email, password, job title,
     facility and unit.
   - `rep`, `facility_admin` and extra `console` users: created by a console user on the
     Console's Team screen. They are created with `status = 'invited'` and no password, and
@@ -127,15 +127,30 @@ Jobs and requests keep their full detail in JSONB `data`, exactly the starter's 
 ## The cross-app flow
 
 ```
-Staff App  ── POST /api/requests ─────────────▶ portal_requests (status new)
+HOP Client ── POST /api/requests ─────────────▶ portal_requests (status new)
 Console    ── GET  /api/requests (all) ◀────────┘
 Console    ── POST /api/jobs {rep: <uuid>, requestId} ▶ portal_jobs (status offer); request → dispatched
 Rep App    ── GET  /api/jobs (server filters rep_id = me) every 4 s
-Rep App    ── PATCH /api/jobs/:id (status, updates, photos, sig, door, attn) ▶ portal_jobs + job_events
+Rep App    ── PATCH /api/jobs/:id (status, updates, photos, sig, attn) ▶ portal_jobs + job_events
 Console    ── GET  /api/jobs every 4 s ◀── sees Accepted → Started → In progress → Completed, proof, signature
-Staff App  ── GET  /api/requests (mine) ◀── request status derived from its job's status
-Facility   ── GET  /api/facility (aggregates for my facility; cells with group_size < MIN_GROUP hidden)
+HOP Client ── GET  /api/requests (mine) ◀── request status derived from its job's status
+HOP Client ── POST /api/me?action=checkin|pulse ▶ portal_checkins (one per ET day / week)
+Facility   ── GET  /api/facility (aggregates portal_checkins + portal_requests for my facility; < 5 people hidden)
 Facility   ── POST /api/facility?action=support ▶ portal_support_actions (+ a Console queue item, unit-level, no names)
+```
+
+v2 flows (2026-10-19):
+
+```
+Any app    ── GET/POST /api/messages (createMessageRoutes) ▶ portal_messages; canUseThread() decides access
+Rep App    ── POST /api/door {ask}           ▶ door.state asked (setDoorState)
+HOP Client ── POST /api/me?action=door        ▶ asked → ok | denied (only the member whose request it is)
+Rep App    ── POST /api/door {unlock|lock}    ▶ ok/closed → open → closed + portal_door_events
+Rep App    ── PATCH status declined           ▶ the request goes back to new (Console: "Rep passed")
+Rep App    ── POST /api/me?action=safety      ▶ urgent rep/<id> message + request source 'safety'
+HOP Client ── POST /api/me?action=redeem      ▶ points deducted + portal_redemptions + request source 'reward'
+HOP Client ── POST /api/me?action=rate        ▶ portal_ratings (Console service rating, rep rating)
+HOP Client ── POST /api/play?game=…           ▶ answers scored on the server, portal_game_plays + points
 ```
 
 Each app hosts its **own** route handlers for the resources it touches, and all of them call the
@@ -150,7 +165,7 @@ server and no cross-origin calls between apps.
 | `status` | ✓ | ✓ forward only: offer→accepted/declined→started→in_progress→completed |
 | `log`, `updates`, `notesList`, `done`, `attn`, `share` | ✓ | ✓ |
 | `photos`, `sig`, `signedBy` | view | ✓ |
-| `door` | view | ✓ (the unlock itself goes through `/api/door`, which writes `portal_door_events`) |
+| `door` | view | ✗ in a PATCH. Only through `setDoorState()`: the rep asks, opens and closes via `/api/door`; the member approves in HOP Client |
 
 The server enforces this with two zod schemas, `consolePatchJobSchema` and
 `repPatchJobSchema`. Don't use a single permissive schema.
