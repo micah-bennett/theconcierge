@@ -18,7 +18,7 @@ function lastLogin(iso: string | null) {
   return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-/** Team accounts: every rep, console user and facility admin. Staff sign themselves up on the Staff App. */
+/** Team accounts: every rep, console user and facility admin. Staff sign themselves up on the HOP Client. */
 export default function TeamApp({ meId }: { meId: string }) {
   const { toast, node } = useDesktopToast();
   const [users, setUsers] = useState<TeamRow[]>([]);
@@ -71,7 +71,7 @@ export default function TeamApp({ meId }: { meId: string }) {
         <div>
           <span className="tag n">Team</span>
           <h1 className="disp" style={{ marginTop: 10 }}>Team accounts</h1>
-          <p>Reps, console users and facility admins. New people get an email to set their password. Staff sign up themselves on the Staff App.</p>
+          <p>Reps, console users and facility admins. New people get an email to set their password. Staff sign up themselves on the HOP Client.</p>
         </div>
       </div>
 
@@ -85,7 +85,7 @@ export default function TeamApp({ meId }: { meId: string }) {
         </div>
         <div className="dtwrap">
           <table className="dtab">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Facility</th><th>Status</th><th>Last sign in</th><th /></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Facility</th><th>Status</th><th>Availability</th><th>Rating</th><th>Last sign in</th><th /></tr></thead>
             <tbody>
               {users.map((u) => {
                 const [label, cls] = STATUS[u.status];
@@ -97,6 +97,22 @@ export default function TeamApp({ meId }: { meId: string }) {
                     <td>{ROLE_LABEL[u.role] ?? u.role}</td>
                     <td>{u.facilityName ?? <span style={{ color: "var(--muted)" }}>-</span>}</td>
                     <td><span className={`tag ${cls}`}>{label}</span></td>
+                    <td>
+                      {u.role === "rep" ? (
+                        <span className={`tag ${u.availability === "online" ? "" : "g"}`}>{u.availability === "online" ? "● Online" : "Offline"}</span>
+                      ) : (
+                        <span style={{ color: "var(--muted)" }}>-</span>
+                      )}
+                    </td>
+                    <td>
+                      {u.role !== "rep" ? (
+                        <span style={{ color: "var(--muted)" }}>-</span>
+                      ) : u.rating != null ? (
+                        <small><b>★ {u.rating.toFixed(1)}</b> · {u.ratings} {u.ratings === 1 ? "rating" : "ratings"}</small>
+                      ) : (
+                        <small style={{ color: "var(--muted)" }}>No ratings yet</small>
+                      )}
+                    </td>
                     <td><small>{lastLogin(u.lastLoginAt)}</small></td>
                     <td>
                       <div className="row" style={{ gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -108,7 +124,7 @@ export default function TeamApp({ meId }: { meId: string }) {
                   </tr>
                 );
               })}
-              {!users.length && <tr><td colSpan={7} style={{ color: "var(--muted)" }}>{loaded ? "No team accounts yet." : "Loading..."}</td></tr>}
+              {!users.length && <tr><td colSpan={9} style={{ color: "var(--muted)" }}>{loaded ? "No team accounts yet." : "Loading..."}</td></tr>}
             </tbody>
           </table>
         </div>
