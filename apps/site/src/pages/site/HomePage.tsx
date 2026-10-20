@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { HeroCarousel } from '../../components/HeroCarousel'
 import { Steps, type Step } from './parts'
 
 const HOME_CARDS = [
@@ -69,41 +70,7 @@ const CONCIERGE_INCLUDES = [
 export function HomePage() {
   return (
     <>
-      <section className="hs-hero">
-        <div className="hs-container hs-hero__grid">
-          <div>
-            <p className="hs-eyebrow">Hospitality On-Site Professionals</p>
-            <h1>Hospitality that helps people and workplaces thrive.</h1>
-            <p className="hs-lead">
-              HOP brings responsive, human-centered support to professionals and
-              organizations—helping people manage the details, stay connected, and build a
-              stronger workplace experience.
-            </p>
-            <div className="hs-button-row">
-              <Link className="hs-btn hs-btn--primary" to="/organizations">
-                Explore HOP for Organizations
-              </Link>
-              <Link className="hs-btn hs-btn--secondary" to="/professionals">
-                Explore HOP for Professionals
-              </Link>
-            </div>
-          </div>
-          <div className="hs-hero__art" role="img" aria-label="Abstract illustration of connected professionals">
-            <span className="hs-hero__art-label">Support that shows up</span>
-            <div className="hs-hero__people" aria-hidden="true">
-              <span className="hs-hero__person" />
-              <span className="hs-hero__person" />
-              <span className="hs-hero__person" />
-            </div>
-            <div className="hs-hero__card">
-              <strong>Human-first support</strong>
-              <span>
-                Thoughtful service, responsive tools, and programs designed around real people.
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroCarousel />
 
       <section className="hs-section">
         <div className="hs-container">
