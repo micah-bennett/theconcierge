@@ -17,3 +17,10 @@
 .fv-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .fv-legend i { width: 26px; height: 10px; border-radius: 3px; display: inline-block; }
 .fv-legend i.supp { background: repeating-linear-gradient(45deg, #dfe4eb 0 4px, #f3f5f8 4px 8px); }
+
+/* A whole unit row with nothing to show: hidden (hatched) or no check-ins yet (plain). */
+.heat2 .c.wide,
+.heat2 .c.empty { grid-column: span 9; font-size: 12px; font-weight: 600; text-align: left; padding: 0 12px; }
+.heat2 .c.empty { background: #f6f8fa; color: var(--muted); border: 1px dashed #d5dde8; }
+.heat2 .c.wide { color: #6b778c; }
+.fv-empty { border-left: 4px solid var(--teal); }
