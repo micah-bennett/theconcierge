@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { submitInquiry } from '../../api/submitInquiry'
 import { INQUIRY_INTERESTS } from '../../site/inquiry'
 import { PageHero } from './parts'
+import { PHONE_DIGITS, PHONE_DISPLAY, PHONE_HREF } from '../../site/contact'
 
 type Status = { kind: 'idle' } | { kind: 'sending' } | { kind: 'sent' } | { kind: 'error'; message: string }
 
@@ -47,6 +48,13 @@ export function ContactPage() {
       />
       <section className="hs-section hs-section--pale">
         <div className="hs-container">
+          <p className="hs-contact-call">
+            Prefer to talk? Call{' '}
+            <a href={PHONE_HREF} aria-label={`Call HOP at ${PHONE_DIGITS}`}>
+              {PHONE_DISPLAY}
+            </a>{' '}
+            <span>{PHONE_DIGITS}</span>
+          </p>
           <form className="hs-contact-form" onSubmit={onSubmit}>
             <div className="hs-form-grid">
               <label>

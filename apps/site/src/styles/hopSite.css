@@ -976,6 +976,67 @@ html:has(.hs) {
   font-size: 0.8rem;
 }
 
+/* ——— Phone number (845-912-SERV) ——— */
+/* Slim bar above the sticky header; it scrolls away, the header stays. */
+.hs-topbar {
+  background: var(--hs-navy);
+}
+
+.hs-topbar__inner {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.hs .hs-topbar a {
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.hs .hs-topbar a strong {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.hs .hs-topbar a:hover strong {
+  color: var(--hs-blue);
+}
+
+.hs .hs-footer__phone {
+  margin-top: 22px;
+  color: #d6e3ec;
+  font-size: 0.95rem;
+}
+
+.hs .hs-footer__phone a {
+  color: #fff;
+  font-weight: 800;
+}
+
+.hs .hs-footer__phone span,
+.hs .hs-contact-call span {
+  white-space: nowrap;
+}
+
+.hs .hs-contact-call {
+  max-width: 780px;
+  margin: 0 auto 18px;
+  color: var(--hs-navy);
+  font-weight: 700;
+}
+
+.hs .hs-contact-call a {
+  color: var(--hs-teal-dark);
+  font-weight: 800;
+}
+
+.hs .hs-contact-call span {
+  color: var(--hs-muted);
+  font-weight: 600;
+}
+
 /* ——— Responsive ——— */
 @media (max-width: 920px) {
   .hs-nav__toggle {

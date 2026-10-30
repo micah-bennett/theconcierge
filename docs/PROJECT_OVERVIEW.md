@@ -47,9 +47,10 @@ things:
   root into `apps/site`.
 - **2026-10 public site rebrand.** The landing site was rebuilt from a leadership mockup
   (`design/hop-mockup.html`), in both design and copy. HOP is the parent brand, and *The
-  Concierge by HOP* is one page (`/concierge`). Removed on purpose: the phone number, team
-  photography, credentials row, chatbot widget, Plans and Personal Services pages. Don't add them
-  back unless asked.
+  Concierge by HOP* is one page (`/concierge`). Removed on purpose: team photography,
+  credentials row, chatbot widget, Plans and Personal Services pages. Don't add them back unless
+  asked. The phone number was removed then, and came back on 2026-10-29 at the owner's request:
+  845-912-SERV ((845) 912-7378), in a slim bar above the header, the footer and `/contact`. Change it in one place: `apps/site/src/site/contact.ts`.
 
 ## Stack
 
