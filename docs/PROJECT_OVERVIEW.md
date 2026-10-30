@@ -51,6 +51,13 @@ things:
   credentials row, chatbot widget, Plans and Personal Services pages. Don't add them back unless
   asked. The phone number was removed then, and came back on 2026-10-29 at the owner's request:
   845-912-SERV ((845) 912-7378), in a slim bar above the header, the footer and `/contact`. Change it in one place: `apps/site/src/site/contact.ts`.
+- **2026-10-29 homepage carousel (owner directive, preview branch `feature/home-carousel`).**
+  The homepage hero became a five-slide carousel (`apps/site/src/components/HomeCarousel.tsx`,
+  styles under "Home carousel" in `hopSite.css`, photos in `apps/site/public/carousel/`). Photography
+  is back on the homepage at the owner's request. The slide copy is the owner's, verbatim. The
+  Healthcare slide links to `/organizations` until a Healthcare page exists, and slide 5 shows the
+  three audience photos until the owner supplies the family photo. The old `.hs-hero` CSS is unused
+  now and can be removed once the carousel ships.
 
 ## Stack
 

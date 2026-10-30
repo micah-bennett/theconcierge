@@ -1168,3 +1168,426 @@ html:has(.hs) {
     transform: none;
   }
 }
+
+/* ——— Home carousel (HomeCarousel.tsx) ———
+   Navy text panel on the left, photo on the right behind a curved edge with
+   light-blue and teal bands. All slides share one grid cell, so the section
+   height comes from the tallest slide and never jumps between slides.
+   Text on teal is always navy (brand rule). */
+.hs-carousel {
+  position: relative;
+  overflow: hidden;
+  background: var(--hs-navy);
+  color: var(--hs-white);
+}
+
+.hs-carousel__track {
+  display: grid;
+}
+
+.hs-slide {
+  grid-area: 1 / 1;
+  position: relative;
+  display: flex;
+  min-height: 600px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.8s ease,
+    visibility 0.8s;
+}
+
+.hs-slide[data-active='true'] {
+  opacity: 1;
+  visibility: visible;
+}
+
+.hs-slide__inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding: 64px 0 132px;
+}
+
+.hs-slide__content {
+  max-width: 560px;
+  transform: translateY(14px);
+  opacity: 0;
+  transition:
+    transform 0.8s ease 0.15s,
+    opacity 0.8s ease 0.15s;
+}
+
+.hs-slide[data-active='true'] .hs-slide__content {
+  transform: none;
+  opacity: 1;
+}
+
+.hs-slide__logo {
+  display: block;
+  width: 230px;
+  height: auto;
+  margin-bottom: 26px;
+}
+
+.hs-slide__eyebrow {
+  margin: 0 0 14px;
+  color: var(--hs-blue);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hs .hs-slide__headline {
+  max-width: none;
+  color: var(--hs-white);
+  font-size: clamp(2.1rem, 3.5vw, 3.3rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.hs .hs-slide--intro .hs-slide__headline {
+  font-size: clamp(2.8rem, 5.4vw, 4.75rem);
+}
+
+.hs-slide__message {
+  margin-top: 22px;
+  max-width: 500px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+.hs-slide__benefits {
+  display: grid;
+  gap: 10px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hs-slide__benefits li {
+  position: relative;
+  padding-left: 32px;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 1.02rem;
+  line-height: 1.45;
+}
+
+.hs-slide__benefits li::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--hs-teal)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23053069' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E")
+    center / 13px no-repeat;
+}
+
+.hs .hs-slide__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  margin-top: 30px;
+  padding: 0 26px;
+  border-radius: 999px;
+  background: var(--hs-teal);
+  color: var(--hs-navy);
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.hs .hs-slide__cta:hover {
+  background: #3cc9c4;
+  transform: translateY(-2px);
+}
+
+.hs-carousel :focus-visible {
+  outline: 3px solid var(--hs-blue);
+  outline-offset: 3px;
+}
+
+/* Art: the curved edge is three stacked ellipses — light blue, teal, photo. */
+.hs-slide__art {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 47%;
+}
+
+.hs-slide__art::before,
+.hs-slide__art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.hs-slide__art::before {
+  background: rgba(91, 169, 230, 0.55);
+  clip-path: ellipse(100% 118% at 100% 50%);
+}
+
+.hs-slide__art::after {
+  background: var(--hs-teal);
+  clip-path: ellipse(97.5% 118% at 100% 50%);
+}
+
+.hs-slide__photo {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  gap: 6px;
+  background: var(--hs-navy-dark);
+  clip-path: ellipse(95% 118% at 100% 50%);
+}
+
+.hs-slide__img {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hs-slide__insets {
+  position: absolute;
+  bottom: 56px;
+  left: -36px;
+  z-index: 3;
+  display: flex;
+  gap: 14px;
+}
+
+.hs-slide__insets img {
+  width: 118px;
+  height: 118px;
+  border: 4px solid var(--hs-white);
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+.hs-slide__insets img:last-child {
+  border-color: var(--hs-blue);
+}
+
+/* Controls sit over the navy panel, under the text. */
+.hs-carousel__controls {
+  position: absolute;
+  right: 0;
+  bottom: 44px;
+  left: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.hs-carousel__controls > * {
+  pointer-events: auto;
+}
+
+.hs .hs-carousel__btn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  background: rgba(5, 48, 105, 0.6);
+  color: var(--hs-white);
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.hs .hs-carousel__btn:hover {
+  background: var(--hs-white);
+  color: var(--hs-navy);
+}
+
+.hs-carousel__btn--pause {
+  margin-left: 6px;
+}
+
+.hs-carousel__dots {
+  display: flex;
+  align-items: center;
+}
+
+.hs .hs-carousel__dot {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.hs-carousel__dot span {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  transition:
+    width 0.3s ease,
+    background 0.3s ease;
+}
+
+.hs-carousel__dot:hover span {
+  background: var(--hs-white);
+}
+
+.hs-carousel__dot[aria-current='true'] {
+  width: 44px;
+}
+
+.hs-carousel__dot[aria-current='true'] span {
+  width: 30px;
+  background: var(--hs-teal);
+}
+
+/* Tablet: narrower art, tighter type. */
+@media (max-width: 1024px) {
+  .hs-slide__art {
+    width: 42%;
+  }
+
+  .hs-slide__content {
+    max-width: 54%;
+  }
+
+  .hs .hs-slide__headline {
+    font-size: clamp(1.9rem, 3.6vw, 2.5rem);
+  }
+
+  .hs-slide__insets {
+    left: -28px;
+  }
+
+  .hs-slide__insets img {
+    width: 92px;
+    height: 92px;
+  }
+}
+
+/* Phone: photo on top with a curved bottom, then headline and CTA.
+   Benefit lists are left to the linked pages. */
+@media (max-width: 720px) {
+  .hs-slide {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .hs-slide__art {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    flex: none;
+  }
+
+  .hs-slide__art::before {
+    clip-path: ellipse(125% 100% at 50% 0%);
+  }
+
+  .hs-slide__art::after {
+    clip-path: ellipse(125% 96% at 50% 0%);
+  }
+
+  .hs-slide__photo {
+    clip-path: ellipse(125% 92% at 50% 0%);
+    gap: 4px;
+  }
+
+  .hs-slide__insets {
+    bottom: 34px;
+    left: 16px;
+    gap: 8px;
+  }
+
+  .hs-slide__insets img {
+    width: 64px;
+    height: 64px;
+    border-width: 3px;
+  }
+
+  .hs-slide__inner {
+    padding: 12px 0 104px;
+  }
+
+  .hs-slide__content {
+    max-width: none;
+  }
+
+  .hs-slide__logo {
+    width: 170px;
+    margin-bottom: 18px;
+  }
+
+  .hs .hs-slide__headline {
+    font-size: clamp(1.7rem, 7.4vw, 2.2rem);
+  }
+
+  .hs .hs-slide--intro .hs-slide__headline {
+    font-size: clamp(2.3rem, 11vw, 3rem);
+  }
+
+  .hs-slide__message {
+    font-size: 1.02rem;
+  }
+
+  .hs-slide__benefits {
+    display: none;
+  }
+
+  .hs .hs-slide__cta {
+    margin-top: 22px;
+  }
+
+  .hs-carousel__controls {
+    bottom: 32px;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-slide,
+  .hs-slide__content,
+  .hs-carousel__dot span,
+  .hs .hs-slide__cta {
+    transition: none;
+  }
+
+  .hs-slide__content {
+    transform: none;
+  }
+
+  .hs .hs-slide__cta:hover {
+    transform: none;
+  }
+}
+
+/* "Explore Our Services" jumps here; clear the sticky header. */
+.hs-section--anchor {
+  scroll-margin-top: 96px;
+}
