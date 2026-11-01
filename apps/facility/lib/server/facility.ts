@@ -53,6 +53,9 @@ export async function loadFacilityView(facilityId: string, metric: Metric, range
   const week = wins.find((w) => w.key === "w7")!;
 
   // The one rollup over check-ins and requests, per window × unit × two-hour ET slot.
+  // Data separation: only HOP Client staff of this organization count. Concierge Portal customers
+  // (role 'customer') and instant requests (no account) are excluded twice over: by the staff-role
+  // join and by portal_requests.channel = 'organization'. scripts/check-separation.mjs verifies it.
   // Mirrors rollup() in ./aggregate.ts; keep the two in step.
   const rows = (await sql()`
     WITH win AS (
@@ -63,6 +66,7 @@ export async function loadFacilityView(facilityId: string, metric: Metric, range
              TRUE AS is_checkin, c.source, c.mood::int AS mood, c.stress::int AS stress, c.took_break
       FROM portal_checkins c
       JOIN portal_units u ON u.id = c.unit_id
+      JOIN portal_users cu ON cu.id = c.user_id AND cu.role = 'staff'
       LEFT JOIN portal_staff_profiles s ON s.user_id = c.user_id
       WHERE u.facility_id = ${facilityId} AND c.day BETWEEN ${first}::date AND ${today}::date
         AND COALESCE(s.consents->(${SHARE_KEY}::text)->>'granted', 'true') <> 'false'
@@ -72,8 +76,9 @@ export async function loadFacilityView(facilityId: string, metric: Metric, range
              FALSE, NULL::text, NULL::int, NULL::int, NULL::boolean
       FROM portal_requests r
       JOIN portal_staff_profiles s ON s.user_id = r.member_id
+      JOIN portal_users mu ON mu.id = r.member_id AND mu.role = 'staff'
       JOIN portal_units u ON u.id = s.unit_id
-      WHERE u.facility_id = ${facilityId} AND r.status <> 'cancelled' AND COALESCE(r.data->>'source', '') <> 'facility'
+      WHERE u.facility_id = ${facilityId} AND r.status <> 'cancelled' AND r.channel = 'organization' AND COALESCE(r.data->>'source', '') <> 'facility'
         AND (r.created_at AT TIME ZONE 'America/New_York')::date BETWEEN ${first}::date AND ${today}::date
         AND COALESCE(s.consents->(${SHARE_KEY}::text)->>'granted', 'true') <> 'false'
     ),
@@ -112,8 +117,9 @@ export async function loadFacilityView(facilityId: string, metric: Metric, range
     SELECT s.unit_id, COALESCE(r.data->>'cat', 'errand') AS cat, COUNT(*)::int AS n
     FROM portal_requests r
     JOIN portal_staff_profiles s ON s.user_id = r.member_id
+    JOIN portal_users mu ON mu.id = r.member_id AND mu.role = 'staff'
     JOIN portal_units u ON u.id = s.unit_id
-    WHERE u.facility_id = ${facilityId} AND r.status <> 'cancelled' AND COALESCE(r.data->>'source', '') <> 'facility'
+    WHERE u.facility_id = ${facilityId} AND r.status <> 'cancelled' AND r.channel = 'organization' AND COALESCE(r.data->>'source', '') <> 'facility'
       AND (r.created_at AT TIME ZONE 'America/New_York')::date BETWEEN ${week.from}::date AND ${today}::date
       AND COALESCE(s.consents->(${SHARE_KEY}::text)->>'granted', 'true') <> 'false'
     GROUP BY 1, 2
@@ -124,8 +130,9 @@ export async function loadFacilityView(facilityId: string, metric: Metric, range
     SELECT COUNT(*)::int AS n, COUNT(DISTINCT r.member_id)::int AS people
     FROM portal_requests r
     JOIN portal_staff_profiles s ON s.user_id = r.member_id
+    JOIN portal_users mu ON mu.id = r.member_id AND mu.role = 'staff'
     JOIN portal_units u ON u.id = s.unit_id
-    WHERE u.facility_id = ${facilityId} AND r.status = 'completed' AND COALESCE(r.data->>'source', '') <> 'facility'
+    WHERE u.facility_id = ${facilityId} AND r.status = 'completed' AND r.channel = 'organization' AND COALESCE(r.data->>'source', '') <> 'facility'
       AND r.updated_at > NOW() - INTERVAL '7 days'
       AND COALESCE(s.consents->(${SHARE_KEY}::text)->>'granted', 'true') <> 'false'
   `) as { n: number; people: number }[];

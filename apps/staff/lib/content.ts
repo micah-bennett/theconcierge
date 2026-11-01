@@ -71,12 +71,20 @@ export const PRIVACY: [name: string, whenOn: string, whenOff: string][] = [
   ["Daily mood check in", "The daily check-in shows on Today", "The daily check-in is hidden"],
   [
     "Share anonymized totals with my hospital",
-    "Your check-ins count toward unit totals, shown to your hospital only when 5 or more people answered. Never your name or your answers.",
-    "Off: your check-ins are left out of every total your hospital sees."
+    "Your check-ins count toward unit totals, shown to your organization only when 5 or more people answered. Never your name or your answers.",
+    "Off: your check-ins are left out of every total your organization sees."
   ]
 ];
 
-/** The Facility View leaves out check-ins from staff who turned this off. Absent means on. */
+/**
+ * What each privacy switch is called on screen. The PRIVACY names above are also the stored consent
+ * keys (`priv:<name>`), so a rename happens here, never there: changing a key would reset everyone's choice.
+ */
+export const PRIVACY_LABEL: Record<string, string> = {
+  "Share anonymized totals with my hospital": "Share anonymized totals with my organization"
+};
+
+/** The Facility View leaves out check-ins from staff who turned this off. Absent means on. Stored key: never rename. */
 export const SHARE_TOTALS_KEY = "priv:Share anonymized totals with my hospital";
 /** Leaderboard opt out. Absent means you are shown. */
 export const HIDE_LB_KEY = "priv:Hide me on the leaderboard";

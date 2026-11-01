@@ -1,7 +1,7 @@
 {
   "name": "hop",
   "private": true,
-  "description": "HOP: public landing site + the four HOP Portal apps (Staff, Console, Rep, Facility)",
+  "description": "HOP: public landing site + the five HOP Portal apps (HOP Client, Console, Rep, Facility, Concierge Portal)",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -14,7 +14,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "hop:create-console-admin": "node scripts/create-console-admin.mjs",
     "hop:seed-demo": "node scripts/seed-demo.mjs",
-    "hop:remove-demo": "node scripts/remove-demo.mjs"
+    "hop:remove-demo": "node scripts/remove-demo.mjs",
+    "hop:check-separation": "node scripts/check-separation.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -256,9 +256,9 @@ export default function FacilityApp({ facilityName }: { facilityName: string }) 
       {node}
       <div className="chead">
         <div>
-          <span className="tag n">Facility view</span>
+          <span className="tag n">Facility View · Hospitals and partner organizations</span>
           <h1 className="disp" style={{ marginTop: 10 }}>See strain early. Act before it costs you people.</h1>
-          <p>{facilityName}. Built from your care team&apos;s HOP Client check-ins and HOP requests. Unit totals only. No names, no personal data.</p>
+          <p>{facilityName}. Built from your team&apos;s HOP Client check-ins and HOP requests. Unit totals only. No names, no personal data. Individual Concierge customers are never included.</p>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           {updated && <span className="tag" title="Refreshes every minute">Updated {updated}</span>}
@@ -313,7 +313,7 @@ export default function FacilityApp({ facilityName }: { facilityName: string }) 
       <div className={`panel ${loading ? "fv-loading" : ""}`}>
         <div className="row between" style={{ flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
           <div>
-            <h2>Care team heat map</h2>
+            <h2>Team heat map</h2>
             <p className="ps" style={{ margin: 0 }}>
               {METRIC_LABEL[metric]} by unit and two-hour slot · {RANGE_LABEL[range]}{data?.asOf ? ` · today is ${shortDate(data.asOf)} (ET)` : ""} · anonymized
             </p>
@@ -330,7 +330,7 @@ export default function FacilityApp({ facilityName }: { facilityName: string }) 
           ))}
         </div>
 
-        {data && units.length === 0 && <p className="ps" style={{ marginTop: 14 }}>No units are set up for this facility yet.</p>}
+        {data && units.length === 0 && <p className="ps" style={{ marginTop: 14 }}>No units or departments are set up for this organization yet.</p>}
         {units.length > 0 && (
           <div className="hmwrap">
             <div>
@@ -601,7 +601,7 @@ export default function FacilityApp({ facilityName }: { facilityName: string }) 
           <h2>How this works</h2>
           <p className="ps" style={{ margin: 0 }}>
             Built from HOP Client check-ins and requests. Units with fewer than {MIN_GROUP_SIZE} people are hidden. Individuals are never shown.
-            Staff who turn off &quot;Share anonymized totals with my hospital&quot; are left out of every number.
+            Staff who turn off &quot;Share anonymized totals with my organization&quot; are left out of every number.
           </p>
         </div>
       </div>

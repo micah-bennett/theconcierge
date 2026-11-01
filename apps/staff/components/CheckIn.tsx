@@ -65,7 +65,7 @@ export function CheckInCard() {
             Edit
           </button>
         </div>
-        <p className="mock" style={{ textAlign: "left", marginTop: 8 }}>Your hospital only ever sees unit totals from 5+ people.</p>
+        <p className="mock" style={{ textAlign: "left", marginTop: 8 }}>Your organization only ever sees unit totals from 5+ people.</p>
       </div>
     );
   }
@@ -129,7 +129,7 @@ export function CheckInCard() {
           </button>
         )}
       </div>
-      <p className="mock" style={{ textAlign: "left", marginTop: 8 }}>Your hospital only ever sees unit totals from 5+ people.</p>
+      <p className="mock" style={{ textAlign: "left", marginTop: 8 }}>Your organization only ever sees unit totals from 5+ people.</p>
     </div>
   );
 }

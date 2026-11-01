@@ -22,7 +22,7 @@ export default async function Home() {
         <main className="auth">
           <div className="auth-card">
             <h1 className="disp">{APP_NAME}</h1>
-            <p className="auth-sub">Your account isn&apos;t linked to a facility yet. Ask your HOP contact to attach one.</p>
+            <p className="auth-sub">Your account isn&apos;t linked to an organization yet. Ask your HOP contact to attach one.</p>
           </div>
         </main>
       )}

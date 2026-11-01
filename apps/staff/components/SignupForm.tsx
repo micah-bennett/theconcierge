@@ -3,11 +3,11 @@ import { useEffect, useState, type FormEvent } from "react";
 import { j } from "@hop/shared/client";
 import type { Facility, Unit } from "@hop/shared/types";
 
-const TITLES = ["ICU Nurse", "ER Doctor", "Imaging Tech", "Home Health Aide", "Respiratory Therapist", "Phlebotomist", "Unit Clerk"];
+const TITLES = ["ICU Nurse", "ER Doctor", "Imaging Tech", "Home Health Aide", "Respiratory Therapist", "Phlebotomist", "Unit Clerk", "Account Manager", "Operations Associate", "Engineer", "Front Desk"];
 
 type Fac = Facility & { units: Unit[] };
 
-/** Self sign-up for nurses, doctors and every healthcare professional. POST /api/auth?action=signup. */
+/** Self sign-up for staff at HOP partner organizations (hospitals, healthcare teams and employers). POST /api/auth?action=signup. */
 export function SignupForm() {
   const [facilities, setFacilities] = useState<Fac[] | null>(null);
   const [f, setF] = useState({ firstName: "", lastName: "", email: "", password: "", phone: "", jobTitle: "", facilityId: "", unitId: "" });
@@ -28,7 +28,7 @@ export function SignupForm() {
         setFacilities(r.facilities);
         if (r.facilities.length === 1) setF((x) => ({ ...x, facilityId: r.facilities[0].id }));
       })
-      .catch(() => setError("We couldn't load the facility list. Refresh to try again."));
+      .catch(() => setError("We couldn't load the organization list. Refresh to try again."));
   }, []);
 
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value, ...(k === "facilityId" ? { unitId: "" } : {}) }));
@@ -37,7 +37,7 @@ export function SignupForm() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (f.password.length < 10) return setError("Use at least 10 characters for your password.");
-    if (!f.facilityId || !f.unitId) return setError("Pick your facility and unit.");
+    if (!f.facilityId || !f.unitId) return setError("Pick your organization and unit.");
     if (!consent) return setError("Please agree to the terms and privacy policy.");
     setBusy(true);
     setError(null);
@@ -84,7 +84,7 @@ export function SignupForm() {
         </label>
         <label className="dl">
           <span>Job title</span>
-          <input className="field" list="titles" required maxLength={80} value={f.jobTitle} onChange={set("jobTitle")} placeholder="For example: ICU Nurse" />
+          <input className="field" list="titles" required maxLength={80} value={f.jobTitle} onChange={set("jobTitle")} placeholder="For example: ICU Nurse or Account Manager" />
           <datalist id="titles">
             {TITLES.map((t) => (
               <option key={t} value={t} />
@@ -92,9 +92,9 @@ export function SignupForm() {
           </datalist>
         </label>
         <label className="dl">
-          <span>Facility</span>
+          <span>Organization</span>
           <select className="field" required value={f.facilityId} onChange={set("facilityId")} disabled={!facilities}>
-            <option value="">{facilities ? "Choose your facility" : "Loading…"}</option>
+            <option value="">{facilities ? "Choose your hospital or organization" : "Loading…"}</option>
             {facilities?.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.name}
@@ -104,9 +104,9 @@ export function SignupForm() {
           </select>
         </label>
         <label className="dl">
-          <span>Unit</span>
+          <span>Unit or department</span>
           <select className="field" required value={f.unitId} onChange={set("unitId")} disabled={!units.length}>
-            <option value="">{f.facilityId ? "Choose your unit" : "Pick a facility first"}</option>
+            <option value="">{f.facilityId ? "Choose your unit" : "Pick an organization first"}</option>
             {units.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
@@ -117,7 +117,7 @@ export function SignupForm() {
         <label className="row" style={{ gap: 10, alignItems: "flex-start", fontSize: 13.5, color: "var(--ink)" }}>
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3 }} />
           {/* [CONFIRM] final terms and privacy wording and links with counsel */}
-          <span>I agree to the HOP terms and privacy policy. My hospital only ever sees unit totals, never who asked for what.</span>
+          <span>I agree to the HOP terms and privacy policy. My organization only ever sees unit totals, never who asked for what.</span>
         </label>
         {error && (
           <p className="auth-error" role="alert">

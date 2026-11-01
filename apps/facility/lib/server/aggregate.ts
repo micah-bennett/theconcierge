@@ -1,7 +1,8 @@
 /*
  * Facility View aggregation and privacy suppression. Pure functions, no database access, so
  * scripts/check-suppression.mts can exercise them directly. lib/server/facility.ts runs one SQL
- * rollup over portal_checkins + portal_requests (aggregates only: counts, sums and distinct-people
+ * rollup over portal_checkins + portal_requests from HOP Client staff only (role 'staff', request
+ * channel 'organization'; Concierge customers never count) (aggregates only: counts, sums and distinct-people
  * counts per window / unit / two-hour slot) and calls buildFacilityView() on the result.
  *
  * `rollup()` below is the reference implementation of that SQL. It is what the check script

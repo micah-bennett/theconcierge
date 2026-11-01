@@ -102,7 +102,7 @@ export function Know() {
       <ComingSoon feature="saved-with-hop" icon="🔖" text="See a gift, a recipe, or a class you like anywhere online? Tap Share, then HOP, and HOP saves it for the right moment." />
       <div className="card" style={{ background: "var(--soft-teal)", borderColor: "#bfe6e6" }}>
         <h3>Our promise</h3>
-        <p>HOP only learns from what you turn on here or tell us. We never follow you around other websites or apps, and we never sell your data. Your hospital only sees unit totals.</p>
+        <p>HOP only learns from what you turn on here or tell us. We never follow you around other websites or apps, and we never sell your data. Your organization only sees unit totals.</p>
       </div>
       <button className="btn o w" onClick={() => go("home")}>Back to Today</button>
     </>

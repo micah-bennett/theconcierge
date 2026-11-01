@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { usePhone } from "@hop/shared/ui/Phone";
 import { SignOutButton } from "@hop/shared/ui/AppHeader";
-import { PRIVACY } from "@/lib/content";
+import { PRIVACY, PRIVACY_LABEL } from "@/lib/content";
 import { initials } from "@/lib/roles";
 import { DAY_SHORT, fmtTime, overnight } from "@/lib/shift";
 import type { ShiftPattern } from "@/lib/types";
@@ -84,10 +84,10 @@ export function You() {
             return (
               <div className="it" key={k}>
                 <div className="grow">
-                  <b style={{ fontSize: 13.5 }}>{k}</b>
+                  <b style={{ fontSize: 13.5 }}>{PRIVACY_LABEL[k] ?? k}</b>
                   <small>{on ? onText : offText}</small>
                 </div>
-                <button className={`toggle ${on ? "on" : ""}`} aria-label={k} aria-pressed={on} onClick={() => setConsent(`priv:${k}`, !on)} />
+                <button className={`toggle ${on ? "on" : ""}`} aria-label={PRIVACY_LABEL[k] ?? k} aria-pressed={on} onClick={() => setConsent(`priv:${k}`, !on)} />
               </div>
             );
           })}
@@ -98,7 +98,7 @@ export function You() {
           <div className="ico" style={{ background: "#fff" }}>🔒</div>
           <div>
             <h3>Your requests stay yours</h3>
-            <p>Your hospital only sees unit totals from 5 or more people, never who asked for what or how you checked in.</p>
+            <p>Your organization only sees unit totals from 5 or more people, never who asked for what or how you checked in.</p>
           </div>
         </div>
       </div>

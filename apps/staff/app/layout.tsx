@@ -3,7 +3,7 @@ import "@hop/shared/styles/portal.css";
 
 export const metadata: Metadata = {
   title: "HOP Client",
-  description: "Radical Hospitality for the people who keep healthcare running.",
+  description: "HOP Client: concierge support for the staff of HOP partner organizations, in healthcare and beyond.",
   icons: { icon: "/logo.png" }
 };
 

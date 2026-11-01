@@ -230,7 +230,7 @@ export function createAuthRoutes(opts: AuthOptions) {
     if (!parsed.success) return json({ error: zodMessage(parsed.error) }, 400);
     const input = parsed.data;
     const facility = (await sql()`SELECT 1 FROM portal_facilities WHERE id = ${input.facilityId}`) as unknown[];
-    if (!facility.length) return json({ error: "Pick your hospital from the list." }, 400);
+    if (!facility.length) return json({ error: "Pick your organization from the list." }, 400);
     const exists = (await sql()`SELECT 1 FROM portal_users WHERE lower(email) = ${input.email}`) as unknown[];
     if (exists.length) return json({ error: "An account with this email already exists. Try signing in." }, 409);
     const hash = await hashPassword(input.password);

@@ -161,7 +161,7 @@ export function RescueSheet() {
       <button className="btn c w" disabled={busy} onClick={send}>
         {busy ? "Sending…" : "Cover tonight"}
       </button>
-      <p className="mock">Your unit leader never sees what you request. [CONFIRM details for hospital funded plans]</p>
+      <p className="mock">Your unit leader never sees what you request. [CONFIRM details for organization funded plans]</p>
     </div>
   );
 }
@@ -491,7 +491,7 @@ export function ConnectSheet() {
     <div>
       <h2 className="disp" style={head}>Connect your apps</h2>
       <p style={{ color: "var(--muted)", fontSize: 14, margin: "4px 0 12px" }}>
-        We&apos;ll connect these when they&apos;re ready. For now HOP saves your choice and reads nothing. When it does, it reads only what you allow and never shares who you are with your hospital.
+        We&apos;ll connect these when they&apos;re ready. For now HOP saves your choice and reads nothing. When it does, it reads only what you allow and never shares who you are with your organization.
       </p>
       <p className="kick" style={{ margin: "4px 2px 6px" }}>Watch or health app · pick one</p>
       <div className="card list" style={{ padding: "4px 16px" }}>{WEAR.map((w) => row(w[0], w[1], "wear"))}</div>
@@ -571,7 +571,7 @@ export function PermSheet({ k, n }: { k: Kind; n: string }) {
         ))}
       </div>
       <div className="card" style={{ background: "var(--soft-teal)", borderColor: "#bfe6e6" }}>
-        <h3>What your hospital sees</h3>
+        <h3>What your organization sees</h3>
         <p>Only totals for whole units, like &quot;ICU sleep is down this week.&quot; Never your name, your data, or your requests.</p>
       </div>
       <button className="btn p w" disabled={busy} onClick={allow}>

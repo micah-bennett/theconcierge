@@ -3,7 +3,7 @@ import "@hop/shared/styles/portal.css";
 
 export const metadata: Metadata = {
   title: "Facility View · HOP",
-  description: "Radical Hospitality for the people who keep healthcare running.",
+  description: "Facility View for hospitals and partner organizations. Unit totals only, never names.",
   icons: { icon: "/logo.png" }
 };
 
