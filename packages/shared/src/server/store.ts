@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import type { Facility, Job, JobStatus, LogEntry, MyRequest, PortalUser, RepSummary, Role, StaffRequest, Unit, UserStatus } from "../types";
+import type { Facility, Job, JobStatus, LogEntry, MyRequest, PortalUser, RepSummary, RequestChannel, Role, StaffRequest, Unit, UserStatus } from "../types";
 import { toUser } from "./auth";
 import { json, sql } from "./db";
 
@@ -177,10 +177,18 @@ export async function getRequest(id: string): Promise<StaffRequest | null> {
   return rows[0]?.data ?? null;
 }
 
+/** The reporting channel a request belongs to. Only "organization" can ever count toward Facility View. */
+export function channelForSource(source: StaffRequest["source"]): RequestChannel {
+  if (source === "concierge") return "concierge";
+  if (source === "instant") return "instant";
+  return "organization";
+}
+
 export async function createRequest(r: StaffRequest): Promise<StaffRequest> {
+  // Instant requests have no account: member_id stays NULL.
   await sql()`
-    INSERT INTO portal_requests (id, member_id, status, job_id, data)
-    VALUES (${r.id}, ${r.memberId}, ${r.status}, ${r.jobId ?? null}, ${JSON.stringify(r)}::jsonb)
+    INSERT INTO portal_requests (id, member_id, status, job_id, data, channel)
+    VALUES (${r.id}, ${r.memberId || null}, ${r.status}, ${r.jobId ?? null}, ${JSON.stringify(r)}::jsonb, ${channelForSource(r.source)})
   `;
   return r;
 }
@@ -227,7 +235,7 @@ export async function isActiveRep(id: string): Promise<boolean> {
 export type TeamMember = PortalUser & { createdAt: string; lastLoginAt: string | null; facilityName: string | null };
 
 export async function listUsers(opts: { roles?: Role[] } = {}): Promise<TeamMember[]> {
-  const roles = opts.roles ?? ["staff", "rep", "console", "facility_admin"];
+  const roles = opts.roles ?? ["staff", "rep", "console", "facility_admin", "customer"];
   const rows = (await sql()`
     SELECT u.id, u.email, u.role, u.first_name, u.last_name, u.phone, u.status, u.facility_id,
            u.created_at, u.last_login_at, f.name AS facility_name

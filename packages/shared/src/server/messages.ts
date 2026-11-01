@@ -39,14 +39,15 @@ const toMessage = (r: Row): Message => ({
 /** True if this user may read and post in the thread. */
 export async function canUseThread(user: PortalUser, kind: ThreadKind, key: string): Promise<boolean> {
   if (user.role === "console") return true;
-  if (kind === "staff") return user.role === "staff" && key === user.id;
+  // "staff" threads are a member's own line to HOP Console: HOP Client staff and Concierge Portal customers.
+  if (kind === "staff") return (user.role === "staff" || user.role === "customer") && key === user.id;
   if (kind === "rep") return user.role === "rep" && key === user.id;
   if (kind === "job") {
     if (user.role === "rep") {
       const rows = (await sql()`SELECT 1 FROM portal_jobs WHERE id = ${key} AND rep_id = ${user.id}`) as unknown[];
       return rows.length > 0;
     }
-    if (user.role === "staff") {
+    if (user.role === "staff" || user.role === "customer") {
       const rows = (await sql()`
         SELECT 1 FROM portal_jobs j JOIN portal_requests r ON r.id = j.request_id
         WHERE j.id = ${key} AND r.member_id = ${user.id}
@@ -90,18 +91,18 @@ export async function markRead(userId: string, kind: ThreadKind, key: string): P
 
 /**
  * Inbox rows for a user: the last message and unread count per thread they can see.
- * Console: every thread. Rep: their HQ thread + their jobs' threads. Staff: their own thread + their jobs' threads.
+ * Console: every thread. Rep: their HQ thread + their jobs' threads. Staff and Concierge customers: their own thread + their jobs' threads.
  */
 export async function listThreads(user: PortalUser): Promise<ThreadSummary[]> {
   const rows = (await sql()`
     WITH visible AS (
       SELECT DISTINCT m.thread_kind, m.thread_key FROM portal_messages m
       WHERE ${user.role} = 'console'
-         OR (m.thread_kind = 'staff' AND ${user.role} = 'staff' AND m.thread_key = ${user.id}::text)
+         OR (m.thread_kind = 'staff' AND ${user.role} IN ('staff', 'customer') AND m.thread_key = ${user.id}::text)
          OR (m.thread_kind = 'rep' AND ${user.role} = 'rep' AND m.thread_key = ${user.id}::text)
          OR (m.thread_kind = 'job' AND ${user.role} = 'rep'
              AND m.thread_key IN (SELECT id FROM portal_jobs WHERE rep_id = ${user.id}))
-         OR (m.thread_kind = 'job' AND ${user.role} = 'staff'
+         OR (m.thread_kind = 'job' AND ${user.role} IN ('staff', 'customer')
              AND m.thread_key IN (SELECT j.id FROM portal_jobs j JOIN portal_requests r ON r.id = j.request_id WHERE r.member_id = ${user.id}))
     ),
     last AS (

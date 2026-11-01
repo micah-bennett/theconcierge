@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { JOB_TYPES } from "@hop/shared/brand";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { JOB_TYPES, conciergeSummary } from "@hop/shared/brand";
 import { ApiError, j, useJobs } from "@hop/shared/client";
 import { nowT, nowTA } from "@hop/shared/time";
 import type { Job, JobCat, RequestSource, ThreadKind } from "@hop/shared/types";
@@ -28,9 +28,12 @@ const SOURCE_LABEL: Record<RequestSource, string> = {
   facility: "Unit support",
   console: "Console",
   reward: "Reward redemption",
-  safety: "Safety"
+  safety: "Safety",
+  concierge: "Concierge Portal",
+  instant: "Instant request"
 };
-const sourceTag = (s: RequestSource | undefined) => (s === "safety" ? "c" : s === "reward" ? "g" : s === "facility" ? "s" : "n");
+const sourceTag = (s: RequestSource | undefined) =>
+  s === "safety" ? "c" : s === "reward" || s === "instant" ? "g" : s === "facility" || s === "concierge" ? "s" : "n";
 
 /** Link to a conversation on the Messages tab. `title` names it until its first message. */
 const msgHref = (kind: ThreadKind, key: string, title: string) =>
@@ -60,6 +63,9 @@ const mins = (m: number) => (m < 60 ? `${Math.round(m)} min` : `${(m / 60).toFix
 /** Composer prefill from a queued request. The job title is capped at 140, so a long request also goes into the notes. */
 function prefillFrom(r: ConsoleRequest): Prefill {
   const long = r.text.length > 140;
+  // Concierge details go to the rep as notes. Payment never does: the Console takes payment.
+  const details = r.details ? conciergeSummary(r.details).map(([k, v]) => `${k}: ${v}`).join("\n") : "";
+  const notes = [long ? r.text : "", details].filter(Boolean).join("\n\n");
   return {
     requestId: r.id,
     cat: r.cat,
@@ -67,8 +73,8 @@ function prefillFrom(r: ConsoleRequest): Prefill {
     client: r.member,
     crole: r.role,
     phone: r.memberPhone,
-    window: r.window,
-    notes: long ? r.text : undefined
+    window: r.window || (r.details ? [r.details.dateNeeded, r.details.timeNeeded].filter(Boolean).join(" ") : undefined),
+    notes: notes || undefined
   };
 }
 
@@ -435,7 +441,19 @@ function RequestPanel({
         ))}
       </div>
 
-      {r.source !== "facility" && !safety && (
+      {r.details && (
+        <div className="memb">
+          <div className="row between"><small className="kick">{r.source === "instant" ? "Instant request (no account)" : "Concierge Portal request"}</small></div>
+          <dl style={{ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "4px 12px", margin: "8px 0", fontSize: 13 }}>
+            {conciergeSummary(r.details, { payment: true, contact: true }).map(([k, v]) => (
+              <Fragment key={k}><dt style={{ color: "var(--muted)" }}>{k}</dt><dd style={{ margin: 0, color: "var(--ink)" }}>{v}</dd></Fragment>
+            ))}
+          </dl>
+          <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>Individual customer. Never counted in any organization&apos;s Facility View.</p>
+        </div>
+      )}
+
+      {r.source !== "facility" && !safety && !r.details && (
         <div className="memb">
           <div className="row between"><small className="kick">Know your member</small></div>
           {r.memberPrefs.length ? (

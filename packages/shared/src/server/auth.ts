@@ -4,7 +4,7 @@ import { parseCookie, stringifySetCookie } from "cookie";
 import bcrypt from "bcryptjs";
 import { APP_FOR_ROLE, appUrlFor } from "../brand";
 import type { Facility, PortalUser, Role, Unit } from "../types";
-import { forgotSchema, loginSchema, setPasswordSchema, signupSchema } from "../validate";
+import { customerSignupSchema, forgotSchema, loginSchema, setPasswordSchema, signupSchema } from "../validate";
 import { json, readJson, sql, zodMessage } from "./db";
 import { sendPasswordResetEmail } from "./email";
 
@@ -166,6 +166,7 @@ export async function listFacilitiesWithUnits(): Promise<(Facility & { units: Un
 // ── /api/auth route factory ──────────────────────────────────────────────────
 
 export type SignupInput = ReturnType<typeof signupSchema.parse>;
+export type CustomerSignupInput = ReturnType<typeof customerSignupSchema.parse>;
 
 type AuthOptions = {
   role: Role;
@@ -173,6 +174,10 @@ type AuthOptions = {
   allowSignup?: boolean;
   /** Runs after the user row is inserted (Staff writes its profile). Throw a Response to reject. */
   onSignup?: (userId: string, input: SignupInput) => Promise<void>;
+  /** Concierge Portal only: allow POST ?action=signup for individual customers (no facility). */
+  allowCustomerSignup?: boolean;
+  /** Runs after a customer row is inserted (the Concierge Portal writes its profile). Throw to reject. */
+  onCustomerSignup?: (userId: string, input: CustomerSignupInput) => Promise<void>;
 };
 
 const BAD_LOGIN = "That email and password don't match.";
@@ -245,6 +250,30 @@ export function createAuthRoutes(opts: AuthOptions) {
     return withCookie({ user }, 201, cookie);
   }
 
+  async function customerSignup(request: Request): Promise<Response> {
+    const parsed = customerSignupSchema.safeParse(await readJson(request));
+    if (!parsed.success) return json({ error: zodMessage(parsed.error) }, 400);
+    const input = parsed.data;
+    const exists = (await sql()`SELECT 1 FROM portal_users WHERE lower(email) = ${input.email}`) as unknown[];
+    if (exists.length) return json({ error: "An account with this email already exists. Try signing in." }, 409);
+    const hash = await hashPassword(input.password);
+    // No facility: a customer belongs to no organization, so no Facility View can ever see them.
+    const rows = (await sql()`
+      INSERT INTO portal_users (email, password_hash, role, first_name, last_name, phone, status, facility_id)
+      VALUES (${input.email}, ${hash}, ${role}, ${input.firstName}, ${input.lastName}, ${input.phone}, 'active', NULL)
+      RETURNING id, email, role, first_name, last_name, phone, status, facility_id
+    `) as UserRow[];
+    const user = toUser(rows[0]);
+    try {
+      await opts.onCustomerSignup?.(user.id, input);
+    } catch (e) {
+      await sql()`DELETE FROM portal_users WHERE id = ${user.id}`;
+      throw e;
+    }
+    const cookie = await signIn(request, user.id);
+    return withCookie({ user }, 201, cookie);
+  }
+
   async function setPassword(request: Request): Promise<Response> {
     const parsed = setPasswordSchema.safeParse(await readJson(request));
     if (!parsed.success) return json({ error: zodMessage(parsed.error) }, 400);
@@ -305,6 +334,7 @@ export function createAuthRoutes(opts: AuthOptions) {
         return withCookie({ ok: true }, 200, sessionCookie(request, role, "", 0));
       }
       if (action === "signup" && opts.allowSignup) return await signup(request);
+      if (action === "signup" && opts.allowCustomerSignup) return await customerSignup(request);
       if (action === "set-password") return await setPassword(request);
       if (action === "forgot") return await forgot(request);
       return json({ error: "Unknown action" }, 400);

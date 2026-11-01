@@ -55,7 +55,7 @@ export interface ConsoleThread extends ThreadSummary {
 export interface TeamRow {
   id: string;
   email: string;
-  role: Exclude<Role, "staff">;
+  role: Exclude<Role, "staff" | "customer">;
   firstName: string;
   lastName: string;
   phone: string;

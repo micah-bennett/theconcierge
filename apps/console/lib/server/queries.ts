@@ -121,7 +121,8 @@ export async function listConsoleRequests(): Promise<ConsoleRequest[]> {
       ...r.data,
       member: r.data.member || fallbackName || "Staff member",
       role: r.data.role || r.job_title || "",
-      memberPhone: r.phone || "",
+      // Instant requests have no account; their phone travels with the request.
+      memberPhone: r.phone || r.data.details?.contact?.phone || "",
       memberPrefs: prefs.slice(0, 8)
     };
   });

@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS portal_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL,
   password_hash TEXT,
-  role TEXT NOT NULL CHECK (role IN ('staff', 'rep', 'console', 'facility_admin')),
+  role TEXT NOT NULL CHECK (role IN ('staff', 'rep', 'console', 'facility_admin', 'customer')),
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
   phone TEXT NOT NULL DEFAULT '',
@@ -274,3 +274,43 @@ ALTER TABLE portal_staff_profiles ADD COLUMN IF NOT EXISTS shift_pattern JSONB;
 ALTER TABLE portal_staff_profiles ADD COLUMN IF NOT EXISTS referral_code TEXT;
 ALTER TABLE portal_staff_profiles ADD COLUMN IF NOT EXISTS referred_by UUID REFERENCES portal_users(id) ON DELETE SET NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS portal_staff_profiles_referral ON portal_staff_profiles (referral_code) WHERE referral_code IS NOT NULL;
+
+-- ── 2026-11: Concierge Portal (apps/concierge, role 'customer') and instant requests ──
+-- Individual concierge customers sign up on their own. They belong to no facility and have no
+-- portal_staff_profiles row, so nothing they do can reach Facility View (which counts requests
+-- only through a staff profile's unit, and only from role 'staff').
+--
+-- Widen the role CHECK on databases created before 'customer' existed. This swaps a constraint;
+-- it never drops a table or column, and it is a no-op once 'customer' is allowed.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'portal_users'::regclass AND conname = 'portal_users_role_check'
+      AND pg_get_constraintdef(oid) NOT LIKE '%customer%'
+  ) THEN
+    ALTER TABLE portal_users DROP CONSTRAINT portal_users_role_check;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conrelid = 'portal_users'::regclass AND conname = 'portal_users_role_check'
+  ) THEN
+    ALTER TABLE portal_users ADD CONSTRAINT portal_users_role_check
+      CHECK (role IN ('staff', 'rep', 'console', 'facility_admin', 'customer'));
+  END IF;
+END $$;
+
+-- A concierge customer's saved details, used to prefill new requests.
+CREATE TABLE IF NOT EXISTS portal_customer_profiles (
+  user_id UUID PRIMARY KEY REFERENCES portal_users(id) ON DELETE CASCADE,
+  address JSONB NOT NULL DEFAULT '{}'::jsonb,
+  hear_about_us TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Where a request came from, as a real column so reporting can filter on it without trusting JSON:
+-- 'organization' (HOP Client staff, Facility View, Console, Rep), 'concierge' (Concierge Portal
+-- customer) or 'instant' (no-account request from the public site; member_id is NULL).
+ALTER TABLE portal_requests ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'organization'
+  CHECK (channel IN ('organization', 'concierge', 'instant'));
+CREATE INDEX IF NOT EXISTS portal_requests_channel_idx ON portal_requests (channel);

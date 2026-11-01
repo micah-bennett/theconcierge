@@ -11,7 +11,8 @@ import { enableUser, repAvailability, repRatings, voidInviteTokens } from "@/lib
 
 export const dynamic = "force-dynamic";
 
-type TeamRole = Exclude<Role, "staff">;
+// Self sign-up roles (HOP Client staff, Concierge Portal customers) are not team members.
+type TeamRole = Exclude<Role, "staff" | "customer">;
 const TEAM_ROLES: TeamRole[] = ["console", "rep", "facility_admin"];
 
 /** Local dev defaults (docs/portal/architecture.md → dev ports) when an *_URL isn't set. */
@@ -38,7 +39,7 @@ async function sendInvite(user: PortalUser, base: string): Promise<boolean> {
 }
 
 /**
- * GET /api/team → every non-staff user (console, rep, facility_admin) plus facilities for the invite picker.
+ * GET /api/team → every team user, not self sign-ups (console, rep, facility_admin) plus facilities for the invite picker.
  * Reps also carry `availability` ("online" | "offline"), `rating` (average stars, null with none) and `ratings` (count).
  */
 export const GET = withAuth(APP_ROLE, async () => {
@@ -78,7 +79,7 @@ export const PATCH = withAuth(APP_ROLE, async (request, me) => {
   const { action } = parsed.data;
 
   const target = await getUser(id);
-  if (!target || target.role === "staff") return json({ error: "User not found" }, 404);
+  if (!target || target.role === "staff" || target.role === "customer") return json({ error: "User not found" }, 404);
   const role = target.role as TeamRole;
 
   if (action === "disable") {

@@ -1,6 +1,7 @@
 import type { JOB_CATS } from "./brand";
 
-export type Role = "staff" | "rep" | "console" | "facility_admin";
+/** One role per app. `customer` = an individual on the Concierge Portal (no facility, never in Facility View). */
+export type Role = "staff" | "rep" | "console" | "facility_admin" | "customer";
 export type UserStatus = "invited" | "active" | "disabled";
 
 export interface PortalUser {
@@ -91,7 +92,64 @@ export interface Job {
 }
 
 export type RequestStatus = "new" | "dispatched" | "completed" | "cancelled";
-export type RequestSource = "ask" | "clutch" | "rescue" | "voice" | "chat" | "welcome" | "life" | "facility" | "console" | "reward" | "safety";
+export type RequestSource =
+  | "ask" | "clutch" | "rescue" | "voice" | "chat" | "welcome" | "life" | "facility" | "console" | "reward" | "safety"
+  /** A Concierge Portal customer's request. */
+  | "concierge"
+  /** A no-account request from the public site (hopserves.com/request). */
+  | "instant";
+
+/**
+ * Where a request came from, stored in the indexed `portal_requests.channel` column.
+ * Only `organization` requests can ever count toward Facility View.
+ */
+export type RequestChannel = "organization" | "concierge" | "instant";
+
+export interface ConciergeAddress {
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  zip: string;
+}
+
+export interface FlightInfo {
+  airline: string;
+  flightNumber: string;
+  airport: string;
+  /** "departure" (drop at the airport) or "arrival" (pick up from it). */
+  direction: "departure" | "arrival" | "";
+  /** Scheduled flight time, free text such as "6:40 AM". */
+  time: string;
+  passengers: string;
+  bags: string;
+}
+
+/**
+ * Payment preference on a concierge request. The full card number is never collected:
+ * only the method, the cardholder name and the last four digits for reference.
+ * The team completes payment by phone. TODO(IT): a hosted checkout (e.g. Stripe) when one is chosen.
+ */
+export interface PaymentPreference {
+  method: "" | "card" | "phone" | "invoice" | "other";
+  cardholderName: string;
+  cardLast4: string;
+}
+
+/** The extra detail a concierge or instant request carries (fields from the original HOP concierge form). */
+export interface ConciergeDetails {
+  requestType: string;
+  /** YYYY-MM-DD */
+  dateNeeded: string;
+  /** e.g. "3:05 PM", or "" for any time. */
+  timeNeeded: string;
+  address: ConciergeAddress;
+  flight: FlightInfo | null;
+  payment: PaymentPreference;
+  hearAboutUs: string;
+  /** Instant requests only (no account): how to reach the requester. */
+  contact?: { firstName: string; lastName: string; email: string; phone: string };
+}
 
 export interface StaffRequest {
   id: string;
@@ -109,6 +167,8 @@ export interface StaffRequest {
   createdAt: number;
   status: RequestStatus;
   jobId?: string;
+  /** Concierge Portal and instant requests only. */
+  details?: ConciergeDetails;
 }
 
 /** A staff member's request as the Staff App sees it, with its job's progress. */
