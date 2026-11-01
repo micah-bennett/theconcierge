@@ -8,7 +8,7 @@ for the four Portal apps. Until then, only the landing site section applies.
 
 - **One Neon database** holds everything: contact-form inquiries and, once built, all Portal
   accounts, requests and jobs.
-- **Five Vercel projects** come from the same GitHub repo and the same `main` branch. Each one
+- **Six Vercel projects** come from the same GitHub repo and the same `main` branch. Each one
   builds a different folder:
 
   | Vercel project | Folder ("Root Directory") | What it is |
@@ -18,6 +18,7 @@ for the four Portal apps. Until then, only the landing site section applies.
   | `hop-console` | `apps/console` | Concierge Console (created in Phase 6) |
   | `hop-rep` | `apps/rep` | Concierge Rep App (created in Phase 6) |
   | `hop-facility` | `apps/facility` | Facility View (created in Phase 6) |
+  | `hop-concierge` | `apps/concierge` | Concierge Portal for individual customers (added in v2.1, 2026-11) |
 
 - The old `theconcierge-staff` project (ConciergeHub, on the `staff-portal` branch) is being
   retired. Leave it alone until Phase 6 says to delete it.
@@ -47,6 +48,37 @@ deploy of `theconcierge` will fail.
    - `ANTHROPIC_API_KEY`
 6. **Deployments → Redeploy** the latest `main` deployment. Then open `/`, `/portal` and
    `/contact`, and send a test message through the contact form.
+
+## ⚠️ v2.1 (2026-11): Concierge Portal, Healthcare / Organizations / Concierge, instant requests
+
+Do these **in this order**. Step 1 must happen before the code reaches `main`, because the new code
+writes a new database column; without it, new requests and the Facility View would fail.
+
+1. **Update the database** (see "Database updates" below): `npm run db:migrate`. It adds the
+   `customer` account type, the `portal_customer_profiles` table and a `channel` column on
+   requests. Safe to run twice; nothing is deleted.
+2. **Merge the code to `main`** (all projects redeploy).
+3. **Create the sixth Vercel project** for the Concierge Portal: Vercel → Add New → Project →
+   import the same repo → name it `hop-concierge` → **Root Directory** `apps/concierge` (leave
+   "Include files outside the root directory" on) → Framework **Next.js**. Before the first
+   deploy, add its settings: `DATABASE_URL`, `SESSION_HASH_SECRET` (the same value as the other
+   apps), `RESEND_API_KEY`, and `APP_URL` = its own address (for example
+   `https://hop-concierge.vercel.app`). Deploy.
+4. **Tell the other apps where it is**: add `CONCIERGE_URL` = that address to `hop-client`,
+   `hop-console`, `hop-rep` and `hop-facility` (used for the "this account is for the Concierge
+   Portal" message), and `VITE_CONCIERGE_URL` = the same address to the site (`hop_services`).
+   Redeploy each one. Until `VITE_CONCIERGE_URL` is set, the site shows the Concierge Portal as
+   "Coming soon"; the no-account instant request form at `/request` works either way.
+5. **Check that customer data stays separate** (read-only, safe on the live database):
+   ```bash
+   DATABASE_URL="postgres://…" npm run hop:check-separation
+   ```
+   Every line should say PASS. Run it again any time, for example before a hospital review.
+
+Instant requests from the public site land in the Concierge Console queue as "Instant request" and
+also email `NOTIFY_EMAIL` on the site project. Payment: the forms never take a full card number.
+They take the method, the cardholder name and the last 4 digits, and the team calls to take
+payment. A real card checkout (for example Stripe) is not set up yet.
 
 ## Database updates
 
@@ -91,19 +123,20 @@ ALLOW_DEMO_SEED=1 DEMO_PASSWORD="…10+ characters…" DATABASE_URL="postgres://
 | `hop-console` | `apps/console` | https://hop-console.vercel.app |
 | `hop-rep` | `apps/rep` | https://hop-rep.vercel.app |
 | `hop-facility` | `apps/facility` | https://hop-facility.vercel.app |
+| `hop-concierge` | `apps/concierge` | Not created yet (v2.1 step 3 above) |
 
-All five are connected to the GitHub repo. A push to `main` deploys to production, and a push to
+All six are connected to the GitHub repo. A push to `main` deploys to production, and a push to
 any other branch makes a preview. If a site deploy ever shows "Ready" but the live site doesn't
 change, an earlier rollback has paused auto-promotion: Deployments → the new one → ⋯ → Promote to
 Production. (`theconcierge.life` is not attached to any project right now; it shows Vercel's
-DEPLOYMENT_NOT_FOUND page.) Every push rebuilds all five.
+DEPLOYMENT_NOT_FOUND page.) Every push rebuilds all six.
 
 **Settings each Portal app has** (Vercel → project → Settings → Environment Variables):
 - `DATABASE_URL`: the Neon database.
-- `SESSION_HASH_SECRET`: one random value, shared by the four apps.
+- `SESSION_HASH_SECRET`: one random value, shared by the five apps.
 - `APP_URL`: that app's own address.
 - `CLIENT_URL` (HOP Client; the old name `STAFF_URL` still works), `CONSOLE_URL`, `REP_URL`,
-  `FACILITY_URL`: the four addresses above.
+  `FACILITY_URL`, `CONCIERGE_URL`: the five addresses above.
 - `RESEND_API_KEY`: needed for invite and password-reset emails. **Add it by hand** (see below).
 
 **HOP Client only:** `SOCIAL_LINKS` turns on the "Follow HOP" reward cards. Paste exactly this
@@ -114,13 +147,14 @@ Leave it unset to show only the blog and share cards. Redeploy HOP Client after 
 **Rep App only:** `HOP_SUPPORT_PHONE` (for example `+18455550100`) shows a "Call the HOP line"
 button on the rep's Safety screen.
 
-**The site** also has `VITE_CLIENT_URL`, `VITE_CONSOLE_URL`, `VITE_REP_URL` and
-`VITE_FACILITY_URL`. These are the links on the HOP Portal page.
+**The site** also has `VITE_CLIENT_URL`, `VITE_CONSOLE_URL`, `VITE_REP_URL`,
+`VITE_FACILITY_URL` and `VITE_CONCIERGE_URL`. These are the links on the HOP Portal and
+Concierge pages.
 
-### Adding the email key to the four apps (one time)
+### Adding the email key to the Portal apps (one time)
 1. Vercel → `hop_services` → Settings → Environment Variables → `RESEND_API_KEY` → copy the value
    (or create a new key at resend.com → API Keys).
-2. For each of `hop-staff`, `hop-console`, `hop-rep` and `hop-facility`: Settings → Environment
+2. For each of `hop-client`, `hop-console`, `hop-rep`, `hop-facility` and `hop-concierge`: Settings → Environment
    Variables → Add → Key `RESEND_API_KEY`, paste the value, tick Production and Preview → Save.
 3. Redeploy each one: Deployments → the top one → ⋯ → Redeploy.
 
@@ -129,7 +163,7 @@ on the live apps.
 
 ### Changing an app's address (custom domain)
 Vercel → project → Settings → Domains → Add (for example `console.theconcierge.life`). Then update
-that address in all four apps' `*_URL` settings and the site's `VITE_*_URL`, and redeploy.
+that address in all five apps' `*_URL` settings and the site's `VITE_*_URL`, and redeploy.
 
 ### Rolling back one app
 Vercel → that project → Deployments → pick the last good one → ⋯ → Promote to Production. The
@@ -139,6 +173,8 @@ other apps aren't affected.
 Vercel → project → Logs (or Deployments → a deployment → Runtime Logs).
 
 ## Still to do
+- v2.1 steps 1-5 above (database update, Concierge Portal project, `CONCIERGE_URL` /
+  `VITE_CONCIERGE_URL`, separation check).
 - Creating the real first Concierge Console account (`npm run hop:create-console-admin`) and
   removing the demo data (above) before real staff sign up.
 - Retiring `theconcierge-staff` and the `staff-portal` branch (only with the operator's go-ahead;

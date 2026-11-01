@@ -1,6 +1,6 @@
 # HOP Portal: architecture
 
-How the four Portal apps are wired. This is the **design every phase builds toward**. What is
+How the five Portal apps are wired. This is the **design every phase builds toward**. What is
 actually built today is tracked in `docs/portal/mvp-scope.md` (and in the status table of
 `docs/rebuild/README.md`). If code and this doc disagree, the code wins: fix this doc in the
 same change.
@@ -14,6 +14,7 @@ apps/
   console/     Next.js: Concierge Console         role: console
   rep/         Next.js: Concierge Rep App         role: rep
   facility/    Next.js: Facility View             role: facility_admin
+  concierge/   Next.js: Concierge Portal          role: customer   (v2.1: individual customers)
 packages/
   shared/      @hop/shared: everything two or more apps need
 db/schema.sql  one idempotent schema for the shared Neon database
@@ -38,7 +39,7 @@ apps/<app>/
   package.json              name "@hop/<app>", fixed dev port (see below)
 ```
 
-Dev ports: site 5173, staff 3001, console 3002, rep 3003, facility 3004.
+Dev ports: site 5173, staff 3001, console 3002, rep 3003, facility 3004, concierge 3005.
 
 ## packages/shared (`@hop/shared`)
 
@@ -66,8 +67,8 @@ bundle.
 
 ## Accounts and auth
 
-- **Roles**: `staff`, `rep`, `console`, `facility_admin`. One role per user, and one app per
-  role. A rep who signs in on the Console gets "This account is for the Rep App" with a link to
+- **Roles**: `staff`, `rep`, `console`, `facility_admin`, `customer`. One role per user, and one
+  app per role. A rep who signs in on the Console gets "This account is for the Rep App" with a link to
   it, not a session.
 - **How accounts are created**:
   - `staff`: self sign-up on HOP Client (`/signup`) with name, email, password, job title,
@@ -75,11 +76,15 @@ bundle.
   - `rep`, `facility_admin` and extra `console` users: created by a console user on the
     Console's Team screen. They are created with `status = 'invited'` and no password, and
     Resend emails them a one-time set-password link to *their* app's `/set-password?token=…`.
+  - `customer`: self sign-up on the Concierge Portal (`/signup`) with name, email, phone and
+    password. **No facility, no unit, no staff profile**: `createAuthRoutes({ allowCustomerSignup })`
+    inserts `facility_id = NULL`, and `onCustomerSignup` writes `portal_customer_profiles`.
+    Customers are not team members: the Console's Team screen never lists them.
   - The first `console` user: `node scripts/create-console-admin.mjs` (from the repo root,
     reads `DATABASE_URL`).
 - **Sessions**: a random 32-byte token in an httpOnly, `SameSite=Lax`, `Secure` (on https)
-  cookie named after the app's role: `hop_portal_staff`, `hop_portal_console`, `hop_portal_rep`
-  or `hop_portal_facility_admin`. (On localhost every app shares one cookie jar, because cookies
+  cookie named after the app's role: `hop_portal_staff`, `hop_portal_console`, `hop_portal_rep`,
+  `hop_portal_facility_admin` or `hop_portal_customer`. (On localhost every app shares one cookie jar, because cookies
   ignore the port, so a single name would let signing in to one app sign you out of another.) Only `HMAC-SHA256(token, SESSION_HASH_SECRET)` is stored, in
   `portal_sessions`. The TTL is 30 days.
   - Lockout: 8 failed attempts lock the account for 15 minutes.
@@ -90,8 +95,9 @@ bundle.
   user, ctx) => …)`. `withAuth` returns 401 when there's no session for this app's role, and
   turns any thrown `Response` (`throw json({ error }, 400)`) into the reply. Ownership is checked in the query:
   - A rep only reads and patches jobs where `rep_id = user.id`.
-  - A staff member only sees requests where `member_id = user.id`.
-  - A facility admin only sees aggregates for `user.facility_id`.
+  - A staff member or customer only sees requests where `member_id = user.id`.
+  - A facility admin only sees aggregates for `user.facility_id`, built only from `staff`
+    accounts and `organization`-channel requests (see "Data separation" below).
 
 ## Data model (`db/schema.sql`, all tables prefixed `portal_`)
 
@@ -107,8 +113,10 @@ portal_password_tokens token_hash pk, user_id, purpose ('invite'|'reset'), expir
 portal_staff_profiles  user_id pk, job_title, unit_id, prefs jsonb (what "HOP knows you"),
                        consents jsonb (watch/calendar/schedule consent intent), points int, lifetime_points int, updated_at
 portal_point_claims    (user_id, earn_key, period) pk, points, claimed_at   (one claim per earn per day/week)
-portal_requests        id text pk ('r'+8), member_id → users, status ('new'|'dispatched'|'completed'|'cancelled'),
-                       job_id, data jsonb (StaffRequest), created_at, updated_at
+portal_requests        id text pk ('r'+8), member_id → users (NULL for instant requests),
+                       status ('new'|'dispatched'|'completed'|'cancelled'), job_id, data jsonb (StaffRequest),
+                       channel ('organization'|'concierge'|'instant', set from data.source), created_at, updated_at
+portal_customer_profiles user_id pk, address jsonb, hear_about_us, created_at, updated_at   (Concierge Portal)
 portal_jobs            id text pk ('d'+8), rep_id → users, request_id, status, data jsonb (Job),
                        created_at, updated_at
 portal_job_events      id bigserial, job_id, actor_id, kind, detail jsonb, at   (audit timeline)
@@ -153,6 +161,25 @@ HOP Client ── POST /api/me?action=rate        ▶ portal_ratings (Console se
 HOP Client ── POST /api/play?game=…           ▶ answers scored on the server, portal_game_plays + points
 ```
 
+v2.1 flows (2026-11):
+
+```
+Concierge Portal ── POST /api/requests (conciergeRequestSchema) ▶ portal_requests (source 'concierge', channel 'concierge')
+Public site      ── POST /api/request (no account)              ▶ portal_requests (source 'instant', channel 'instant',
+                                                                  member_id NULL, contact in data.details) + owner email
+Console          ── GET  /api/requests ◀── both show in the queue as "Concierge Portal" / "Instant request",
+                                           with the details panel (address, flight, payment preference)
+Console          ── dispatch ▶ job notes carry the details, never payment
+Concierge Portal ── GET  /api/requests (mine), cancel while 'new', messages on its own member thread
+```
+
+Request details (`ConciergeDetails`, `packages/shared/src/types.ts`): request type, date and time
+needed, address, flight (only for the flight request types), payment preference (method,
+cardholder name, last 4 digits; **never** a full card number, expiry or CVV; the team takes
+payment by phone, `TODO(IT)` hosted checkout) and how they heard about HOP. The public site keeps a
+mirrored copy of the option lists in `apps/site/src/site/conciergeRequest.ts` because it can't
+import `@hop/shared`.
+
 Each app hosts its **own** route handlers for the resources it touches, and all of them call the
 same `@hop/shared/server/store` functions against the same database. There is no shared API
 server and no cross-origin calls between apps.
@@ -190,15 +217,17 @@ The server enforces this with two zod schemas, `consolePatchJobSchema` and
 | `hop-console` | `apps/console` | Next.js | shared set + `APP_URL`, `STAFF_URL`, `REP_URL`, `FACILITY_URL` (for invite links) |
 | `hop-rep` | `apps/rep` | Next.js | shared set + `APP_URL`, optional `BLOB_READ_WRITE_TOKEN` |
 | `hop-facility` | `apps/facility` | Next.js | shared set + `APP_URL` |
+| `hop-concierge` | `apps/concierge` | Next.js | shared set + `APP_URL` |
 
 The shared set is `DATABASE_URL`, `SESSION_HASH_SECRET` and `RESEND_API_KEY`, the same values in
 every project.
 
-- All five projects deploy from `main`. Vercel detects npm workspaces and installs from the repo
+- All six projects deploy from `main`. Every Portal app also gets `CONCIERGE_URL` (wrong-app
+  message), and the site gets `VITE_CONCIERGE_URL`. Vercel detects npm workspaces and installs from the repo
   root.
 - In each Portal project, "Include files outside the root directory" must stay on (the default),
   because the apps import `packages/shared`.
-- No "Ignored Build Step": every push to `main` rebuilds all five. (A git-diff skip was tried and
+- No "Ignored Build Step": every push to `main` rebuilds all six. (A git-diff skip was tried and
   silently skipped real changes on multi-commit pushes, so it was removed on 2026-10-19.)
 - The old `theconcierge-staff` project and the `staff-portal` branch are retired in Phase 6.
 
@@ -209,3 +238,8 @@ every project.
 - No watch, calendar or schedule data is collected until a privacy/HIPAA review is done. Those
   screens show sample data and "Connect" flows that only record consent intent.
 - Proof photos are private before any real job (signed Blob URLs).
+- **Data separation (2026-11).** Individual customer activity never reaches organization
+  reporting. Concierge customers have no facility and no staff profile; instant requests have no
+  account. On top of that, every Facility View query requires the requester's role to be `staff`
+  and the request's `channel` to be `organization`, and check-ins require a `staff` account.
+  `npm run hop:check-separation` is a read-only leak test against the database.

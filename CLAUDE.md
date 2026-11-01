@@ -6,11 +6,11 @@ deliberately duplicates as little as possible, because duplicated facts go stale
 
 ## Read this first, in order
 
-1. **`docs/PROJECT_OVERVIEW.md`**: what this repo is (a landing site plus four HOP Portal apps in
+1. **`docs/PROJECT_OVERVIEW.md`**: what this repo is (a landing site plus five HOP Portal apps in
    one npm-workspaces monorepo), the stack, local dev. Always read this before your first edit in
    a session.
-2. **If touching anything under `apps/staff`, `apps/console`, `apps/rep`, `apps/facility` or
-   `packages/shared`**: read `docs/portal/architecture.md` first, then `docs/portal/mvp-scope.md`.
+2. **If touching anything under `apps/staff`, `apps/console`, `apps/rep`, `apps/facility`,
+   `apps/concierge` or `packages/shared`**: read `docs/portal/architecture.md` first, then `docs/portal/mvp-scope.md`.
    `architecture.md` describes how the Portal is *actually* wired. `mvp-scope.md` tracks what's
    real, what's stubbed with sample data, and what's not built yet. Both are living docs: update
    them in the same change that changes the behavior they describe.
@@ -30,14 +30,17 @@ deliberately duplicates as little as possible, because duplicated facts go stale
 
 ## The rules that matter most
 
-- **Five Vercel projects, one repo, one branch (`main`), one Neon database.** Each folder in
+- **Six Vercel projects, one repo, one branch (`main`), one Neon database.** Each folder in
   `apps/` is its own Vercel project with its own Root Directory: `apps/site` (public landing),
-  `apps/staff`, `apps/console`, `apps/rep`, `apps/facility`. They share code through
+  `apps/staff`, `apps/console`, `apps/rep`, `apps/facility`, `apps/concierge`. They share code through
   `packages/shared` and share data through the one database. There is no more `staff-portal`
   branch. Don't recreate per-app branches.
 - **One role per app, enforced server-side.** Roles: `staff`, `rep`, `console`,
-  `facility_admin`. Every API route checks the signed-in user's role from the session cookie.
+  `facility_admin`, `customer` (Concierge Portal). Every API route checks the signed-in user's role from the session cookie.
   Never trust a rep id, member name or facility id sent by the client.
+- **Individual customers never reach organization reporting.** Concierge Portal customers and
+  instant requests have no facility; Facility View counts only `staff` accounts and
+  `organization`-channel requests. Keep it that way, and run `npm run hop:check-separation`.
 - **The old HOP system is gone on purpose.** That covers the `/hop/app` member app, the admin,
   ConciergeHub, the feed, wellness, Google Calendar, the chatbot and the iOS wrapper. It was all
   removed in the 2026-10 rebuild. Its tables (`hop_users`, `hop_sessions`, `hop_service_requests`

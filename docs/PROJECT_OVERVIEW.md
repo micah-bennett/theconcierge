@@ -10,24 +10,32 @@ HOP (Hospitality On-Site Professionals) is run by Hudson Valley Concierge Servic
 line is *"Radical Hospitality for the people who keep healthcare running."* This repo holds two
 things:
 
-1. **The public landing site** (`apps/site`). Routes: `/`, `/how-it-works`, `/professionals`,
-   `/organizations`, `/concierge`, `/portal`, `/contact`. Old URLs redirect: `/personal-services`
-   → `/concierge`, `/hop` → `/`, `/plans` → `/organizations`, `/request` → `/contact`.
-   - `/portal` is the **"Choose your portal"** page. It has four cards that link to each Portal
+1. **The public landing site** (`apps/site`). The three main categories (2026-11 meeting) are
+   **Healthcare** (the primary marketing focus), **Organizations** (employers outside healthcare)
+   and **Concierge** (individual customers). Routes: `/`, `/how-it-works`, `/healthcare`,
+   `/organizations`, `/concierge`, `/portal`, `/request`, `/contact`. Old URLs redirect:
+   `/professionals` → `/healthcare`, `/personal-services` → `/concierge`, `/hop` → `/`, `/plans` →
+   `/organizations`.
+   - `/portal` is the **"Choose your portal"** page. It has five cards that link to each Portal
      app's `/login`, with URLs taken from `VITE_*_URL` env vars. A card shows "Coming soon" when
      its URL is unset.
-   - The only API is the contact form, `POST /api/inquiry`. It writes to `hop_inquiries` and
-     emails the owner through Resend.
-2. **The HOP Portal**: four apps that work together on one database.
+   - `/request` is the **instant request** form for people who don't want an account (fields from
+     the original HOP concierge form: request type, date and time, address, flight details for
+     travel, payment preference, how they heard). `POST /api/request` puts it straight into the
+     Concierge Console queue (`portal_requests`, channel `instant`) and emails the owner.
+   - The contact form is `POST /api/inquiry`. It writes to `hop_inquiries` and emails the owner
+     through Resend.
+2. **The HOP Portal**: five apps that work together on one database.
 
    | App | Folder | Role | What it does |
    |---|---|---|---|
    | HOP Client | `apps/staff` | `staff` | Ask HOP for anything, Clutch, rewards, a profile that learns you. Self sign-up |
    | Concierge Console | `apps/console` | `console` | Sees every request, dispatches trips and tasks to one specific rep, tracks jobs, reviews proof, manages rep and facility accounts |
    | Concierge Rep App | `apps/rep` | `rep` | Sees only the jobs sent to them: accept, track, call, photo proof, signature, smart door |
-   | Facility View | `apps/facility` | `facility_admin` | Unit heat map and Burnout Radar. Unit totals only, no names |
+   | Facility View | `apps/facility` | `facility_admin` | For hospitals and partner organizations: unit heat map and Burnout Radar. Unit totals only, no names, HOP Client staff only |
+   | Concierge Portal | `apps/concierge` | `customer` | Individual concierge customers: self sign-up, place requests, see and cancel their own, message HOP. Never part of any organization's reporting |
 
-   The flow: HOP Client request → Console queue → Console dispatches a job to one rep → the rep
+   The flow: HOP Client, Concierge Portal or instant request → Console queue → Console dispatches a job to one rep → the rep
    works it in the Rep App → the Console sees updates live. Details are in
    `docs/portal/architecture.md`.
 

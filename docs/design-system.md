@@ -12,7 +12,7 @@ almost certainly belongs in one of the token sets below, not as a fresh one-off.
 If you see `--hop-*`, `hopApp.css`, `--tc-*`, `.home-*`, `.plans*` or `.hop-page` anywhere, it's
 a stale reference to a removed system.
 
-## 1. Public landing site (`apps/site`: `/`, `/how-it-works`, `/professionals`, `/organizations`, `/concierge`, `/portal`, `/contact`)
+## 1. Public landing site (`apps/site`: `/`, `/how-it-works`, `/healthcare`, `/organizations`, `/concierge`, `/portal`, `/request`, `/contact`)
 
 Ported near-verbatim from the leadership mockup (`design/hop-mockup.html`)
 (2026-10). Paths below are relative to `apps/site/`. Pages: `src/pages/site/*.tsx`; shared pieces (`Steps`, `PageHero`, `InfoPanel`,

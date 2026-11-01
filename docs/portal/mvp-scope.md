@@ -4,14 +4,16 @@ Keep this honest. Update it in the same change that builds, stubs or removes som
 means it reads or writes the database and works across devices. "Sample" means it's hard-coded
 demo data on the client, as in leadership's mockups. "Not built" means there's no code.
 
-_Last updated: 2026-10-19 (v2: every screen real or Coming soon; HOP Client rename)._
+_Last updated: 2026-11-01 (v2.1: Healthcare / Organizations / Concierge, Concierge Portal, instant requests, data separation)._
 
 ## Landing site (`apps/site`): real
 
 | Feature | Status |
 |---|---|
-| Seven public pages | Real |
-| `/portal` "Choose your portal" with four app cards (Staff card also links to `/signup`) | Real. The links come from `VITE_*_URL` env vars, and a card shows "Coming soon" while its URL is unset |
+| Public pages: Home, How HOP Works, Healthcare, Organizations, Concierge, HOP Portal, Request, Contact (`/professionals` → `/healthcare`) | Real. New Healthcare, Concierge-paths and Request copy is marked `[CONFIRM]` for leadership review |
+| `/portal` "Choose your portal" with five app cards (HOP Client and Concierge Portal also link to `/signup`) | Real. The links come from `VITE_*_URL` env vars, and a card shows "Coming soon" while its URL is unset |
+| `/request` instant request (no account): request type, date/time, address, flight (travel types), payment preference, how heard | Real: `POST /api/request` → `portal_requests` (channel `instant`) → Console queue, plus owner email |
+| Payment on request forms | Preference only: method, cardholder name, last 4 digits. **No full card number is collected anywhere**; the team takes payment by phone. Hosted checkout `TODO(IT)` |
 | Contact form → `hop_inquiries` + owner email | Real |
 
 ## Portal apps
@@ -32,6 +34,10 @@ each screen reads the database, or says "Coming soon" with a "Tell me when" butt
 | A job a rep passes on sends its request back to the Console queue | Real |
 
 ### HOP Client (`apps/staff`, formerly the Staff App)
+
+For staff of any contracted organization (healthcare and other industries). Privacy copy says "your
+organization"; the final label/tagline is `[CONFIRM]` with leadership.
+
 | Feature | Status |
 |---|---|
 | Sign-up (facility, unit, optional referral code) | Real |
@@ -49,10 +55,28 @@ each screen reads the database, or says "Coming soon" with a "Tell me when" butt
 | Watch readiness, calendar/schedule sync, smart home, Family Hub, Crew community, Saved with HOP | Coming soon (Tell me when) |
 | AI assistant | Not built (leadership chose people, not AI, for now) |
 
+### Concierge Portal (`apps/concierge`, new in v2.1)
+| Feature | Status |
+|---|---|
+| Self sign-up (name, email, phone, password, optional address and how heard), sign in, reset password | Real (`customer` role, no facility) |
+| New request: the expanded concierge form (same fields as `/request`), saved address prefill | Real `portal_requests` (source/channel `concierge`) |
+| My requests: live status (10 s polling), details, cancel while still New, request again | Real |
+| Messages: own thread with HOP Concierge, chat with the rep on an active request | Real |
+| Profile: name, phone, address, how heard | Real (`portal_customer_profiles`) |
+| "Needs attention" flag and unread badge | Not built |
+| Realtime instead of polling | `TODO(IT)` |
+
+### Data separation (v2.1)
+| Feature | Status |
+|---|---|
+| Customers and instant requests excluded from Facility View (role `staff` + channel `organization` on every query) | Real; tested against a scratch Postgres with a deliberately planted leak |
+| `npm run hop:check-separation` read-only leak test for the live database | Real |
+
 ### Concierge Console (`apps/console`)
 | Feature | Status |
 |---|---|
-| Request queue with source labels (incl. Reward redemption, Unit support, Safety alert pinned), cancel/reopen, "Rep passed — dispatch again" | Real |
+| Request queue with source labels (incl. Reward redemption, Unit support, Safety alert pinned, Concierge Portal, Instant request), cancel/reopen, "Rep passed — dispatch again" | Real |
+| Concierge/instant request details panel (address, flight, contact, payment preference); rep job notes get the details without payment | Real |
 | Dispatch to one rep (online reps first), live dispatch table, details, reassign | Real; push `notify()` is a `TODO(IT)` stub |
 | KPIs: new requests, active jobs, needs attention, completed with proof, avg response (request → accepted), service rating, today's volume by service | Real |
 | Messages tab: every staff, rep and job thread, unread counts, urgent pinned | Real |
@@ -71,6 +95,9 @@ each screen reads the database, or says "Coming soon" with a "Tell me when" butt
 | Start-of-shift checklist | Saved on the device only |
 
 ### Facility View (`apps/facility`)
+
+For hospitals and partner organizations. Counts HOP Client staff of that organization only.
+
 | Feature | Status |
 |---|---|
 | Heat map (Strain, Stress, Missed breaks, HOP requests, Mood) × Today / Last 7 days / Next 72 hours | Real, from `portal_checkins` + `portal_requests` (formulas `[CONFIRM]`, see `apps/facility/lib/server/aggregate.ts`) |
