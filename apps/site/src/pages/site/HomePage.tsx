@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { HomeCarousel } from '../../components/HomeCarousel'
 import { Steps, type Step } from './parts'
 
 const HOME_CARDS = [
@@ -69,43 +70,9 @@ const CONCIERGE_INCLUDES = [
 export function HomePage() {
   return (
     <>
-      <section className="hs-hero">
-        <div className="hs-container hs-hero__grid">
-          <div>
-            <p className="hs-eyebrow">Hospitality On-Site Professionals</p>
-            <h1>Hospitality that helps people and workplaces thrive.</h1>
-            <p className="hs-lead">
-              HOP brings responsive, human-centered support to professionals and
-              organizations—helping people manage the details, stay connected, and build a
-              stronger workplace experience.
-            </p>
-            <div className="hs-button-row">
-              <Link className="hs-btn hs-btn--primary" to="/healthcare">
-                HOP for Healthcare
-              </Link>
-              <Link className="hs-btn hs-btn--secondary" to="/organizations">
-                HOP for Organizations
-              </Link>
-            </div>
-          </div>
-          <div className="hs-hero__art" role="img" aria-label="Abstract illustration of connected professionals">
-            <span className="hs-hero__art-label">Support that shows up</span>
-            <div className="hs-hero__people" aria-hidden="true">
-              <span className="hs-hero__person" />
-              <span className="hs-hero__person" />
-              <span className="hs-hero__person" />
-            </div>
-            <div className="hs-hero__card">
-              <strong>Human-first support</strong>
-              <span>
-                Thoughtful service, responsive tools, and programs designed around real people.
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HomeCarousel />
 
-      <section className="hs-section">
+      <section className="hs-section hs-section--anchor" id="services">
         <div className="hs-container">
           <div className="hs-section-head">
             <div>

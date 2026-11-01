@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { HopBrand } from './HopBrand'
+import { PHONE_DIGITS, PHONE_DISPLAY, PHONE_HREF } from '../site/contact'
 
 /** Single source of truth for the nav row (and its mobile drop-down below 920px). */
 const NAV_LINKS = [
@@ -44,43 +45,52 @@ export function SiteHeader() {
   }, [menuOpen])
 
   return (
-    <header className="hs-header">
-      <div className="hs-container hs-nav">
-        <Link className="hs-brand" to="/" aria-label="HOP Home">
-          <HopBrand />
-        </Link>
-        <button
-          ref={toggleRef}
-          type="button"
-          className="hs-nav__toggle"
-          aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
-          aria-expanded={menuOpen}
-          aria-controls="hs-nav-links"
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          ☰
-        </button>
-        <nav
-          id="hs-nav-links"
-          className={`hs-nav__links${menuOpen ? ' hs-nav__links--open' : ''}`}
-          aria-label="Main navigation"
-        >
-          {NAV_LINKS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={'end' in item ? item.end : undefined}
-              className={({ isActive }) => (isActive ? 'is-active' : undefined)}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-          <a href={BLOG_URL}>Blog</a>
-        </nav>
-        <Link className="hs-btn hs-btn--primary hs-btn--small hs-header__cta" to="/contact">
-          Start a Conversation
-        </Link>
+    <>
+      <div className="hs-topbar">
+        <div className="hs-container hs-topbar__inner">
+          <a href={PHONE_HREF} aria-label={`Call HOP at ${PHONE_DIGITS}`}>
+            Call HOP <strong>{PHONE_DISPLAY}</strong>
+          </a>
+        </div>
       </div>
-    </header>
+      <header className="hs-header">
+        <div className="hs-container hs-nav">
+          <Link className="hs-brand" to="/" aria-label="HOP Home">
+            <HopBrand />
+          </Link>
+          <button
+            ref={toggleRef}
+            type="button"
+            className="hs-nav__toggle"
+            aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={menuOpen}
+            aria-controls="hs-nav-links"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            ☰
+          </button>
+          <nav
+            id="hs-nav-links"
+            className={`hs-nav__links${menuOpen ? ' hs-nav__links--open' : ''}`}
+            aria-label="Main navigation"
+          >
+            {NAV_LINKS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={'end' in item ? item.end : undefined}
+                className={({ isActive }) => (isActive ? 'is-active' : undefined)}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+            <a href={BLOG_URL}>Blog</a>
+          </nav>
+          <Link className="hs-btn hs-btn--primary hs-btn--small hs-header__cta" to="/contact">
+            Start a Conversation
+          </Link>
+        </div>
+      </header>
+    </>
   )
 }
