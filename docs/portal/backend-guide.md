@@ -54,7 +54,7 @@ deploy of `theconcierge` will fail.
 Do these **in this order**. Step 1 must happen before the code reaches `main`, because the new code
 writes a new database column; without it, new requests and the Facility View would fail.
 
-1. **Update the database** (see "Database updates" below): `npm run db:migrate`. It adds the
+1. ✅ Done 2026-11-01. **Update the database** (see "Database updates" below): `npm run db:migrate`. It adds the
    `customer` account type, the `portal_customer_profiles` table and a `channel` column on
    requests. Safe to run twice; nothing is deleted.
 2. **Merge the code to `main`** (all projects redeploy).
@@ -93,6 +93,10 @@ It's always safe to run twice: it only adds things, and it never deletes tables 
 
 **Status:** applied to the live database on 2026-10-17 (it added the `portal_` tables and
 `hop_inquiries`; the old tables were not touched).
+
+**v2.1 status:** applied to the live database on 2026-11-01 (role `customer`,
+`portal_customer_profiles`, `portal_requests.channel`; all 109 existing requests became
+`organization`, 275 accounts untouched). `npm run hop:check-separation` passed right after.
 
 ## Demo accounts (in the live database until launch)
 
@@ -173,7 +177,7 @@ other apps aren't affected.
 Vercel → project → Logs (or Deployments → a deployment → Runtime Logs).
 
 ## Still to do
-- v2.1 steps 1-5 above (database update, Concierge Portal project, `CONCIERGE_URL` /
+- v2.1 steps 2-5 above (database update, Concierge Portal project, `CONCIERGE_URL` /
   `VITE_CONCIERGE_URL`, separation check).
 - Creating the real first Concierge Console account (`npm run hop:create-console-admin`) and
   removing the demo data (above) before real staff sign up.
