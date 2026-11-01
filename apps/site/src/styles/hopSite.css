@@ -949,6 +949,53 @@ html:has(.hs) {
   background: #fdecec;
 }
 
+/* Instant request form (RequestPage.tsx) — extends the contact form above. */
+.hs-required {
+  color: var(--hs-teal-dark);
+}
+
+.hs .hs-form-note {
+  margin: 0 0 15px;
+  color: var(--hs-muted);
+  font-size: 0.87rem;
+}
+
+.hs-fieldset {
+  margin: 24px 0 0;
+  padding: 20px;
+  border: 1px solid var(--hs-line);
+  border-radius: 14px;
+  min-width: 0;
+}
+
+.hs-fieldset legend {
+  padding: 0 8px;
+  color: var(--hs-navy);
+  font-weight: 800;
+}
+
+.hs-form-grid--3 {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+
+.hs-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.hs .hs-request-portal-link {
+  margin-top: 18px;
+  font-weight: 700;
+}
+
+.hs .hs-request-portal-link a {
+  color: var(--hs-teal-dark);
+  text-decoration: underline;
+}
+
 /* ——— Footer ——— */
 .hs-footer {
   padding: 39px 0;

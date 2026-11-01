@@ -4,11 +4,12 @@ import { SiteFooter } from './components/SiteFooter'
 import { SiteHeader } from './components/SiteHeader'
 import { ConciergePage } from './pages/site/ConciergePage'
 import { ContactPage } from './pages/site/ContactPage'
+import { HealthcarePage } from './pages/site/HealthcarePage'
 import { HomePage } from './pages/site/HomePage'
 import { HowItWorksPage } from './pages/site/HowItWorksPage'
 import { OrganizationsPage } from './pages/site/OrganizationsPage'
 import { PortalPage } from './pages/site/PortalPage'
-import { ProfessionalsPage } from './pages/site/ProfessionalsPage'
+import { RequestPage } from './pages/site/RequestPage'
 import { usePageTitle } from './hooks/usePageTitle'
 import './styles/hopSite.css'
 
@@ -34,15 +35,16 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
-          <Route path="/professionals" element={<ProfessionalsPage />} />
+          <Route path="/healthcare" element={<HealthcarePage />} />
           <Route path="/organizations" element={<OrganizationsPage />} />
           <Route path="/concierge" element={<ConciergePage />} />
           <Route path="/portal" element={<PortalPage />} />
+          <Route path="/request" element={<RequestPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/personal-services" element={<Navigate to="/concierge" replace />} />
           <Route path="/hop" element={<Navigate to="/" replace />} />
           <Route path="/plans" element={<Navigate to="/organizations" replace />} />
-          <Route path="/request" element={<Navigate to="/contact" replace />} />
+          <Route path="/professionals" element={<Navigate to="/healthcare" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

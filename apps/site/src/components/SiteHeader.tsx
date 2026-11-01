@@ -6,9 +6,9 @@ import { HopBrand } from './HopBrand'
 const NAV_LINKS = [
   { to: '/', label: 'Home', end: true },
   { to: '/how-it-works', label: 'How HOP Works' },
-  { to: '/professionals', label: 'For Professionals' },
-  { to: '/organizations', label: 'For Organizations' },
-  { to: '/concierge', label: 'The Concierge' },
+  { to: '/healthcare', label: 'Healthcare' },
+  { to: '/organizations', label: 'Organizations' },
+  { to: '/concierge', label: 'Concierge' },
   { to: '/portal', label: 'HOP Portal' },
 ] as const
 

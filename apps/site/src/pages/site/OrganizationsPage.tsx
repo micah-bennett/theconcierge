@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom'
-import { InfoPanel, PageHero } from './parts'
+import { InfoPanel, PageHero, Quote } from './parts'
+
+// The non-healthcare category: employers and businesses across industries. Healthcare
+// organizations have their own page (HealthcarePage.tsx).
 
 const ORG_CARDS = [
   {
@@ -27,16 +30,24 @@ const PARTNERSHIP_INCLUDES = [
   'HOP Portal access and program insight',
 ] as const
 
+const EMPLOYEE_SUPPORT = [
+  'Request coordination and follow-up',
+  'Trusted local and workplace resources',
+  'Planning and organization support',
+  'Service navigation and referrals when appropriate',
+  'Personalized concierge options through The Concierge by HOP',
+] as const
+
 export function OrganizationsPage() {
   return (
     <>
       <PageHero
         eyebrow="HOP for Organizations"
         title="Create a workplace experience that feels more human."
-        lead="HOP partners with organizations that want to support their people in practical, thoughtful, and responsive ways—without relying on one-size-fits-all programs."
+        lead="HOP partners with employers and businesses across industries that want to support their people in practical, thoughtful, and responsive ways—without relying on one-size-fits-all programs."
       >
         <div className="hs-button-row">
-          <Link className="hs-btn hs-btn--primary" to="/contact">
+          <Link className="hs-btn hs-btn--primary" to="/contact?interest=organization">
             Discuss a HOP Program
           </Link>
         </div>
@@ -49,8 +60,8 @@ export function OrganizationsPage() {
               <h2>Hospitality is a workplace advantage.</h2>
             </div>
             <p>
-              HOP can be shaped for companies, professional teams, care settings, campuses,
-              residential communities, and other people-centered organizations.
+              HOP can be shaped for companies, professional teams, campuses, residential
+              communities, and other people-centered organizations.
             </p>
           </div>
           <div className="hs-cards-3">
@@ -77,6 +88,20 @@ export function OrganizationsPage() {
               partnership designed to be present, adaptive, and useful in the moments that matter.
             </p>
           </div>
+        </div>
+      </section>
+      <section className="hs-section">
+        <div className="hs-container hs-split">
+          <InfoPanel
+            heading="h2"
+            title="Personalized, practical support for your employees"
+            intro="Every person’s needs are different. HOP can help each of your employees find a clear path from “I need help with this” to a practical next step."
+            items={EMPLOYEE_SUPPORT}
+          />
+          <Quote
+            text="“Support is more meaningful when it is easy to access, respectful of a person’s time, and built around what they actually need.”"
+            attribution="HOP Approach"
+          />
         </div>
       </section>
     </>

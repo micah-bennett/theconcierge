@@ -4,9 +4,9 @@ import { Steps, type Step } from './parts'
 const HOME_CARDS = [
   {
     icon: '✦',
-    title: 'HOP for Professionals',
-    desc: 'Personalized requests, trusted resources, and practical support that helps professionals protect their time and energy.',
-    link: { to: '/professionals', label: 'Explore professional support' },
+    title: 'HOP for Healthcare',
+    desc: 'Radical Hospitality for the people who keep healthcare running: errands, logistics, and real support for hospital and healthcare teams.',
+    link: { to: '/healthcare', label: 'Explore HOP for Healthcare' },
   },
   {
     icon: '◫',
@@ -16,9 +16,9 @@ const HOME_CARDS = [
   },
   {
     icon: '⌁',
-    title: 'The HOP Portal',
-    desc: 'A secure, web-based access point where members log in to request help, connect to services, and find resources.',
-    link: { to: '/portal', label: 'Log in to the HOP Portal' },
+    title: 'The Concierge by HOP',
+    desc: 'Personalized support for life’s everyday details. Keep a Concierge Portal account, or make a single request with no account needed.',
+    link: { to: '/concierge', label: 'Explore The Concierge' },
   },
 ] as const
 
@@ -80,11 +80,11 @@ export function HomePage() {
               stronger workplace experience.
             </p>
             <div className="hs-button-row">
-              <Link className="hs-btn hs-btn--primary" to="/organizations">
-                Explore HOP for Organizations
+              <Link className="hs-btn hs-btn--primary" to="/healthcare">
+                HOP for Healthcare
               </Link>
-              <Link className="hs-btn hs-btn--secondary" to="/professionals">
-                Explore HOP for Professionals
+              <Link className="hs-btn hs-btn--secondary" to="/organizations">
+                HOP for Organizations
               </Link>
             </div>
           </div>
