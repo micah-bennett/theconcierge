@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom'
 import { HopBrand } from './HopBrand'
 
 const FOOTER_LINKS = [
+  { to: '/healthcare', label: 'Healthcare' },
   { to: '/organizations', label: 'Organizations' },
-  { to: '/professionals', label: 'Professionals' },
-  { to: '/concierge', label: 'The Concierge' },
+  { to: '/concierge', label: 'Concierge' },
   { to: '/portal', label: 'HOP Portal' },
   { to: '/contact', label: 'Contact' },
 ] as const

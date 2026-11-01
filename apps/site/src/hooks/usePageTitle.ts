@@ -9,10 +9,11 @@ import { useEffect } from 'react'
 const TITLES: Record<string, string> = {
   '/': 'HOP | Hospitality On-Site Professionals',
   '/how-it-works': 'How HOP Works | HOP',
-  '/professionals': 'For Professionals | HOP',
-  '/organizations': 'For Organizations | HOP',
+  '/healthcare': 'HOP for Healthcare | HOP',
+  '/organizations': 'HOP for Organizations | HOP',
   '/concierge': 'The Concierge by HOP | HOP',
   '/portal': 'HOP Portal | HOP',
+  '/request': 'Make a Request | The Concierge by HOP',
   '/contact': 'Start a Conversation | HOP',
 }
 

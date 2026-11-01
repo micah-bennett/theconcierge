@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { appUrl, CONCIERGE_URL } from '../../site/portalUrls'
 import { PageHero } from './parts'
 
 // Each HOP Portal app is its own Vercel deployment (see docs/portal/architecture.md), so the
@@ -16,9 +17,18 @@ const PORTAL_APPS: readonly PortalApp[] = [
   {
     icon: '♥',
     title: 'HOP Client',
-    who: 'Nurses, doctors, and every healthcare professional',
-    desc: 'Ask HOP for anything, check in on how your day is going, earn rewards, and message the HOP team—in and out of the hospital.',
+    // [CONFIRM] final HOP Client tagline
+    who: 'Staff at HOP partner organizations: hospitals, healthcare teams and employers',
+    desc: 'Ask HOP for anything, check in on how your day is going, earn rewards, and message the HOP team, at work and beyond.',
     url: import.meta.env.VITE_CLIENT_URL || import.meta.env.VITE_STAFF_URL,
+    signup: true,
+  },
+  {
+    icon: '✦',
+    title: 'Concierge Portal',
+    who: 'Individual concierge customers',
+    desc: 'Request The Concierge by HOP, track every request and message the team.',
+    url: CONCIERGE_URL,
     signup: true,
   },
   {
@@ -38,15 +48,11 @@ const PORTAL_APPS: readonly PortalApp[] = [
   {
     icon: '▦',
     title: 'Facility View',
-    who: 'Hospital leaders',
+    who: 'Leaders at hospitals and partner organizations',
     desc: 'A unit heat map and Burnout Radar so leaders can act early. Unit totals only, never names.',
     url: import.meta.env.VITE_FACILITY_URL,
   },
 ]
-
-function appUrl(base: string, path: string): string {
-  return `${base.replace(/\/+$/, '')}${path}`
-}
 
 export function PortalPage() {
   return (
@@ -54,7 +60,7 @@ export function PortalPage() {
       <PageHero
         eyebrow="HOP Portal"
         title="Choose your portal."
-        lead="HOP runs on four secure, web-based apps—one for each part of the team. Pick yours and sign in from any browser. No app store, no download."
+        lead="HOP runs on five secure, web-based apps—one for each part of the team. Pick yours and sign in from any browser. No app store, no download."
       />
       <section className="hs-section">
         <div className="hs-container">
@@ -92,7 +98,7 @@ export function PortalPage() {
           <h2>Bringing HOP to your team?</h2>
           <p>
             Reps, dispatch, and facility accounts are set up by HOP. Start a conversation and we
-            will help your professionals or organization get going.
+            will help your hospital or organization get going.
           </p>
           <div className="hs-button-row">
             <Link className="hs-btn hs-btn--primary" to="/contact?interest=portal">
